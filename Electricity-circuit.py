@@ -22,9 +22,9 @@ APP_HTML = r'''<!doctype html>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>יסודות החשמל | תרגול DC</title>
   <style>
-    :root{color-scheme:light;--paper:#f4f5f1;--card:#fffefa;--ink:#182e3c;--muted:#5b6f78;--line:#dce3df;--green:#116e65;--soft:#e7f1ed;--amber:#a65b20;--shadow:0 8px 28px #182e3c08}
-    *{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Arial,"Noto Sans Hebrew",sans-serif;line-height:1.65;text-align:right}button,input,select{font:inherit}button{cursor:pointer;touch-action:manipulation}button:disabled{opacity:.48;cursor:default}button,input{font-size:calc(16px * var(--text-scale,1))}input[aria-invalid=true]{border-color:#b05242!important}button{border:0}button:focus-visible,input:focus-visible,summary:focus-visible,a:focus-visible{outline:3px solid #c38330;outline-offset:3px}[hidden]{display:none!important}h1,h2,h3,p{margin-top:0}h1,h2,h3{line-height:1.35}h1{font-size:clamp(calc(30px * var(--text-scale,1)),calc(5vw * var(--text-scale,1)),calc(46px * var(--text-scale,1)));letter-spacing:-.04em;margin-bottom:12px}h2{font-size:calc(25px * var(--text-scale,1));margin-bottom:8px}h3{font-size:calc(20px * var(--text-scale,1));margin-bottom:12px}p{margin-bottom:12px}bdi,.math{direction:ltr;unicode-bidi:isolate;font-variant-numeric:tabular-nums}bdi{display:inline-block}.math{display:block;text-align:left}input.numeric{direction:ltr;text-align:left;font-variant-numeric:tabular-nums}
-    .app{max-width:1160px;margin:auto;padding:22px 24px 40px}.topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;padding-bottom:22px;border-bottom:1px solid var(--line)}.identity{display:flex;align-items:center;gap:12px}.brand-icon{background:var(--ink);color:white;border-radius:14px;width:46px;height:46px;display:grid;place-items:center;font-size:calc(27px * var(--text-scale,1))}.brand-title{font-weight:700;font-size:calc(18px * var(--text-scale,1))}.eyebrow{color:var(--green);font-weight:700;font-size:calc(12px * var(--text-scale,1));letter-spacing:.06em}.muted{color:var(--muted)}.small{font-size:calc(13px * var(--text-scale,1))}.top-tools{display:flex;gap:8px;flex-wrap:wrap}
+    :root{color-scheme:light;--paper:#f5f8f5;--card:#ffffff;--ink:#182e3c;--muted:#5b6f78;--line:#dce3df;--green:#116e65;--soft:#e7f1ed;--amber:#a65b20;--shadow:0 8px 28px #182e3c08}
+    *{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Arial,"Noto Sans Hebrew",sans-serif;line-height:1.65;text-align:right}button,input,select{font:inherit}button{cursor:pointer;touch-action:manipulation}button:disabled{opacity:.48;cursor:default}button,input{font-size:calc(17px * var(--text-scale,1))}input[aria-invalid=true]{border-color:#b05242!important}button{border:0}button:focus-visible,input:focus-visible,summary:focus-visible,a:focus-visible{outline:3px solid #c38330;outline-offset:3px}[hidden]{display:none!important}h1,h2,h3,p{margin-top:0}h1,h2,h3{line-height:1.35}h1{font-size:clamp(calc(30px * var(--text-scale,1)),calc(5vw * var(--text-scale,1)),calc(46px * var(--text-scale,1)));letter-spacing:-.04em;margin-bottom:12px}h2{font-size:calc(25px * var(--text-scale,1));margin-bottom:8px}h3{font-size:calc(20px * var(--text-scale,1));margin-bottom:12px}p{margin-bottom:12px}bdi,.math{direction:ltr;unicode-bidi:isolate;font-variant-numeric:tabular-nums}bdi{display:inline-block}.math{display:block;text-align:left}input.numeric{direction:ltr;text-align:left;font-variant-numeric:tabular-nums}
+    .app{max-width:1160px;margin:auto;padding:22px 24px 40px}.topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;padding-bottom:22px;border-bottom:1px solid var(--line)}.identity{display:flex;align-items:center;gap:12px}.brand-icon{background:var(--ink);color:white;border-radius:14px;width:46px;height:46px;display:grid;place-items:center;font-size:calc(27px * var(--text-scale,1))}.brand-title{font-weight:700;font-size:calc(18px * var(--text-scale,1))}.eyebrow{color:var(--green);font-weight:700;font-size:calc(12px * var(--text-scale,1));letter-spacing:.06em}.muted{color:var(--muted)}.small{font-size:calc(14px * var(--text-scale,1))}.top-tools{display:flex;gap:8px;flex-wrap:wrap}
     .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:46px;padding:10px 17px;border-radius:11px;color:white;background:var(--green);font-weight:700;border:1px solid transparent;line-height:1.45}.btn.secondary{background:var(--card);color:var(--ink);border-color:var(--line)}.btn.soft{background:var(--soft);color:var(--green)}.btn.tiny{font-size:calc(14px * var(--text-scale,1));min-height:40px;padding:8px 11px}.btn:hover:enabled{filter:brightness(.97)}.text-btn{background:none;color:var(--green);text-decoration:underline;padding:8px;min-height:40px}.hero{display:flex;align-items:center;justify-content:space-between;gap:30px;padding:32px 0 24px}.hero-copy{max-width:710px}.hero-copy p{color:var(--muted);font-size:calc(17px * var(--text-scale,1))}.hero-symbol{width:150px;height:150px;border-radius:28px;border:1px solid #cdded7;background:linear-gradient(140deg,#e9f0e8,#f9f5e8);display:grid;place-content:center;direction:ltr;text-align:center;color:var(--green);font-size:calc(31px * var(--text-scale,1));font-weight:700;flex-shrink:0;transform:rotate(-3deg)}.hero-symbol small{font-size:calc(13px * var(--text-scale,1));color:var(--muted);font-weight:400;margin-top:8px}.pills{display:flex;flex-wrap:wrap;gap:7px}.pill{border:1px solid var(--line);background:var(--card);padding:4px 10px;border-radius:20px;font-size:calc(12px * var(--text-scale,1));color:var(--muted)}
     .tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:8px 0 22px}.tab{min-height:64px;padding:12px 16px;background:#e8ede7;border-radius:13px;color:var(--muted);font-weight:700;text-align:right}.tab span{font-size:calc(12px * var(--text-scale,1));font-weight:400;display:block;margin-top:2px}.tab[aria-selected=true]{background:var(--ink);color:white}.course-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:16px}.levels{display:flex;gap:7px;flex-wrap:wrap}.level{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 13px;min-height:46px;color:var(--muted);font-weight:700}.level[aria-pressed=true]{color:var(--green);border-color:var(--green);box-shadow:inset 0 0 0 1px var(--green)}.level small{display:block;font-weight:400;font-size:calc(12px * var(--text-scale,1))}.card{min-width:0;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:22px;box-shadow:var(--shadow)}.progress-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px;font-size:calc(14px * var(--text-scale,1))}.question-dots{display:flex;gap:6px;direction:ltr}.question-dot{height:9px;width:23px;border-radius:5px;background:var(--line)}.question-dot.current{background:#80b5a6}.question-dot.done{background:var(--green)}.progress-track{height:5px;background:var(--line);border-radius:5px;overflow:hidden;margin-bottom:22px}.progress-track>div{height:100%;background:var(--green);transition:width .25s;}
     .exercise-grid{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(320px,.9fr);gap:18px;align-items:start}.exercise-title{margin-bottom:16px}.givens{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0}.given{background:#f1f4ed;border:1px solid #e0e7dc;border-radius:10px;padding:8px 12px;min-width:92px}.given small{display:block;color:var(--muted);font-size:calc(12px * var(--text-scale,1))}.given bdi{font-weight:700;font-size:calc(19px * var(--text-scale,1))}.diagram{margin:8px 0 0;overflow-x:auto;max-width:100%}.diagram svg{display:block;width:100%;height:auto;min-width:0}.diagram figcaption{color:var(--muted);font-size:calc(12px * var(--text-scale,1));margin-top:5px}.flow{stroke-dasharray:7 20;animation:currentFlow 2.4s linear infinite}@keyframes currentFlow{to{stroke-dashoffset:-216}}
@@ -38,12 +38,94 @@ APP_HTML = r'''<!doctype html>
     .formula-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}.formula-tab{min-width:0}.manual-entry{display:flex;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:18px}.manual-intro{margin-bottom:14px}.manual-choices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:10px 0 18px}.manual-choice{min-width:0;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:11px;padding:12px;text-align:right}.manual-choice strong{display:block;font-size:calc(15px * var(--text-scale,1));line-height:1.5}.manual-choice bdi{font-size:calc(14px * var(--text-scale,1));color:var(--muted);margin-top:5px}.manual-choice[aria-pressed=true]{border-color:var(--green);box-shadow:inset 0 0 0 1px var(--green);background:var(--soft)}.manual-workspace{display:grid;grid-template-columns:170px minmax(0,1fr);gap:22px;align-items:start}.manual-list{min-width:0;background:var(--soft);padding:12px;border-radius:12px}.manual-list>.btn{width:100%;margin-bottom:10px}.manual-list h3{font-size:calc(14px * var(--text-scale,1));margin-bottom:10px}.manual-list-row{display:flex;direction:ltr;align-items:center;gap:6px;margin:8px 0}.manual-list-row bdi{font-weight:700;white-space:nowrap}.manual-list-row input{width:0;min-width:0;flex:1;min-height:42px;border:1px solid #a8c4b6;border-radius:7px;background:white;padding:5px;direction:ltr;text-align:center;font-size:calc(17px * var(--text-scale,1))}.manual-form{min-width:0}.manual-form h3{text-align:center;font-size:calc(17px * var(--text-scale,1))}.manual-placeholder{border:1px dashed #b9cfc2;border-radius:13px;padding:30px 15px;text-align:center;color:var(--muted)}.manual-triangle{width:100%;max-width:360px;height:auto;aspect-ratio:260/225}.manual-triangle .triangle-slot{width:32%;gap:3px}.manual-triangle .triangle-slot.top{top:18%;left:34%}.manual-triangle .triangle-slot.left{top:63%;left:12%}.manual-triangle .triangle-slot.right{top:63%;left:56%}.manual-triangle .triangle-slot input{width:100%;min-width:0;max-width:100px;min-height:40px;padding:4px;font-size:calc(20px * var(--text-scale,1))}.manual-answer{margin-top:15px}.manual-answer label{display:block;margin-bottom:7px;font-weight:700}.manual-answer input{width:100%;min-width:0;min-height:46px;padding:8px 10px;border:2px solid var(--green);border-radius:9px;background:white;font-size:calc(21px * var(--text-scale,1));direction:ltr;text-align:left}.manual-answer .btn{width:100%;margin-top:10px}.manual-note{margin:14px 0 0}.manual-status{min-height:0}.manual-status:empty{display:none}
     @media(max-width:570px){.formula-tab{padding:8px 5px;font-size:calc(13px * var(--text-scale,1))}.manual-choices{gap:7px}.manual-choice{padding:9px}.manual-choice strong{font-size:calc(13px * var(--text-scale,1))}.manual-choice bdi{font-size:calc(12px * var(--text-scale,1))}.manual-workspace{grid-template-columns:84px minmax(0,1fr);gap:10px}.manual-list{padding:6px}.manual-list>.btn{padding:7px 3px;font-size:calc(13px * var(--text-scale,1))}.manual-list h3{font-size:calc(12px * var(--text-scale,1));line-height:1.5}.manual-list-row{gap:3px}.manual-list-row bdi{font-size:calc(14px * var(--text-scale,1))}.manual-list-row input{min-height:36px;padding:3px;font-size:calc(16px * var(--text-scale,1))}.manual-triangle .triangle-slot{gap:2px}.manual-triangle .triangle-slot strong{font-size:calc(17px * var(--text-scale,1))}.manual-triangle .triangle-slot input{min-height:28px;height:28px;font-size:calc(16px * var(--text-scale,1));padding:2px}.manual-form h3{font-size:calc(14px * var(--text-scale,1))}.manual-answer label{font-size:calc(14px * var(--text-scale,1))}.manual-answer .btn{font-size:calc(13px * var(--text-scale,1));padding:9px 6px}.manual-answer input{font-size:calc(18px * var(--text-scale,1))}.manual-list .small{font-size:calc(11px * var(--text-scale,1))}}
     @media(max-width:570px){.sim-layout{display:flex;flex-direction:column;gap:14px}.sim-layout>div:first-child{display:contents}.sim-layout .diagram{order:0;width:100%}.sim-layout .sim-controls{order:1;width:100%}.sim-layout #sim-metrics{order:2;width:100%}.table-scroll table,.table-scroll tbody{display:block;width:100%}.table-scroll caption{display:block;width:100%;white-space:normal}.table-scroll thead{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}.table-scroll tbody tr{display:block;margin-bottom:12px;border:1px solid var(--line);border-radius:10px;overflow:hidden}.table-scroll tbody td{display:flex;align-items:center;justify-content:space-between;gap:12px;white-space:normal;padding:8px 12px}.table-scroll tbody td::before{content:attr(data-label);color:var(--muted);font-size:calc(13px * var(--text-scale,1))}.table-scroll tbody td:last-child{border-bottom:0}}
-    .skip-link{position:fixed;top:-100px;right:12px;z-index:10000;background:#182e3c;color:white;padding:12px 18px;border-radius:8px}.skip-link:focus{top:12px}.top-tools{max-width:720px}.top-tools .btn{min-width:0;overflow-wrap:anywhere}.profile-dialog{max-width:650px}.profile-fields{display:grid;grid-template-columns:1fr 1fr;gap:14px}.profile-fields label{display:block;font-weight:700}.profile-fields input{display:block;min-width:0;width:100%;min-height:46px;padding:9px;border:1px solid #a8c4b6;border-radius:9px;background:white;color:var(--ink)}.terms-document{margin:18px 0;border:1px solid var(--line);border-radius:12px;padding:13px}.terms-document summary,.profile-accessibility summary{cursor:pointer;font-weight:700;min-height:44px;align-content:center}.terms-document p,.terms-document li{font-size:calc(14px * var(--text-scale,1))}.terms-document h3{font-size:calc(17px * var(--text-scale,1));margin-top:18px}.consent-row{display:flex;align-items:flex-start;gap:10px;margin:18px 0;font-size:calc(14px * var(--text-scale,1))}.consent-row input{flex:0 0 22px;width:22px;height:22px;margin:2px 0;accent-color:var(--green)}.profile-accessibility{margin-top:18px}.accessibility-dialog{max-width:650px}.accessibility-options{display:grid;gap:12px;margin:14px 0}.accessibility-options label{display:flex;align-items:center;gap:10px;min-height:44px}.accessibility-options input[type=checkbox]{width:22px;height:22px;accent-color:var(--green)}.accessibility-options select{min-height:44px;padding:7px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink)}.text-scale-150 .manual-workspace{grid-template-columns:1fr}.text-scale-150 .manual-list{max-width:none}.text-scale-150 .manual-list-row input{max-width:220px}.high-contrast{--paper:#fff;--card:#fff;--ink:#000;--muted:#242424;--line:#333;--green:#005b4f;--soft:#e8f4ed}.high-contrast .triangle svg path{stroke:#000}.high-contrast .manual-choice,.high-contrast .formula-tab,.high-contrast .level{border-color:#000}.reduce-motion *,.reduce-motion *::before,.reduce-motion *::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}.highlight-links a,.highlight-links .text-btn{text-decoration:underline;text-decoration-thickness:2px}.personal-progress{margin-top:28px}.personal-progress h2:focus,#sim-title:focus{outline:3px solid #c38330;outline-offset:4px}.progress-heading{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}.personal-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:18px 0}.personal-stat{border:1px solid var(--line);border-radius:12px;padding:13px}.personal-stat strong{display:block;font-size:calc(25px * var(--text-scale,1));color:var(--green)}.personal-chart{margin:22px 0}.personal-chart-row{display:grid;grid-template-columns:115px minmax(0,1fr) 58px;align-items:center;gap:12px;margin:16px 0;font-size:calc(14px * var(--text-scale,1))}.personal-bar{height:25px;border-radius:6px;overflow:hidden;background:#e2e9e2;border:1px solid #c9d8cd}.personal-bar>div{height:100%;background:#116e65;min-width:0}.personal-rate{direction:ltr;text-align:left;font-weight:700}.personal-progress .table-scroll th,.personal-progress .table-scroll td{white-space:normal}.personal-progress .table-scroll td:first-child{font-weight:700}.sim-jump{margin-top:10px}.simulator{background:#050505;color:#fff;border-color:#555}.simulator .eyebrow,.simulator .muted,.simulator .small,.simulator .metric small,.simulator caption{color:#fff}.simulator .sim-controls,.simulator .metric,.simulator th,.simulator .btn.secondary{background:#111;color:#fff;border-color:#666}.simulator .sim-value,.simulator .metric bdi{color:#fff}.simulator td[data-label="זרם"] bdi,.simulator .metric:nth-child(2) bdi{color:#ff6565}.simulator td[data-label="מתח"] bdi{color:#65e680}.simulator .diagram-preview,.simulator .diagram-preview:hover{background:#000;color:#fff}.simulator .diagram-open-label{color:#fff}.simulator .metric,.simulator .table-scroll td,.simulator .table-scroll tbody tr{border-color:#666}.simulator th{color:#fff}.simulator input[type=range],.simulator input[type=checkbox]{accent-color:#fff}.sim-legend{display:flex;gap:18px;flex-wrap:wrap;font-size:calc(13px * var(--text-scale,1));margin:12px 0;color:#fff}.sim-legend .current{color:#ff6565}.sim-legend .voltage{color:#65e680}.simulator .table-scroll tbody td::before{color:#fff}.dark-diagram .diagram-viewport{background:#000;border-color:#666}.manual-choice svg{display:block;max-width:115px;width:100%;height:auto;margin:6px auto}.manual-choice math{font-size:calc(15px * var(--text-scale,1))}.formula-lines math{margin:3px 0}.mathml{font-family:"Cambria Math","STIX Two Math","Times New Roman",serif;direction:ltr;unicode-bidi:isolate;max-width:100%}.formula-networks .math{overflow-x:auto;max-width:100%}.formula-card .mathml{font-size:calc(20px * var(--text-scale,1))}select:focus-visible,textarea:focus-visible,[tabindex]:focus-visible{outline:3px solid #c38330;outline-offset:3px}
+    .skip-link{position:fixed;top:-100px;right:12px;z-index:10000;background:#182e3c;color:white;padding:12px 18px;border-radius:8px}.skip-link:focus{top:12px}.top-tools{max-width:720px}.top-tools .btn{min-width:0;overflow-wrap:anywhere}.profile-dialog{max-width:650px}.profile-fields{display:grid;grid-template-columns:1fr 1fr;gap:14px}.profile-fields label{display:block;font-weight:700}.profile-fields input{display:block;min-width:0;width:100%;min-height:46px;padding:9px;border:1px solid #a8c4b6;border-radius:9px;background:white;color:var(--ink)}.terms-document{margin:18px 0;border:1px solid var(--line);border-radius:12px;padding:13px}.terms-document summary,.profile-accessibility summary{cursor:pointer;font-weight:700;min-height:44px;align-content:center}.terms-document p,.terms-document li{font-size:calc(14px * var(--text-scale,1))}.terms-document h3{font-size:calc(17px * var(--text-scale,1));margin-top:18px}.consent-row{display:flex;align-items:flex-start;gap:10px;margin:18px 0;font-size:calc(14px * var(--text-scale,1))}.consent-row input{flex:0 0 22px;width:22px;height:22px;margin:2px 0;accent-color:var(--green)}.profile-accessibility{margin-top:18px}.accessibility-dialog{max-width:650px}.accessibility-options{display:grid;gap:12px;margin:14px 0}.accessibility-options label{display:flex;align-items:center;gap:10px;min-height:44px}.accessibility-options input[type=checkbox]{width:22px;height:22px;accent-color:var(--green)}.accessibility-options select{min-height:44px;padding:7px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink)}.text-scale-150 .manual-workspace{grid-template-columns:1fr}.text-scale-150 .manual-list{max-width:none}.text-scale-150 .manual-list-row input{max-width:220px}.high-contrast{--paper:#fff;--card:#fff;--ink:#000;--muted:#242424;--line:#333;--green:#005b4f;--soft:#e8f4ed}.high-contrast .triangle svg path{stroke:#000}.high-contrast .manual-choice,.high-contrast .formula-tab,.high-contrast .level{border-color:#000}.reduce-motion *,.reduce-motion *::before,.reduce-motion *::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}.highlight-links a,.highlight-links .text-btn{text-decoration:underline;text-decoration-thickness:2px}.personal-progress{margin-top:28px}.personal-progress h2:focus,#sim-title:focus{outline:3px solid #c38330;outline-offset:4px}.progress-heading{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}.personal-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:18px 0}.personal-stat{border:1px solid var(--line);border-radius:12px;padding:13px}.personal-stat strong{display:block;font-size:calc(25px * var(--text-scale,1));color:var(--green)}.personal-chart{margin:22px 0}.personal-chart-row{display:grid;grid-template-columns:115px minmax(0,1fr) 58px;align-items:center;gap:12px;margin:16px 0;font-size:calc(14px * var(--text-scale,1))}.personal-bar{height:25px;border-radius:6px;overflow:hidden;background:#e2e9e2;border:1px solid #c9d8cd}.personal-bar>div{height:100%;background:#116e65;min-width:0}.personal-rate{direction:ltr;text-align:left;font-weight:700}.personal-progress .table-scroll th,.personal-progress .table-scroll td{white-space:normal}.personal-progress .table-scroll td:first-child{font-weight:700}.sim-jump{margin-top:10px}.sim-legend{display:flex;gap:18px;flex-wrap:wrap;font-size:calc(14px * var(--text-scale,1));margin:12px 0}.sim-legend .current{color:#b73139}.sim-legend .voltage{color:var(--green)}.manual-choice svg{display:block;max-width:115px;width:100%;height:auto;margin:6px auto}.manual-choice math{font-size:calc(15px * var(--text-scale,1))}.formula-lines math{margin:3px 0}.mathml{font-family:"Cambria Math","STIX Two Math","Times New Roman",serif;direction:ltr;unicode-bidi:isolate;max-width:100%}.formula-networks .math{overflow-x:auto;max-width:100%}.formula-card .mathml{font-size:calc(20px * var(--text-scale,1))}select:focus-visible,textarea:focus-visible,[tabindex]:focus-visible{outline:3px solid #c38330;outline-offset:3px}
     @media(max-width:570px){.top-tools{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));max-width:none}.profile-fields{grid-template-columns:1fr}.personal-summary{gap:6px}.personal-stat{padding:9px}.personal-stat strong{font-size:calc(21px * var(--text-scale,1))}.personal-stat .small{font-size:calc(11px * var(--text-scale,1))}.personal-chart-row{grid-template-columns:82px minmax(0,1fr) 43px;gap:7px;font-size:calc(12px * var(--text-scale,1))}.personal-chart-row .personal-rate{font-size:calc(12px * var(--text-scale,1))}.personal-progress .table-scroll tbody td{gap:10px}.personal-progress .table-scroll tbody td::before{max-width:55%}.text-scale-150 .top-tools,.text-scale-150 .tabs,.text-scale-150 .formula-tabs,.text-scale-150 .manual-choices{grid-template-columns:1fr}.text-scale-150 .personal-summary{grid-template-columns:1fr}.text-scale-150 .personal-chart-row{grid-template-columns:1fr;gap:5px}.text-scale-150 .personal-rate{text-align:right}}
     @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
 
     .text-scale-125 .triangle:not(.manual-triangle){height:265px}.text-scale-150 .triangle:not(.manual-triangle){height:300px}.text-scale-125 .triangle:not(.manual-triangle) .triangle-slot.top,.text-scale-150 .triangle:not(.manual-triangle) .triangle-slot.top{top:18%}.text-scale-125 .triangle:not(.manual-triangle) .triangle-slot.left,.text-scale-125 .triangle:not(.manual-triangle) .triangle-slot.right,.text-scale-150 .triangle:not(.manual-triangle) .triangle-slot.left,.text-scale-150 .triangle:not(.manual-triangle) .triangle-slot.right{top:63%}
-    body{font-size:calc(16px * var(--text-scale,1))}.text-scale-125 .progress-row,.text-scale-150 .progress-row{flex-wrap:wrap}.text-scale-125 .manual-triangle input,.text-scale-150 .manual-triangle input{height:40px;min-height:40px}.attempt-values{display:inline-flex;gap:5px;flex-wrap:wrap;align-items:center}
+    body{font-size:calc(18px * var(--text-scale,1))}.text-scale-125 .progress-row,.text-scale-150 .progress-row{flex-wrap:wrap}.text-scale-125 .manual-triangle input,.text-scale-150 .manual-triangle input{height:40px;min-height:40px}.attempt-values{display:inline-flex;gap:5px;flex-wrap:wrap;align-items:center}
+    /* Shared spacing, readable diagrams and compact navigation. */
+    :root{--shadow:0 6px 24px #182e3c06}
+    .app{max-width:1280px;padding:24px 28px 32px}
+    .topbar{gap:20px;padding-bottom:18px;flex-wrap:wrap}
+    .brand-icon{background:var(--green);border-radius:12px}
+    .brand-title{font-size:calc(20px * var(--text-scale,1))}
+    .top-tools{max-width:none;gap:10px;align-items:center}
+    .tool-icon{width:21px;height:21px;flex:0 0 21px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+    .btn{min-height:48px;border-radius:12px;padding:11px 16px}
+    .btn.tiny{min-height:44px;font-size:calc(15px * var(--text-scale,1))}
+    .progress-trigger{background:var(--soft)!important;color:var(--green)!important;border-color:#c5ddd1!important}
+    .settings{position:relative;min-width:0}
+    .settings>summary{list-style:none;cursor:pointer;user-select:none}
+    .settings>summary::-webkit-details-marker{display:none}
+    .settings[open]>summary{border-color:var(--green)}
+    .settings-panel{position:absolute;inset-inline-end:0;top:calc(100% + 8px);z-index:20;width:min(290px,calc(100vw - 40px));padding:8px;background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:0 12px 32px #182e3c18}
+    .settings-panel button{width:100%;min-height:48px;display:flex;gap:12px;align-items:center;text-align:right;background:transparent;color:var(--ink);padding:10px 12px;border-radius:8px;overflow-wrap:anywhere}
+    .settings-panel button:hover{background:var(--soft)}
+    .settings-panel button[aria-pressed=true]{background:var(--soft);color:var(--green)}
+    .hero{padding:25px 0 22px;gap:24px}
+    h1{font-size:clamp(calc(28px * var(--text-scale,1)),calc(3.2vw * var(--text-scale,1)),calc(38px * var(--text-scale,1)));letter-spacing:-.02em;margin-bottom:10px}
+    .hero-copy{max-width:870px}.hero-copy p{font-size:calc(18px * var(--text-scale,1));margin-bottom:14px}
+    .hero-symbol{width:150px;height:120px;border-radius:20px;transform:none;font-size:calc(23px * var(--text-scale,1))}
+    .pill{font-size:calc(13px * var(--text-scale,1));padding:4px 11px}
+    .tabs{grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:4px 0 24px}
+    .tab{min-width:0;min-height:76px;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:12px;padding:13px 16px;font-size:calc(17px * var(--text-scale,1));line-height:1.4}
+    .tab span{font-size:calc(13px * var(--text-scale,1));margin-top:5px;color:var(--muted)}
+    .tab[aria-selected=true]{background:var(--green);border-color:var(--green);color:white;box-shadow:0 4px 12px #116e6518}
+    .tab[aria-selected=true] span{color:white}.tab:hover{border-color:var(--green)}
+    .course-head{gap:20px;margin-bottom:20px}.course-head h2{margin-bottom:6px}
+    .level{min-height:48px;padding:9px 14px}.level small{font-size:calc(13px * var(--text-scale,1))}
+    .progress-row{font-size:calc(15px * var(--text-scale,1));margin-bottom:12px}
+    .exercise-grid{grid-template-columns:minmax(0,1.35fr) minmax(370px,1fr);gap:22px}
+    .card{border-radius:16px;padding:24px}.exercise-title{margin-bottom:18px}
+    .given{background:var(--soft);border-color:var(--line);padding:10px 14px;min-width:104px}
+    .given small{font-size:calc(14px * var(--text-scale,1))}.given bdi{font-size:calc(21px * var(--text-scale,1))}
+    .diagram{margin:20px 0 0;overflow:visible}.diagram-preview{border:1px solid var(--line);background:var(--paper);overflow:hidden}
+    .diagram-drawing{display:block;width:100%;overflow-x:auto;direction:ltr;overscroll-behavior-x:contain}
+    .diagram-drawing svg{background:var(--card);width:100%;height:auto}
+    .diagram-open-label{font-size:calc(14px * var(--text-scale,1));padding:9px 12px;background:var(--soft);min-height:42px}
+    .diagram figcaption{font-size:calc(14px * var(--text-scale,1));line-height:1.65;margin-top:12px}
+    .answer-row{gap:12px;flex-wrap:wrap;margin:16px 0 8px}.answer-wrap{flex-basis:200px}
+    .answer-wrap input{min-height:54px;font-size:calc(25px * var(--text-scale,1))}
+    .answer-row>.btn{flex:1;min-width:162px}.answer-tools{gap:8px;margin:18px 0}
+    .rounding{font-size:calc(14px * var(--text-scale,1))}.step-pill{min-width:32px;height:32px;font-size:calc(14px * var(--text-scale,1))}
+    .task-kicker{font-size:calc(14px * var(--text-scale,1))}.completed-row{gap:14px;flex-wrap:wrap}
+    .simulator{margin-top:0}.sim-layout{grid-template-columns:minmax(0,1.8fr) minmax(270px,.75fr);gap:24px}
+    .sim-controls{background:var(--soft);border:1px solid var(--line);padding:20px}
+    .sim-controls label{font-size:calc(16px * var(--text-scale,1))}.sim-value{font-size:calc(28px * var(--text-scale,1))}
+    .simulator .metric small{font-size:calc(14px * var(--text-scale,1))}.metric bdi{font-size:calc(20px * var(--text-scale,1))}
+    .simulator td[data-label="זרם"] bdi,.simulator .metric:nth-child(2) bdi{color:#b73139}
+    .simulator td[data-label="מתח"] bdi{color:var(--green)}
+    .sim-choice{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:20px}
+    .sim-choice label{font-weight:700}.sim-choice select{flex:1;min-width:0;max-width:620px;min-height:48px;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:8px 12px;font-size:calc(16px * var(--text-scale,1))}
+    .sim-empty{padding:36px;text-align:center;max-width:720px;margin:0 auto}.sim-empty .brand-icon{margin:0 auto 18px}
+    .sim-empty p{color:var(--muted)}.sim-empty .btn{margin-top:10px}
+    dialog{padding:24px;overscroll-behavior:contain;border-radius:16px;width:min(1100px,calc(100% - 32px))}
+    .progress-dialog{max-width:980px}.personal-progress{margin-top:0;padding:0;border:0;border-radius:0;box-shadow:none;background:transparent}
+    .personal-stat{background:var(--card);padding:16px}.personal-stat strong{font-size:calc(30px * var(--text-scale,1))}
+    table{font-size:calc(16px * var(--text-scale,1))}th,td{padding:11px 12px}
+    .footer{display:flex;justify-content:space-between;align-items:flex-start;gap:12px 28px;font-size:calc(12px * var(--text-scale,1));margin-top:28px;padding-top:18px;flex-wrap:wrap}
+    .footer>div:first-child{max-width:620px}.footer>div:last-child{display:flex;gap:4px 10px;flex-wrap:wrap}
+    .footer .text-btn{font-size:calc(12px * var(--text-scale,1));padding:4px;min-height:36px;color:var(--muted)}
+    .high-contrast .progress-trigger,.high-contrast .settings-panel{border-color:var(--line)!important}
+    .text-scale-150 .exercise-grid,.text-scale-150 .sim-layout{grid-template-columns:1fr}
+    @media(max-width:1000px){.exercise-grid,.sim-layout{grid-template-columns:1fr}.course-head{flex-direction:column}.sim-controls{display:block}.hero-symbol{display:none}.diagram-drawing svg{min-width:640px}.diagram-open-label::before{content:'גררו לצדדים לצפייה בכל המעגל · ';font-weight:400}.top-tools{flex-wrap:wrap}}
+    @media(max-width:720px){
+      .app{padding:18px 16px 24px}.topbar{gap:16px;padding-bottom:16px}.top-tools{width:100%;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+      .top-tools>.btn,.settings>summary{width:100%;font-size:calc(15px * var(--text-scale,1));min-height:46px;padding:10px 8px}.settings{width:100%}
+      .hero{padding:20px 0}.hero-copy p{font-size:calc(17px * var(--text-scale,1))}.pills{gap:6px}.pill{font-size:calc(12px * var(--text-scale,1))}
+      .tabs{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:20px}.tab{min-height:76px;padding:12px;font-size:calc(16px * var(--text-scale,1))}.tab span{font-size:calc(12px * var(--text-scale,1))}
+      .card{padding:18px}.exercise-grid{gap:16px}.course-head{gap:14px}.levels{width:100%;gap:8px}.level{flex:1;padding:8px;min-width:0;font-size:calc(15px * var(--text-scale,1))}.level small{font-size:calc(12px * var(--text-scale,1))}
+      .givens{gap:8px}.given{flex:1;min-width:105px;padding:9px 11px}.given bdi{font-size:calc(20px * var(--text-scale,1))}.given small{font-size:calc(13px * var(--text-scale,1))}
+      .answer-row>.btn{width:100%;flex-basis:100%}.answer-tools .btn{font-size:calc(14px * var(--text-scale,1));padding:9px 10px;flex:1}.answer-tools .text-btn{min-height:44px}
+      .sim-head{gap:14px}.sim-controls{padding:16px}.sim-choice{gap:8px}.sim-choice select{flex-basis:100%;max-width:100%}.sim-empty{padding:26px 18px}
+      .metrics{gap:8px}.metric{padding:10px;min-width:0}.metric bdi{font-size:calc(18px * var(--text-scale,1))}.simulator .metric small{font-size:calc(12px * var(--text-scale,1))}
+      dialog{padding:18px;width:calc(100% - 24px)}.personal-summary{grid-template-columns:1fr}.personal-stat{padding:13px}.personal-stat strong{font-size:calc(27px * var(--text-scale,1))}
+      .personal-chart-row{grid-template-columns:85px minmax(0,1fr) 44px;font-size:calc(14px * var(--text-scale,1));gap:8px}.personal-chart-row .personal-rate{font-size:calc(14px * var(--text-scale,1))}
+      .footer{gap:8px;margin-top:24px}.footer>div:last-child{gap:3px 10px}
+    }
+    @media(max-width:400px){.metrics{grid-template-columns:1fr}.metric{display:flex;justify-content:space-between;align-items:center;gap:12px}.simulator .metric small{font-size:calc(14px * var(--text-scale,1))}.progress-row{flex-wrap:wrap}}
+    @media(max-width:720px){.text-scale-150 .tabs,.text-scale-150 .top-tools{grid-template-columns:1fr}.text-scale-150 .levels{flex-direction:column}.text-scale-150 .personal-chart-row{grid-template-columns:1fr}.text-scale-150 .personal-rate{text-align:right}}
   </style>
 </head>
 <body>
@@ -51,17 +133,24 @@ APP_HTML = r'''<!doctype html>
 <div class="app" id="app">
   <header class="topbar">
     <div class="identity"><div class="brand-icon" aria-hidden="true">ϟ</div><div><div class="brand-title">יסודות החשמל</div><div class="eyebrow">תרגול למתחילים · DC</div></div></div>
-    <div class="top-tools"><button class="btn secondary" data-open-formulas>דף נוסחאות △</button><button class="btn secondary" data-open-calculator>מחשבון</button><button class="btn secondary" id="text-size" aria-pressed="false" aria-label="הגדלת טקסט">א+</button><button class="btn secondary" data-open-profile id="profile-label">הפרופיל שלי</button><button class="btn secondary" data-show-progress>התקדמות אישית</button><button class="btn secondary" data-open-accessibility>נגישות</button></div>
+    <div class="top-tools" aria-label="כלי לימוד">
+      <button class="btn secondary" data-open-formulas><svg class="tool-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v15M12 5C8 2 4 3 2 4v15c3-2 7-2 10 1 3-3 7-3 10-1V4c-2-1-6-2-10 1Z"/></svg>דף נוסחאות</button>
+      <button class="btn secondary" data-open-calculator><svg class="tool-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="2" width="16" height="20" rx="3"/><path d="M8 6h8M8 11h1m6 0h1m-8 4h1m6 0h1m-8 4h1m6 0h1"/></svg>מחשבון</button>
+      <button class="btn secondary progress-trigger" data-show-progress aria-haspopup="dialog" aria-controls="progress-dialog" title="פתיחת ההתקדמות האישית"><svg class="tool-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3v18h18M7 15l4-4 4 2 6-8M17 5h4v4"/></svg>התקדמות אישית</button>
+      <details class="settings" id="settings-menu"><summary class="btn secondary"><svg class="tool-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/><circle cx="9" cy="6" r="2" fill="var(--card)"/><circle cx="15" cy="12" r="2" fill="var(--card)"/><circle cx="9" cy="18" r="2" fill="var(--card)"/></svg>הגדרות</summary><div class="settings-panel" role="group" aria-label="פרופיל והתאמות"><button data-open-profile id="profile-label">הפרופיל שלי</button><button id="text-size" aria-pressed="false">א+ · הגדלת טקסט</button><button data-open-accessibility>התאמות נגישות</button></div></details>
+    </div>
   </header>
   <section class="hero"><div class="hero-copy"><div class="eyebrow">לומדים להבין, ואז לחשב</div><h1>חשמל, צעד אחרי צעד.</h1><p>תרגול קצר של חוק אום, הספק ומעגלים. מתחילים במספרים שלמים ומתקדמים לעשרוניים — עם מחשבון, רמזים ודף נוסחאות בכל שלב.</p><div class="pills"><span class="pill">מקור DC בלבד</span><span class="pill">ללא חישובי שורש</span><span class="pill">5 תרגילים בכל רמה</span><span class="pill">תרגילים חדשים בכל כניסה</span></div></div><div class="hero-symbol" aria-hidden="true">U = I × R<small>להבין את הקשר בין הנתונים</small></div></section>
   <nav class="tabs" role="tablist" aria-label="תחומי התרגול">
     <button id="tab-ohm" class="tab" data-tab="ohm" role="tab" aria-controls="workspace" aria-selected="true" tabindex="0">חוק אום והספק<span>מתח · זרם · התנגדות · הספק</span></button>
     <button id="tab-series" class="tab" data-tab="series" role="tab" aria-controls="workspace" aria-selected="false" tabindex="-1">מעגל טורי<span>אותו זרם בכל הרכיבים</span></button>
     <button id="tab-parallel" class="tab" data-tab="parallel" role="tab" aria-controls="workspace" aria-selected="false" tabindex="-1">מעגל מקבילי<span>אותו מתח בכל הענפים</span></button>
+    <button id="tab-simulator" class="tab" data-tab="simulator" role="tab" aria-controls="simulator-workspace" aria-selected="false" tabindex="-1">סימולטור<span>רואים את המעגל בפעולה</span></button>
   </nav>
-  <main id="learning-main" tabindex="-1" aria-label="תרגול והתקדמות"><div id="storage-notice" class="feedback error" role="status" hidden></div><section id="workspace" role="tabpanel" aria-labelledby="tab-ohm"></section><section id="personal-progress" class="card personal-progress" aria-labelledby="personal-progress-title"></section></main>
+  <main id="learning-main" tabindex="-1" aria-label="תרגול וסימולטור"><div id="storage-notice" class="feedback error" role="status" hidden></div><section id="workspace" role="tabpanel" aria-labelledby="tab-ohm"></section><section id="simulator-workspace" role="tabpanel" aria-labelledby="tab-simulator" hidden></section></main>
   <footer class="footer"><div>הפרופיל וההתקדמות האישית נשמרים בדפדפן במכשיר הזה. בכניסה מחדש נוצר סבב תרגול חדש.</div><div><button class="text-btn" data-open-formulas>דף נוסחאות</button><button class="text-btn" id="new-course">איפוס תרגילים</button><button class="text-btn" data-open-terms>תנאי שימוש ופרטיות</button><button class="text-btn" data-open-accessibility>הצהרת נגישות</button></div></footer>
 </div>
+<dialog id="progress-dialog" class="progress-dialog" aria-labelledby="progress-dialog-title"><div class="dialog-head"><span class="eyebrow" id="progress-dialog-title">התקדמות אישית</span><button class="close" data-close-dialog="progress-dialog" aria-label="סגירת ההתקדמות האישית">×</button></div><section id="personal-progress" class="personal-progress" aria-labelledby="personal-progress-title"></section></dialog>
 <dialog id="formula-dialog" aria-labelledby="formula-title"><div class="dialog-head"><h2 id="formula-title">דף נוסחאות</h2><button class="close" data-close-dialog="formula-dialog" aria-label="סגירת דף הנוסחאות">×</button></div><nav class="formula-tabs" role="tablist" aria-label="תצוגת דף הנוסחאות"><button id="formula-tab-reference" class="formula-tab" data-formula-tab="reference" role="tab" aria-selected="true" aria-controls="formula-body" tabindex="0">נוסחאות</button><button id="formula-tab-help" class="formula-tab" data-formula-tab="help" role="tab" aria-selected="false" aria-controls="formula-body" tabindex="-1">עזרה</button><button id="formula-tab-manual" class="formula-tab" data-formula-tab="manual" role="tab" aria-selected="false" aria-controls="formula-body" tabindex="-1">פתירה בעזרת המשולש</button></nav><p class="formula-intro">החלק העליון במשולש הוא מכפלת שני החלקים התחתונים. כדי למצוא חלק תחתון, מחלקים את העליון בחלק התחתון הידוע. בלשונית עזרה מופיעים נתוני התרגיל ואפשר לענות במשולש המתאים.</p><div id="formula-body" role="tabpanel" aria-labelledby="formula-tab-reference" tabindex="0"></div></dialog>
 <dialog id="diagram-dialog" aria-labelledby="diagram-title"><div class="dialog-head"><h2 id="diagram-title">הגדלת הסכמה</h2><button class="close" data-close-dialog="diagram-dialog" aria-label="סגירת הסכמה המוגדלת">×</button></div><div class="diagram-toolbar" role="group" aria-label="הגדלת הסכמה"><button class="btn secondary tiny" data-diagram-zoom="in" aria-label="הגדלה">+</button><button class="btn secondary tiny" data-diagram-zoom="out" aria-label="הקטנה">−</button><button class="btn soft tiny" data-diagram-zoom="reset">התאמה למסך</button><bdi id="diagram-zoom-label" role="status" aria-live="polite">100%</bdi></div><p class="small muted">אפשר להגדיל באמצעות הכפתורים ולגלול בתוך הסכמה.</p><div class="diagram-viewport" id="diagram-viewport" tabindex="0" role="region" aria-label="סכמה מוגדלת — אפשר לגלול לצדדים ולמעלה ולמטה"><div class="diagram-canvas" id="diagram-canvas"></div></div></dialog>
 <dialog id="calculator-dialog" class="calc-dialog" aria-labelledby="calc-title"><div class="dialog-head"><h2 id="calc-title">מחשבון</h2><button class="close" data-close-dialog="calculator-dialog" aria-label="סגירת המחשבון">×</button></div><label class="small muted" for="calc-screen">חיבור, חיסור, כפל וחילוק</label><input id="calc-screen" class="calc-screen" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" maxlength="160" placeholder="12 ÷ 3"><div id="calc-result" class="calc-result" role="status" aria-live="polite"></div><div class="calc-grid" id="calc-grid"></div><p id="calc-error" class="feedback error" role="alert"></p><div class="calc-actions"><button class="btn" id="calc-use" disabled>העברה לתשובה</button><button class="btn secondary" id="calc-clear">ניקוי</button></div><button class="text-btn" data-open-formulas>דף נוסחאות △</button><p class="small muted" style="margin-top:12px;margin-bottom:0">המחשבון שומר על סדר פעולות חשבון. אפשר להשתמש בסוגריים. אין פונקציית שורש.</p></dialog>
@@ -246,7 +335,7 @@ const DC = (() => {
 
 function circuitSVG(q, options = {}) {
   const complete = options.complete === true;
-  const palette = complete ? {text:'#ffffff',wire:'#ffffff',surface:'#000000',current:'#ff6565',voltage:'#65e680',power:'#ffffff'} : {text:'#203c47',wire:'#687e84',surface:'#fffefa',current:'#159485',voltage:'#203c47',power:'#956122'};
+  const palette = complete ? {text:'#182e3c',wire:'#526b66',surface:'#ffffff',current:'#b73139',voltage:'#116e65',power:'#182e3c'} : {text:'#203c47',wire:'#687e84',surface:'#fffefa',current:'#159485',voltage:'#203c47',power:'#956122'};
   const voltage = options.voltage ?? q.voltage;
   const moving = complete && options.animate !== false && voltage > 0;
   const model = DC.physics(q.kind, voltage, q.resistances);
@@ -258,7 +347,7 @@ function circuitSVG(q, options = {}) {
     : count === 1 ? [450] : count === 2 ? [330, 600] : [260, 450, 640];
   const parts = [];
   const text = (x, y, value, size = 17, anchor = 'middle', color = palette.text) =>
-    `<text x="${x}" y="${y}" text-anchor="${anchor}" font-family="Arial,sans-serif" font-size="${size}" fill="${color}" direction="ltr">${value}</text>`;
+    `<text x="${x}" y="${y}" text-anchor="${anchor}" font-family="Arial,sans-serif" font-size="${Math.round(size * 1.12)}" fill="${color}" direction="ltr">${value}</text>`;
   const wire = d => `<path d="${d}" fill="none" stroke="${palette.wire}" stroke-width="3" stroke-linecap="round"/>`;
   const flow = (d, current) => `<path d="${d}" fill="none" stroke="${palette.current}" stroke-width="4" stroke-dasharray="7 20" class="${moving ? 'flow' : ''}" style="${moving ? `animation-duration:${Math.max(.65, 3.2 / (1 + current * .35))}s` : 'animation:none'}" opacity="${voltage > 0 ? .9 : 0}"/>`;
   const arrow = (x, y, direction) => {
@@ -292,9 +381,9 @@ function circuitSVG(q, options = {}) {
     const resistance = known ? `${DC.fmt(r)} Ω` : '? Ω';
     if (q.lamps[j]) {
       const brightness = complete && voltage > 0 ? Math.min(1, model.powers[j] / (referencePower * 1.4)) : 0;
-      if (brightness) parts.push(`<circle cx="${x}" cy="${y}" r="43" fill="#ffffff" opacity="${brightness * .32}"/>`);
+      if (brightness) parts.push(`<circle cx="${x}" cy="${y}" r="43" fill="#e6b42c" opacity="${brightness * .38}"/>`);
       parts.push(`<circle cx="${x}" cy="${y}" r="25" fill="${palette.surface}" stroke="${palette.wire}" stroke-width="2.5"/>`);
-      if (brightness) parts.push(`<circle cx="${x}" cy="${y}" r="21" fill="#ffffff" opacity="${brightness * .15}"/>`);
+      if (brightness) parts.push(`<circle cx="${x}" cy="${y}" r="21" fill="#f1c64f" opacity="${brightness * .7}"/>`);
       parts.push(`<path d="M${x - 16} ${y - 16} L${x + 16} ${y + 16} M${x + 16} ${y - 16} L${x - 16} ${y + 16}" stroke="${palette.wire}" stroke-width="2"/>`);
     } else {
       parts.push(`<rect x="${x - (parallel ? 17 : 31)}" y="${y - (parallel ? 30 : 17)}" width="${parallel ? 34 : 62}" height="${parallel ? 60 : 34}" rx="2" fill="${palette.surface}" stroke="${palette.wire}" stroke-width="2.5"/>`);
@@ -315,7 +404,7 @@ function circuitSVG(q, options = {}) {
   const knownVoltage = complete || Object.hasOwn(q.givens, 'U');
   parts.push(text(138, 222, `U = ${knownVoltage ? DC.fmt(voltage) : '?'} V`, 16, 'start'));
   const title = `${q.kind === 'parallel' ? 'מעגל מקבילי' : q.kind === 'series' ? 'מעגל טורי' : 'מעגל DC'} עם ${count} רכיבים`;
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 365" role="img" aria-label="${title}" dir="ltr"${complete ? ' style="background:#000000"' : ''}><title>${title}</title><desc>${complete ? `מתח המקור ${DC.fmt(voltage)} וולט. זרם כולל ${DC.fmt(model.total)} אמפר. זרם מסומן באדום ומפלי מתח בירוק; הערכים כתובים ליד הרכיבים.` : 'סכמה של נתוני התרגיל. מלבן הוא נגד ועיגול עם X הוא נורה.'}</desc>${parts.join('')}</svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="20 25 800 325" role="img" aria-label="${title}" dir="ltr"><title>${title}</title><desc>${complete ? `מתח המקור ${DC.fmt(voltage)} וולט. זרם כולל ${DC.fmt(model.total)} אמפר. זרם מסומן באדום ומפלי מתח בירוק; הערכים כתובים ליד הרכיבים.` : 'סכמה של נתוני התרגיל. מלבן הוא נגד ועיגול עם X הוא נורה.'}</desc>${parts.join('')}</svg>`;
 }
 
 const $ = id => document.getElementById(id);
@@ -330,6 +419,7 @@ const triangleDefinitions = [
     { id:'power-ur', title:'הספק לפי מתח והתנגדות', slots:[{key:'U2',symbol:'U²',unit:'U × U'},{key:'P',symbol:'P',unit:'W'},{key:'R',symbol:'R',unit:'Ω'}], formulas:['U² = P × R','P = U² ÷ R','R = U² ÷ P'], note:'U² פירושו U כפול U. בתרגול משתמשים כאן במתח ידוע; לא מוציאים שורש.' },
 ];
 const recentKey = 'dc.basics.recent.v1';
+let viewTab = 'ohm', simulatorQuestion = null;
 let questions, tab = 'ohm', levels = { ohm:0, series:0, parallel:0 }, positions, previous = [];
 let feedback = '', feedbackType = 'success', calculatorValue = null, calculatorFresh = false;
 let formulaView = 'reference', calculatorReturnToFormulas = false;
@@ -449,7 +539,7 @@ function renderProgress() {
   const table=rows.map(({name,value,accuracy,average})=>`<tr><td data-label="נושא">${name}</td><td data-label="שלבים שנוסו">${value.attempted}</td><td data-label="שלבים שהושלמו">${value.solved}</td><td data-label="דיוק בניסיון ראשון">${accuracy===null?'—':accuracy+'%'}</td><td data-label="ניסיונות"><span class="attempt-values">${value.attempts}<span class="small muted"> · ממוצע ${average}</span></span></td><td data-label="שלבים עם עזרה">${value.helped}</td></tr>`).join('');
   $('personal-progress').innerHTML=`<div class="progress-heading"><div><div class="eyebrow">לומדים להכיר את ההתקדמות</div><h2 id="personal-progress-title" tabindex="-1">ההתקדמות האישית${profileReady()?' של '+escapeHTML(personal.profile.name):''}</h2></div><button class="btn secondary tiny" data-new-course>איפוס תרגילים</button></div><p class="small muted">הנתונים נשמרים במכשיר הזה ומצטברים בין סבבי תרגול. איפוס תרגילים שומר על ההתקדמות האישית.</p><div class="personal-summary"><div class="personal-stat"><strong>${total.exercises}</strong><span class="small">תרגילים שהושלמו</span></div><div class="personal-stat"><strong>${rate(total)===null?'—':rate(total)+'%'}</strong><span class="small">דיוק בניסיון הראשון</span></div><div class="personal-stat"><strong>${total.attempts}</strong><span class="small">ניסיונות בסך הכול</span></div></div><h3>דיוק בניסיון הראשון לפי נושא</h3><div class="personal-chart" aria-label="גרף דיוק לפי נושא">${chart}</div><div class="table-scroll"><table><caption class="small muted">פירוט התרגול לפי נושאים</caption><thead><tr><th scope="col">נושא</th><th scope="col">שלבים שנוסו</th><th scope="col">שלבים שהושלמו</th><th scope="col">דיוק בניסיון ראשון</th><th scope="col">ניסיונות</th><th scope="col">שלבים עם עזרה</th></tr></thead><tbody>${table}</tbody></table></div><p class="small muted">הדיוק מחושב לפי השליחה הראשונה בכל צעד. מספר הניסיונות כולל בדיקות תשובה והצבה במשולש. עזרה כוללת רמזים, פתרון מוסבר, לשונית עזרה ומילוי רשימת הנתונים. עזרה נספרת פעם אחת בכל צעד, גם אם נעזרים שוב. גם רמז שמוצג אחרי טעות נחשב עזרה. שאלות הספק במעגל טורי או מקבילי נספרות גם בהספק וגם בנושא המעגל.</p>`;
 }
-function showProgress() { $('personal-progress').scrollIntoView({behavior:personal.preferences.motion?'auto':'smooth',block:'start'});$('personal-progress-title').focus({preventScroll:true}); }
+function showProgress() { renderProgress(); openDialog('progress-dialog'); }
 function initializePersonal() {
   document.querySelectorAll('[data-terms-document]').forEach(node=>node.innerHTML=termsHTML());
   $('profile-birth').max=localDateValue();
@@ -462,6 +552,7 @@ try { const saved = JSON.parse(localStorage.getItem(recentKey)); if (Array.isArr
 function newCourse() {
   const seed = window.crypto?.getRandomValues ? window.crypto.getRandomValues(new Uint32Array(1))[0] : (Date.now() ^ Math.floor(Math.random() * 4294967296));
   questions = DC.course(seed, previous);
+  simulatorQuestion = null;
   positions = { ohm:[0,0], series:[0,0], parallel:[0,0,0] };
   for (const kind of DC.kinds) for (const level of questions[kind]) for (const q of level) {
     q.cursor = 0; q.draft = ''; q.attempts = 0; q.help = {}; q.hint = false; q.solution = false; q.simVoltage = q.voltage; q.simAnimate = !personal.preferences.motion;
@@ -504,12 +595,11 @@ function trianglePreview(definition) {
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 225" role="img" aria-label="משולש ${escapeHTML(definition.title)}: ${symbols[0]} למעלה, ${symbols[1]} ו־${symbols[2]} למטה"><path d="M130 10 L15 218 L245 218 Z" fill="#f3f6ee" stroke="#526f62" stroke-width="3"/><path d="M65 125 L195 125 M130 125 L130 218" fill="none" stroke="#526f62" stroke-width="2"/><g fill="#182e3c" font-family="Arial,sans-serif" font-size="33" font-weight="700" text-anchor="middle" direction="ltr"><text x="130" y="96">${symbols[0]}</text><text x="80" y="183">${symbols[1]}</text><text x="181" y="183">${symbols[2]}</text></g></svg>`;
 }
 function diagramPreview(q, options = {}) {
-  return `<button type="button" class="diagram-preview" data-open-diagram="${options.complete ? 'simulator' : 'exercise'}" aria-label="פתיחת הסכמה להגדלה">${circuitSVG(q, options)}<span class="diagram-open-label">הגדלת הסכמה ⤢</span></button>`;
+  return `<button type="button" class="diagram-preview" data-open-diagram="${options.complete ? 'simulator' : 'exercise'}" aria-label="פתיחת הסכמה להגדלה"><span class="diagram-drawing">${circuitSVG(q, options)}</span><span class="diagram-open-label">הגדלת הסכמה ⤢</span></button>`;
 }
 function openDiagram(source) {
   diagramZoom = 1;
-  $('diagram-dialog').classList.toggle('dark-diagram',source==='simulator');
-  const q = currentQuestion();
+  const q = source === 'simulator' ? activeSimulatorQuestion() : currentQuestion();
   $('diagram-canvas').innerHTML = circuitSVG(q, source === 'simulator' ? { complete:true, voltage:q.simVoltage, animate:q.simAnimate } : {});
   $('diagram-canvas').style.width = '100%';
   openDialog('diagram-dialog');
@@ -534,10 +624,35 @@ function contextTitle(q, step) {
   const match = /^[UIP](\d)$/.exec(step.key);
   return match ? `רכיב R${match[1]}${q.kind === 'parallel' ? ` בענף ${match[1]}` : ' במעגל הטורי'}` : 'המעגל כולו';
 }
+function selectTab(next) {
+  viewTab = next;
+  if (DC.kinds.includes(next)) { tab = next; feedback = ''; }
+  else if (completed(currentQuestion())) simulatorQuestion = currentQuestion();
+  render();
+}
+function completedCircuits() {
+  return DC.kinds.flatMap(kind => questions[kind].flatMap((list, level) => list.flatMap((q, index) =>
+    completed(q) ? [{q, id:`${kind}:${level}:${index}`, label:`${names[kind]} · רמה ${letters[level]} · תרגיל ${index + 1}`}]:[])));
+}
+function activeSimulatorQuestion() { return simulatorQuestion ?? currentQuestion(); }
+function renderSimulatorPanel() {
+  const circuits = completedCircuits();
+  if (!circuits.some(item => item.q === simulatorQuestion)) simulatorQuestion = circuits[0]?.q ?? null;
+  if (!simulatorQuestion) {
+    $('simulator-workspace').innerHTML = `<section class="card sim-empty"><div class="brand-icon" aria-hidden="true">ϟ</div><h2>סימולטור DC</h2><p>לאחר השלמת תרגיל, המעגל שלו יהיה זמין כאן. תוכלו לשנות את מתח המקור ולראות את הזרמים, מפלי המתח וההספקים.</p><button class="btn" data-return-training>חזרה לתרגול</button></section>`;
+    return;
+  }
+  const options = circuits.map(item => `<option value="${item.id}"${item.q === simulatorQuestion ? ' selected' : ''}>${item.label}</option>`).join('');
+  $('simulator-workspace').innerHTML = `<div class="sim-choice"><label for="sim-circuit">המעגל להצגה</label><select id="sim-circuit">${options}</select><button class="btn secondary tiny" data-return-training>חזרה לתרגול</button></div>${simulatorHTML(simulatorQuestion)}`;
+}
 function render(focus = false) {
+  document.querySelectorAll('[role="tab"][data-tab]').forEach(button => { const active = button.dataset.tab === viewTab; button.setAttribute('aria-selected', active); button.tabIndex = active ? 0 : -1; });
+  $('workspace').hidden = viewTab === 'simulator';
+  $('simulator-workspace').hidden = viewTab !== 'simulator';
+  if (viewTab === 'simulator') { renderSimulatorPanel(); renderProgress(); fitDialogs(); resizeFrame(); return; }
+  $('simulator-workspace').innerHTML = '';
   const level = levels[tab], sequence = questions[tab][level], index = positions[tab][level], q = sequence[index], done = completed(q), step = currentStep();
   const doneCount = sequence.filter(completed).length;
-  document.querySelectorAll('[data-tab]').forEach(button => { const active = button.dataset.tab === tab; button.setAttribute('aria-selected', active); button.tabIndex = active ? 0 : -1; });
   $('workspace').setAttribute('aria-labelledby', 'tab-' + tab);
   const levelButtons = questions[tab].map((list, j) => `<button class="level" data-level="${j}" aria-pressed="${j === level}">רמה ${letters[j]}<small>${j === 0 ? 'מספרים שלמים' : j === 1 ? 'מספרים עשרוניים' : 'שלושה ענפים'} · ${list.filter(completed).length}/5</small></button>`).join('');
   const given = Object.entries(q.givens).map(([key, value]) => `<div class="given"><small>${key === 'U' ? 'מתח המקור' : key === 'I' ? 'זרם נתון' : key === 'P' ? 'הספק נתון' : /^R\d/.test(key) ? `התנגדות ${key}${q.lamps[Number(key.slice(1)) - 1] ? ' · נורה' : ''}` : 'התנגדות נתונה'}</small>${bdi(`${key} = ${DC.fmt(value)} ${units[key[0]]}`)}</div>`).join('');
@@ -552,7 +667,7 @@ function render(focus = false) {
   const tools = `<div class="answer-tools"><button class="btn secondary tiny" data-open-formulas>דף נוסחאות △</button><button class="btn secondary tiny" data-open-calculator>מחשבון</button>${!done ? '<button class="btn soft tiny" data-hint>רמז</button><button class="text-btn small" data-solution>פתרון מוסבר</button>' : ''}</div>`;
   const next = done ? `<div class="completion-actions">${index < 4 ? '<button class="btn" data-next-question>לתרגיל הבא ←</button>' : level < questions[tab].length - 1 ? '<button class="btn" data-next-level>לרמה הבאה ←</button>' : '<button class="btn" data-new-course>סבב חדש</button>'}</div>${doneCount === 5 ? `<div class="level-note">השלמתם את חמשת התרגילים ברמה ${letters[level]}. ${level < questions[tab].length - 1 ? 'אפשר להתקדם לרמה הבאה.' : 'אפשר לעבור ללשונית אחרת או להתחיל סבב חדש.'}</div>` : ''}` : '';
   const descriptions = { ohm:'מתחילים בנתונים ידועים ומוצאים את הערך החסר.', series:'בטור הזרם זהה בכל הרכיבים. המתח מתחלק ביניהם.', parallel:level === 0 ? 'שני נגדים זהים במקביל. בכל ענף אותו מתח.' : level === 1 ? 'שני נגדים שונים במקביל. הזרמים תלויים בהתנגדויות.' : 'שלושה ענפים במקביל: נגדים זהים ושונים.' };
-  $('workspace').innerHTML = `<div class="course-head"><div><h2>${names[tab]}</h2><p class="muted small" style="margin:0">${descriptions[tab]}</p></div><div class="levels" aria-label="רמות תרגול">${levelButtons}</div></div><div class="progress-row"><span>תרגיל ${index + 1} מתוך 5 · רמה ${letters[level]}</span><div class="question-dots">${dots}</div></div><div class="progress-track" role="progressbar" aria-label="תרגילים שהושלמו ברמה" aria-valuemin="0" aria-valuemax="5" aria-valuenow="${doneCount}"><div style="width:${doneCount * 20}%"></div></div><div class="exercise-grid"><section class="card"><div class="exercise-title"><div class="eyebrow">הנתונים שלכם</div><h3 style="margin-top:6px">${q.title}</h3><p class="muted small" style="margin:0">${tab === 'ohm' ? 'המקור הוא מקור מתח ישר (DC). מצאו את הנעלם המבוקש.' : 'כל ההתנגדויות ומתח המקור נתונים. פתרו לפי הסדר.'}</p></div><div class="givens">${given}</div><figure class="diagram">${diagramPreview(q)}<figcaption>${q.lamps.some(Boolean) ? 'סימון עיגול עם X הוא נורה. בתרגול הנורה היא רכיב בעל התנגדות קבועה.' : 'מלבן הוא נגד. המקור הוא DC; U מציין מתח ו־I מציין זרם.'}${tab !== 'ohm' ? ' לאחר השלמת המעגל ייפתח הסימולטור. לחצו על הסכמה להגדלה.' : ''}</figcaption></figure>${done ? '<button class="btn sim-jump" data-go-simulator>סימולציה</button>' : ''}</section><section class="card ${done ? 'success-summary' : ''}">${active}<p id="rounding-text" class="rounding">${rounding}</p>${tools}<div class="feedback ${feedbackType}" id="form-feedback" role="status" aria-live="polite">${escapeHTML(feedback)}</div>${hints}${explain}${q.cursor ? `<div class="completed-steps"><strong class="small">החישובים שהשלמתם</strong>${rows}</div>` : ''}${next}</section></div>${done ? simulatorHTML(q) : ''}`;
+  $('workspace').innerHTML = `<div class="course-head"><div><h2>${names[tab]}</h2><p class="muted small" style="margin:0">${descriptions[tab]}</p></div><div class="levels" aria-label="רמות תרגול">${levelButtons}</div></div><div class="progress-row"><span>תרגיל ${index + 1} מתוך 5 · רמה ${letters[level]}</span><div class="question-dots">${dots}</div></div><div class="progress-track" role="progressbar" aria-label="תרגילים שהושלמו ברמה" aria-valuemin="0" aria-valuemax="5" aria-valuenow="${doneCount}"><div style="width:${doneCount * 20}%"></div></div><div class="exercise-grid"><section class="card"><div class="exercise-title"><div class="eyebrow">הנתונים שלכם</div><h3 style="margin-top:6px">${q.title}</h3><p class="muted small" style="margin:0">${tab === 'ohm' ? 'המקור הוא מקור מתח ישר (DC). מצאו את הנעלם המבוקש.' : 'כל ההתנגדויות ומתח המקור נתונים. פתרו לפי הסדר.'}</p></div><div class="givens">${given}</div><figure class="diagram">${diagramPreview(q)}<figcaption>${q.lamps.some(Boolean) ? 'סימון עיגול עם X הוא נורה. בתרגול הנורה היא רכיב בעל התנגדות קבועה.' : 'מלבן הוא נגד. המקור הוא DC; U מציין מתח ו־I מציין זרם.'}${tab !== 'ohm' ? ' לאחר השלמת המעגל הוא יהיה זמין בלשונית הסימולטור. לחצו על הסכמה להגדלה.' : ''}</figcaption></figure>${done ? '<button class="btn sim-jump" data-go-simulator>סימולציה</button>' : ''}</section><section class="card ${done ? 'success-summary' : ''}">${active}<p id="rounding-text" class="rounding">${rounding}</p>${tools}<div class="feedback ${feedbackType}" id="form-feedback" role="status" aria-live="polite">${escapeHTML(feedback)}</div>${hints}${explain}${q.cursor ? `<div class="completed-steps"><strong class="small">החישובים שהשלמתם</strong>${rows}</div>` : ''}${next}</section></div>`;
   if ($('formula-dialog').open) renderFormulas();
   if (focus && !done) requestAnimationFrame(() => ($('formula-dialog').open ? formulaAnswerField() : $('answer'))?.focus());
   renderProgress(); fitDialogs(); resizeFrame();
@@ -581,14 +696,14 @@ function syncDraft(value, source) {
   document.querySelectorAll('[data-answer]').forEach(field => { if (field !== source) field.value = value; field.removeAttribute('aria-invalid'); });
 }
 function simulatorHTML(q) {
-  return `<section class="card simulator" id="simulator-section" aria-labelledby="sim-title"><div class="sim-head"><div><div class="eyebrow">אחרי החישוב — רואים את המעגל</div><h2 id="sim-title" tabindex="-1" style="margin:5px 0">סימולטור DC</h2></div><button class="btn secondary tiny" data-open-formulas>דף נוסחאות △</button></div><div class="sim-layout"><div><figure class="diagram" id="sim-diagram">${diagramPreview(q, { complete:true, voltage:q.simVoltage, animate:q.simAnimate })}</figure><div class="sim-legend"><span class="current">→ I — זרם</span><span class="voltage">ΔU — מפל מתח</span><span>רכיבים ונתונים נוספים — לבן</span></div><div id="sim-metrics">${simMetrics(q)}</div></div><div class="sim-controls"><label for="sim-voltage">שינוי מתח המקור</label><div class="sim-value" id="sim-voltage-label">${bdi(`${DC.fmt(q.simVoltage)} V`)}</div><input id="sim-voltage" type="range" min="0" max="${DC.fmt(q.voltage * 2)}" step="0.1" value="${q.simVoltage}" aria-describedby="sim-note"><label class="toggle"><input id="sim-animation" type="checkbox" ${personal.preferences.motion ? 'disabled' : ''} ${q.simAnimate ? 'checked' : ''}>הנפשת מסלול הזרם</label><button class="btn secondary tiny" data-reset-simulator>חזרה למתח התרגיל</button><p class="small muted" id="sim-note" style="margin:6px 0 0">החצים מציגים זרם מוסכם: מהפלוס אל המינוס דרך המעגל החיצוני. הבהירות ממחישה את ההספק בנורה בעלת התנגדות קבועה. שינוי המתח כאן אינו משנה את תשובות התרגיל.</p></div></div></section>`;
+  return `<section class="card simulator" id="simulator-section" aria-labelledby="sim-title"><div class="sim-head"><div><div class="eyebrow">אחרי החישוב — רואים את המעגל</div><h2 id="sim-title" tabindex="-1" style="margin:5px 0">סימולטור DC</h2></div><button class="btn secondary tiny" data-open-formulas>דף נוסחאות △</button></div><div class="sim-layout"><div><figure class="diagram" id="sim-diagram">${diagramPreview(q, { complete:true, voltage:q.simVoltage, animate:q.simAnimate })}</figure><div class="sim-legend"><span class="current">→ I — זרם</span><span class="voltage">ΔU — מפל מתח</span><span>רכיבים ונתונים נוספים</span></div><div id="sim-metrics">${simMetrics(q)}</div></div><div class="sim-controls"><label for="sim-voltage">שינוי מתח המקור</label><div class="sim-value" id="sim-voltage-label">${bdi(`${DC.fmt(q.simVoltage)} V`)}</div><input id="sim-voltage" type="range" min="0" max="${DC.fmt(q.voltage * 2)}" step="0.1" value="${q.simVoltage}" aria-describedby="sim-note"><label class="toggle"><input id="sim-animation" type="checkbox" ${personal.preferences.motion ? 'disabled' : ''} ${q.simAnimate ? 'checked' : ''}>הנפשת מסלול הזרם</label><button class="btn secondary tiny" data-reset-simulator>חזרה למתח התרגיל</button><p class="small muted" id="sim-note" style="margin:6px 0 0">החצים מציגים זרם מוסכם: מהפלוס אל המינוס דרך המעגל החיצוני. הבהירות ממחישה את ההספק בנורה בעלת התנגדות קבועה. שינוי המתח כאן אינו משנה את תשובות התרגיל.</p></div></div></section>`;
 }
 function simMetrics(q) {
   const m = DC.physics(q.kind, q.simVoltage, q.resistances);
   return `<div class="metrics"><div class="metric"><small>נגד שקול</small>${bdi(`${DC.fmt(m.req)} Ω`)}</div><div class="metric"><small>זרם כולל</small>${bdi(`${DC.fmt(m.total)} A`)}</div><div class="metric"><small>הספק כולל</small>${bdi(`${DC.fmt(m.power)} W`)}</div></div><div class="table-scroll"><table><caption class="small muted" style="text-align:right;margin-bottom:5px">נתוני המעגל במתח שנבחר בסימולטור</caption><thead><tr><th>רכיב</th><th>התנגדות</th><th>מתח</th><th>זרם</th><th>הספק</th></tr></thead><tbody>${q.resistances.map((r,j) => `<tr><td data-label="רכיב">${bdi('R' + (j+1))}${q.lamps[j] ? ' · נורה' : ''}</td><td data-label="התנגדות">${bdi(`${DC.fmt(r)} Ω`)}</td><td data-label="מתח">${bdi(`${DC.fmt(m.drops[j])} V`)}</td><td data-label="זרם">${bdi(`${DC.fmt(m.currents[j])} A`)}</td><td data-label="הספק">${bdi(`${DC.fmt(m.powers[j])} W`)}</td></tr>`).join('')}</tbody></table></div>`;
 }
 function updateSimulator() {
-  const q = currentQuestion();
+  const q = activeSimulatorQuestion();
   if (!$('sim-diagram')) return;
   $('sim-diagram').innerHTML = diagramPreview(q, { complete:true, voltage:q.simVoltage, animate:q.simAnimate });
   $('sim-metrics').innerHTML = simMetrics(q);
@@ -737,9 +852,16 @@ function openDialog(id, { preserveFormulaView = false } = {}) {
   if (!$(id).open) $(id).showModal();
   fitDialogs(); resizeFrame();
 }
-function postMessage(type, data) { window.parent.postMessage({ isStreamlitMessage:true, type, ...data }, '*'); }
+function fitSettingsMenu() {
+  const settings = $('settings-menu');
+  if (!settings.open) return;
+  const panel = settings.querySelector('.settings-panel'), bounds = settings.getBoundingClientRect();
+  const left = Math.max(12, Math.min(bounds.left, window.innerWidth - panel.offsetWidth - 12));
+  panel.style.insetInlineEnd = 'auto'; panel.style.left = (left - bounds.left) + 'px';
+}
+function sendStreamlitMessage(type, data) { window.parent.postMessage({ isStreamlitMessage:true, type, ...data }, '*'); }
 function resizeFrame() {
-  requestAnimationFrame(() => postMessage('streamlit:setFrameHeight', { height:Math.ceil($('app').getBoundingClientRect().height + 10) }));
+  requestAnimationFrame(() => sendStreamlitMessage('streamlit:setFrameHeight', { height:Math.ceil($('app').getBoundingClientRect().height + 10) }));
 }
 function fitDialogs() {
   let top = 0, height = Math.min(window.innerHeight, window.screen?.availHeight || 850);
@@ -761,7 +883,7 @@ function calculateScreen() {
   try {
     calculatorValue = DC.calculate($('calc-screen').value);
     $('calc-result').textContent = String(Math.round(calculatorValue * 1e10) / 1e10);
-    $('calc-error').textContent = ''; $('calc-use').disabled = !currentStep(); calculatorFresh = true;
+    $('calc-error').textContent = ''; $('calc-use').disabled = viewTab === 'simulator' || !currentStep(); calculatorFresh = true;
   } catch (error) {
     calculatorValue = null; $('calc-result').textContent = ''; $('calc-error').textContent = error.message;
     $('calc-use').disabled = true;
@@ -775,6 +897,8 @@ function clearCalculator() {
 const keypad = ['C','←','(',')','7','8','9','÷','4','5','6','×','1','2','3','−','0','.','=','+'];
 $('calc-grid').innerHTML = keypad.map(key => `<button type="button" data-calc="${key}" class="${['÷','×','−','+'].includes(key) ? 'operator' : key === '=' ? 'equals' : ''}" aria-label="${key === '←' ? 'מחיקת תו' : key === 'C' ? 'ניקוי' : key === '=' ? 'חישוב' : key}">${key}</button>`).join('');
 document.addEventListener('click', event => {
+  const settings = $('settings-menu');
+  if (settings.open && (!settings.contains(event.target) || event.target.closest('button'))) settings.open = false;
   const button = event.target.closest('button');
   if (!button || button.disabled) return;
   if (button.hasAttribute('data-open-profile')) return openProfile();
@@ -785,8 +909,8 @@ document.addEventListener('click', event => {
     personal.preferences=emptyPersonal().preferences;savePersonal();applyPreferences();return;
   }
   if (button.hasAttribute('data-go-simulator')) {
-    $('simulator-section')?.scrollIntoView({behavior:personal.preferences.motion?'auto':'smooth',block:'start'});
-    $('sim-title')?.focus({preventScroll:true});return;
+    simulatorQuestion = currentQuestion(); selectTab('simulator');
+    $('tab-simulator').focus({preventScroll:true});return;
   }
   if (button.hasAttribute('data-open-formulas')) return openDialog('formula-dialog');
   if (button.dataset.openDiagram) return openDiagram(button.dataset.openDiagram);
@@ -800,14 +924,15 @@ document.addEventListener('click', event => {
   }
   if (button.hasAttribute('data-manual-list-help')) return fillManualList();
   if (button.hasAttribute('data-open-calculator')) {
-    $('calc-use').disabled = calculatorValue === null || !currentStep();
+    $('calc-use').disabled = calculatorValue === null || viewTab === 'simulator' || !currentStep();
     openDialog('calculator-dialog'); return;
   }
   if (button.dataset.closeDialog) {
     if(button.dataset.closeDialog==='profile-dialog'&&profileRequired)return;
     return $(button.dataset.closeDialog).close();
   }
-  if (button.dataset.tab) { tab = button.dataset.tab; feedback = ''; render(); return; }
+  if (button.dataset.tab) { selectTab(button.dataset.tab); return; }
+  if (button.hasAttribute('data-return-training')) { selectTab(tab); $('tab-' + tab).focus({preventScroll:true}); return; }
   if (button.dataset.level !== undefined) { levels[tab] = Number(button.dataset.level); feedback = ''; render(); return; }
   const q = currentQuestion();
   if (button.hasAttribute('data-hint')) { markHelp(); q.hint = true; render(); return; }
@@ -819,7 +944,7 @@ document.addEventListener('click', event => {
   if (button.id === 'text-size') {
     personal.preferences.textScale=personal.preferences.textScale===100?125:100;savePersonal();applyPreferences();return;
   }
-  if (button.hasAttribute('data-reset-simulator')) { q.simVoltage = q.voltage; updateSimulator(); return; }
+  if (button.hasAttribute('data-reset-simulator')) { const model = activeSimulatorQuestion(); model.simVoltage = model.voltage; updateSimulator(); return; }
   if (button.id === 'calc-clear') { clearCalculator(); return; }
   if (button.id === 'calc-use' && calculatorValue !== null) {
     if (calculatorReturnToFormulas && formulaView === 'manual') manualDraft().answer = DC.fmt(calculatorValue);
@@ -861,18 +986,23 @@ document.addEventListener('input', event => {
     $('manual-message').textContent = '';
   }
   if (event.target.hasAttribute('data-answer')) syncDraft(event.target.value, event.target);
-  if (event.target.id === 'sim-voltage') { currentQuestion().simVoltage = Number(event.target.value); updateSimulator(); }
+  if (event.target.id === 'sim-voltage') { activeSimulatorQuestion().simVoltage = Number(event.target.value); updateSimulator(); }
   if (event.target.id === 'calc-screen') { calculatorValue = null; calculatorFresh = false; $('calc-use').disabled = true; $('calc-result').textContent = ''; }
 });
 document.addEventListener('change', event => {
+  if (event.target.id === 'sim-circuit') {
+    simulatorQuestion = completedCircuits().find(item => item.id === event.target.value)?.q ?? null;
+    renderSimulatorPanel(); $('sim-circuit')?.focus({preventScroll:true}); fitDialogs(); resizeFrame(); return;
+  }
   if(event.target.hasAttribute('data-preference')){
     const key=event.target.dataset.preference;
     personal.preferences[key]=event.target.type==='checkbox'?event.target.checked:Number(event.target.value);
     savePersonal();applyPreferences();return;
   }
-  if (event.target.id === 'sim-animation') { currentQuestion().simAnimate = event.target.checked; updateSimulator(); }
+  if (event.target.id === 'sim-animation') { activeSimulatorQuestion().simAnimate = event.target.checked; updateSimulator(); }
 });
 document.addEventListener('keydown', event => {
+  if (event.key === 'Escape' && $('settings-menu').open) { $('settings-menu').open = false; $('settings-menu').querySelector('summary').focus(); return; }
   if (event.target.id === 'calc-screen' && event.key === 'Enter') { event.preventDefault(); calculateScreen(); return; }
   const formulaTab = event.target.closest('.formula-tab[data-formula-tab]');
   if (formulaTab && ['ArrowLeft','ArrowRight','Home','End'].includes(event.key)) {
@@ -884,9 +1014,9 @@ document.addEventListener('keydown', event => {
   const button = event.target.closest('[data-tab]');
   if (!button || !['ArrowLeft','ArrowRight','Home','End'].includes(event.key)) return;
   event.preventDefault();
-  const index = DC.kinds.indexOf(button.dataset.tab);
-  tab = DC.kinds[event.key === 'Home' ? 0 : event.key === 'End' ? 2 : (index + (event.key === 'ArrowLeft' ? 1 : 2)) % 3];
-  feedback = ''; render(); $('tab-' + tab).focus();
+  const views = [...DC.kinds, 'simulator'], index = views.indexOf(button.dataset.tab);
+  selectTab(views[event.key === 'Home' ? 0 : event.key === 'End' ? views.length - 1 : (index + (event.key === 'ArrowLeft' ? 1 : views.length - 1)) % views.length]);
+  $('tab-' + viewTab).focus();
 });
 document.querySelectorAll('dialog').forEach(dialog => {
   dialog.addEventListener('cancel', event => {if(dialog.id==='profile-dialog'&&profileRequired)event.preventDefault();});
@@ -905,10 +1035,11 @@ document.querySelectorAll('dialog').forEach(dialog => {
     if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) dialog.close();
   });
 });
-window.addEventListener('resize', () => { fitDialogs(); resizeFrame(); });
+$('settings-menu').addEventListener('toggle', fitSettingsMenu);
+window.addEventListener('resize', () => { fitSettingsMenu(); fitDialogs(); resizeFrame(); });
 window.visualViewport?.addEventListener('resize', fitDialogs);
 try { if (window.parent !== window) { window.parent.addEventListener('scroll', fitDialogs, true); window.parent.addEventListener('resize', fitDialogs); } } catch {}
-postMessage('streamlit:componentReady', { apiVersion:1 });
+sendStreamlitMessage('streamlit:componentReady', { apiVersion:1 });
 newCourse();
 initializePersonal();
 if ('ResizeObserver' in window) new ResizeObserver(resizeFrame).observe($('app'));
@@ -920,8 +1051,8 @@ if ('ResizeObserver' in window) new ResizeObserver(resizeFrame).observe($('app')
 
 st.set_page_config(page_title="יסודות החשמל | תרגול DC", page_icon="⚡", layout="wide")
 st.markdown("""<style>
-.stApp,[data-testid="stAppViewContainer"]{background:#f4f5f1}
-[data-testid="stMainBlockContainer"],.block-container{max-width:1220px;padding:.5rem .25rem 1rem}
+.stApp,[data-testid="stAppViewContainer"]{background:#f5f8f5}
+[data-testid="stMainBlockContainer"],.block-container{max-width:1360px;padding:.5rem .25rem 1rem}
 [data-testid="stHeader"]{display:none}
 @media(max-width:600px){[data-testid="stMainBlockContainer"],.block-container{padding:.25rem 0 .5rem}}
 </style>""", unsafe_allow_html=True)
