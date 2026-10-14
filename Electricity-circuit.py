@@ -88,6 +88,10 @@ APP_HTML = r'''<!doctype html>
     .manual-keypad-grid button[data-manual-key="enter"]{grid-column:span 3;background:var(--green);color:white;font-size:calc(23px * var(--text-scale,1))}
     .manual-keypad-grid button[data-manual-key="done"]{font-size:calc(23px * var(--text-scale,1))}
     .manual-keypad-grid button[data-manual-key="clear"]{grid-column:span 2;font-size:calc(14px * var(--text-scale,1))}
+    .manual-keypad.numeric-only .manual-keypad-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+    .manual-keypad.numeric-only button[data-manual-key="clear"]{grid-column:1;grid-row:5}
+    .manual-keypad.numeric-only button[data-manual-key="enter"]{grid-column:2;grid-row:5}
+    .manual-keypad.numeric-only button[data-manual-key="done"]{grid-column:3;grid-row:5}
     .parallel-formulas{display:flex;flex-direction:column;gap:calc(22px * var(--text-scale,1));margin-top:16px}
     .parallel-formulas .network-formula{padding:4px 0;line-height:1.5}
   </style>
@@ -637,14 +641,22 @@ function restoreManualWork(raw,q) {
   for(let index=0;index<=q.steps.length;index++) {
     const item=raw[index];if(!item||typeof item!=='object')continue;
     const drafts={};
+    const legacy=Object.values(item.drafts??{}).some(draft=>draft&&Object.prototype.hasOwnProperty.call(draft,'answer'));
     for(const definition of triangleDefinitions) {
       const draft=item.drafts?.[definition.id];if(!draft||typeof draft!=='object')continue;
-      drafts[definition.id]={answer:text(draft.answer),values:Object.fromEntries(definition.slots.map(slot=>[slot.key,text(draft.values?.[slot.key])]))};
+      const values=Object.fromEntries(definition.slots.map(slot=>{
+        const value=text(draft.values?.[slot.key]);
+        return [slot.key,manualTokenKind(value)==='number'?value:''];
+      }));
+      const stepKey=q.steps[index]?.key;
+      const target=/^[UIRP]\d+$/.test(stepKey??'')?stepKey[0]:stepKey;
+      if(definition.slots.some(slot=>slot.key===target)&&!values[target]&&manualTokenKind(text(draft.answer))==='number')values[target]=text(draft.answer);
+      drafts[definition.id]={values};
     }
     work[index]={list:Object.fromEntries(['U','R','I','P'].map(key=>[key,text(item.list?.[key])])),
       selected:triangleDefinitions.some(def=>def.id===item.selected)?item.selected:'',drafts,
-      message:typeof item.message==='string'?item.message.slice(0,1000):'',type:item.type==='success'?'success':'error',
-      errors:Array.isArray(item.errors)?item.errors.filter(value=>typeof value==='string').slice(0,5):[],
+      message:!legacy&&typeof item.message==='string'?item.message.slice(0,1000):'',type:item.type==='success'?'success':'error',
+      errors:!legacy&&Array.isArray(item.errors)?item.errors.filter(value=>typeof value==='string').slice(0,5):[],
       listStatus:typeof item.listStatus==='string'?item.listStatus.slice(0,500):''};
   }
   return work;
@@ -925,7 +937,16 @@ function manualState() {
   return q.manualWork[q.cursor] ??= { list:{U:'',R:'',I:'',P:''}, selected:'', drafts:{}, message:'', type:'error', errors:[], listStatus:'' };
 }
 function manualDraft(state = manualState()) {
-  return state.drafts[state.selected] ??= { values:{}, answer:'' };
+  return state.drafts[state.selected] ??= { values:{} };
+}
+function manualResultSlotKey() {
+  const target=triangleContext().target;
+  const definition=triangleDefinitions.find(item=>item.id===manualState().selected);
+  return definition?.slots.some(slot=>slot.key===target)?target:null;
+}
+function canUseCalculatorResult() {
+  if(viewTab==='simulator'||!currentStep()||currentQuestion().accepted)return false;
+  return !(calculatorReturnToFormulas&&formulaView==='manual')||manualResultSlotKey()!==null;
 }
 function hideManualKeypad() {
   manualKeypadTarget=null;manualKeypadFieldId=null;
@@ -940,6 +961,11 @@ function paintManualKeypad() {
   const input=keypadInput();
   if(!input)return hideManualKeypad();
   const key=input.dataset.manualList??input.dataset.manualSlot;
+  const numbersOnly=input.hasAttribute('data-manual-slot');
+  $('manual-keypad').classList.toggle('numeric-only',numbersOnly);
+  $('manual-keypad').querySelector('.manual-keypad-header .small').textContent=numbersOnly?'מספרים בלבד':'מקלדת נתונים';
+  for(const token of ['X','?'])$('manual-keypad').querySelector(`[data-manual-key="${token}"]`).hidden=numbersOnly;
+  $('manual-keypad').setAttribute('aria-label',numbersOnly?'מקלדת מספרים':'מקלדת מספרים X וסימן שאלה');
   $('manual-keypad-value').textContent=key+' = '+(input.value||'…');
 }
 function showManualKeypad(input) {
@@ -956,6 +982,7 @@ function writeKeypadValue(input,value,position) {
     state.message='';state.errors=[];$('manual-message').textContent='';
   }
   input.value=value;
+  input.classList.remove('answer-incorrect');
   if(input.hasAttribute('data-manual-list'))syncManualEntryOrder();
   if(manualTokenKind(value)==='invalid')input.setAttribute('aria-invalid','true');
   else input.removeAttribute('aria-invalid');
@@ -966,11 +993,14 @@ function pressManualKey(key) {
   const input=keypadInput();
   if(key==='done'){hideManualKeypad();$('formula-tab-manual').focus({preventScroll:true});return;}
   if(!input)return hideManualKeypad();
+  if(input.hasAttribute('data-manual-slot')&&(key==='X'||key==='?'))return;
   if(key==='enter') {
-    if(manualTokenKind(input.value)==='invalid'){input.setAttribute('aria-invalid','true');return;}
+    const kind=manualTokenKind(input.value);
+    if(kind==='invalid'||input.hasAttribute('data-manual-slot')&&!['blank','number'].includes(kind)){input.setAttribute('aria-invalid','true');return;}
     saveCourse();
     const fields=[...document.querySelectorAll(input.hasAttribute('data-manual-list')?'[data-manual-list]':'[data-manual-slot]')];
-    const next=fields[fields.indexOf(input)+1]??(input.hasAttribute('data-manual-list')?document.querySelector('[data-manual-slot]'):$('manual-answer'));
+    const next=fields[fields.indexOf(input)+1]??(input.hasAttribute('data-manual-list')?document.querySelector('[data-manual-slot]'):document.querySelector('[data-check-manual]'));
+    if(next?.hasAttribute('data-check-manual'))hideManualKeypad();
     if(next)next.focus({preventScroll:true});else{hideManualKeypad();$('formula-tab-manual').focus({preventScroll:true});}
     return;
   }
@@ -997,9 +1027,17 @@ document.addEventListener('focusin',event=>{
 });
 document.addEventListener('beforeinput',event=>{
   const input=event.target;
-  if(!input.matches('[data-manual-list],[data-manual-slot]')||event.inputType!=='insertText')return;
+  if(!input.matches('[data-manual-list],[data-manual-slot]'))return;
+  if(input.hasAttribute('data-manual-slot')){
+    if(event.inputType.startsWith('insert')&&event.data!==null&&!/^[0-9.,]+$/.test(event.data))event.preventDefault();
+    return;
+  }
+  if(event.inputType!=='insertText')return;
   if(/^[xX?]$/.test(event.data??'')){event.preventDefault();input.value=event.data.toUpperCase();input.dispatchEvent(new Event('input',{bubbles:true}));return;}
   if(/^[0-9.,]$/.test(event.data??'')&&/^[xX?]$/.test(input.value))input.value='';
+});
+document.addEventListener('paste',event=>{
+  if(event.target.hasAttribute('data-manual-slot')&&manualTokenKind(event.clipboardData?.getData('text')??'')!=='number')event.preventDefault();
 });
 function manualTokenKind(value) {
   const text = String(value).trim();
@@ -1010,7 +1048,7 @@ function manualTokenKind(value) {
 }
 function formulaAnswerField() {
   if(currentQuestion().accepted)return $('formula-body').querySelector('[data-next-step]');
-  return formulaView === 'manual' ? $('manual-answer') : $('formula-body').querySelector('[data-answer]');
+  return formulaView === 'manual' ? $('manual-slot-'+manualResultSlotKey())??document.querySelector('[data-manual-slot]') : $('formula-body').querySelector('[data-answer]');
 }
 function manualEntrySlots(definition, state = manualState(), context = triangleContext()) {
   const order=['U','R','I','P'];
@@ -1048,11 +1086,11 @@ function manualSolverHTML() {
   if (definition) {
     const draft = manualDraft(state), locations = ['top','left','right'];
     const geometry = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 225" preserveAspectRatio="none" aria-hidden="true"><path d="M130 10 L15 218 L245 218 Z" fill="#f3f6ee" stroke="#78958a" stroke-width="2.5"/><path d="M65 125 L195 125 M130 125 L130 218" stroke="#78958a" stroke-width="2"/></svg>';
-    const fields = manualEntrySlots(definition,state,context).map(slot => `<label class="triangle-slot ${locations[definition.slots.indexOf(slot)]}" for="manual-slot-${slot.key}"><strong>${slot.symbol}</strong><input id="manual-slot-${slot.key}" data-manual-slot="${slot.key}" type="text" inputmode="none" lang="en" maxlength="24" aria-controls="manual-keypad"${window.matchMedia('(pointer:coarse)').matches ? ' readonly' : ''}${context.q.accepted?' disabled':''} autocomplete="off" autocapitalize="off" spellcheck="false" value="${escapeHTML(draft.values[slot.key] ?? '')}" aria-label="הצבת ${slot.symbol} במשולש" aria-describedby="manual-instructions"${state.errors.includes(slot.key) ? ' aria-invalid="true"' : ''}></label>`).join('');
-    work = `<form id="manual-form" class="manual-form" novalidate><h3>${definition.title}</h3><div class="triangle manual-triangle">${geometry}${fields}</div><div class="manual-answer"><label for="manual-answer">התשובה שחישבתם${context.task ? ` (${bdi(context.task.unit)})` : ''}</label><input id="manual-answer" type="text" class="numeric${context.q.accepted?' answer-correct':state.errors.includes('answer')?' answer-incorrect':''}" inputmode="decimal" maxlength="24" autocomplete="off" value="${escapeHTML(context.q.accepted?context.q.draft:draft.answer)}"${context.q.accepted?' readonly':''}${state.errors.includes('answer') ? ' aria-invalid="true"' : ''}>${status}${context.q.accepted?'<button class="btn" type="button" data-next-step>הבא ←</button>':`<button class="btn" type="submit"${context.task ? '' : ' disabled'}>בדיקת ההצבה והתשובה</button>`}<button class="btn secondary tiny" type="button" data-open-calculator${context.q.accepted?' disabled':''}>מחשבון</button></div></form>`;
+    const fields = manualEntrySlots(definition,state,context).map(slot => `<label class="triangle-slot ${locations[definition.slots.indexOf(slot)]}" for="manual-slot-${slot.key}"><strong>${slot.symbol}</strong><input id="manual-slot-${slot.key}" data-manual-slot="${slot.key}" class="numeric${context.q.accepted&&slot.key===context.target?' answer-correct':state.errors.includes(slot.key)?' answer-incorrect':''}" type="text" inputmode="none" lang="en" maxlength="24" aria-controls="manual-keypad"${window.matchMedia('(pointer:coarse)').matches||context.q.accepted&&slot.key===context.target ? ' readonly' : ''}${context.q.accepted&&slot.key!==context.target?' disabled':''} autocomplete="off" autocapitalize="off" spellcheck="false" value="${escapeHTML(context.q.accepted&&slot.key===context.target?context.q.draft:draft.values[slot.key] ?? '')}" aria-label="${slot.key===context.target?'התוצאה שחישבתם עבור':'הצבת'} ${slot.symbol} במשולש" aria-describedby="manual-instructions"${state.errors.includes(slot.key) ? ' aria-invalid="true"' : ''}></label>`).join('');
+    work = `<form id="manual-form" class="manual-form" novalidate><h3>${definition.title}</h3><div class="triangle manual-triangle">${geometry}${fields}</div><div class="manual-answer">${status}${context.q.accepted?'<button class="btn" type="button" data-next-step>הבא ←</button>':`<button class="btn" type="submit" data-check-manual${context.task ? '' : ' disabled'}>בדוק</button>`}<button class="btn secondary tiny" type="button" data-open-calculator${context.q.accepted?' disabled':''}>מחשבון</button></div></form>`;
   }
   const notice = !context.task ? '<p class="complete-badge">התרגיל הושלם. אפשר לחזור לתרגול ולהמשיך לתרגיל הבא.</p>' : context.target === 'Req' ? '<p class="hint">בצעד הזה מחשבים התנגדות שקולה בעזרת נוסחת טור או מקביל. משולשי חוק אום וההספק מתאימים לצעדים הבאים. <button class="text-btn" data-formula-tab="reference">חזרה לנוסחאות</button></p>' : '';
-  return `<div class="manual-intro"><h3>פתירה בעזרת המשולש</h3><p class="small muted">${escapeHTML(context.label)}${context.task ? ` · מחשבים: ${escapeHTML(context.task.label)}` : ''}</p><p id="manual-instructions" class="small">בחרו משולש, הציבו בעצמכם את הנתונים הידועים וסמנו ${bdi('?')} במקום הנעלם. המעבר בשדות מתחיל בנתונים המספריים לפי סדר רשימת הנתונים. חשבו והקלידו את התשובה מתחת למשולש; בדיקה תעביר אותה לתרגיל ותציג נכון או לא נכון. לאחר תשובה נכונה לחצו על הבא.</p></div>${notice}<strong class="small" id="manual-choice-title">בחרו את המשולש המתאים</strong><div class="manual-choices" role="group" aria-labelledby="manual-choice-title">${choices}</div><div class="manual-workspace"><aside class="manual-list" aria-labelledby="manual-list-title"><p class="manual-paper-note">מומלץ לרשום את הנתונים בדף.</p><button class="btn manual-fill" type="button" data-manual-list-help${context.q.accepted?' disabled':''}>מילוי מתרגיל</button><h3 id="manual-list-title">רשימת נתונים<br><span class="muted">רשות</span></h3>${list}</aside>${work}</div><p id="manual-token-help" class="small muted manual-note">הרשימה היא כלי עזר ואפשר להשאיר אותה ריקה. ${bdi('?')} = הנעלם שמחפשים; ${bdi('X')} = ערך שלא ידוע ולא התבקש לחשב. אפשר להקליד מספרים, כולל עשרוניים. כפתור מילוי מתרגיל ממלא רק את הרשימה; את ההצבה והחישוב עושים בעצמכם.</p><p id="manual-list-status" class="small muted manual-status" role="status" aria-live="polite">${escapeHTML(state.listStatus)}</p>${definition?.note ? `<p class="small muted">${escapeHTML(definition.note)}</p>` : ''}`;
+  return `<div class="manual-intro"><h3>פתירה בעזרת המשולש</h3><p class="small muted">${escapeHTML(context.label)}${context.task ? ` · מחשבים: ${escapeHTML(context.task.label)}` : ''}</p><p id="manual-instructions" class="small">בחרו משולש והציבו בו את שני הנתונים הידועים. חשבו בעצמכם והקלידו במשבצת של הנעלם את התוצאה המספרית. המעבר בשדות מתחיל בנתונים הידועים לפי סדר רשימת הנתונים. לחצו על בדוק כדי לבדוק את ההצבה ואת התוצאה ולהעביר אותה לתרגיל. לאחר תשובה נכונה לחצו על הבא.</p></div>${notice}<strong class="small" id="manual-choice-title">בחרו את המשולש המתאים</strong><div class="manual-choices" role="group" aria-labelledby="manual-choice-title">${choices}</div><div class="manual-workspace"><aside class="manual-list" aria-labelledby="manual-list-title"><p class="manual-paper-note">מומלץ לרשום את הנתונים בדף.</p><button class="btn manual-fill" type="button" data-manual-list-help${context.q.accepted?' disabled':''}>מילוי מתרגיל</button><h3 id="manual-list-title">רשימת נתונים<br><span class="muted">רשות</span></h3>${list}</aside>${work}</div><p id="manual-token-help" class="small muted manual-note">הרשימה היא כלי עזר ואפשר להשאיר אותה ריקה. ${bdi('?')} = הנעלם שמחפשים; ${bdi('X')} = ערך שלא ידוע ולא התבקש לחשב. אפשר להקליד מספרים, כולל עשרוניים. כפתור מילוי מתרגיל ממלא רק את הרשימה; את ההצבה והחישוב עושים בעצמכם.</p><p id="manual-list-status" class="small muted manual-status" role="status" aria-live="polite">${escapeHTML(state.listStatus)}</p>${definition?.note ? `<p class="small muted">${escapeHTML(definition.note)}</p>` : ''}`;
 }
 function fillManualList() {
   if(currentQuestion().accepted)return;
@@ -1070,6 +1108,7 @@ function fillManualList() {
 }
 function manualFeedback(message, errors = []) {
   if(currentQuestion().accepted)return;
+  hideManualKeypad();
   recordAttempt(false,'manual');
   currentQuestion().attempts++;
   const state = manualState(); state.message = 'לא נכון. '+message; state.type = 'error'; state.errors = errors;
@@ -1079,9 +1118,9 @@ function manualFeedback(message, errors = []) {
   $('form-feedback').className='feedback error';$('form-feedback').textContent=state.message;
   document.querySelectorAll('[data-answer]').forEach(input=>{input.classList.add('answer-incorrect');input.setAttribute('aria-invalid','true');});
   $('manual-form')?.querySelectorAll('input').forEach(input => {
-    const invalid = errors.includes(input.dataset.manualSlot ?? 'answer');
+    const invalid = errors.includes(input.dataset.manualSlot);
     if (invalid) input.setAttribute('aria-invalid','true'); else input.removeAttribute('aria-invalid');
-    if(input.id==='manual-answer')input.classList.toggle('answer-incorrect',invalid);
+    input.classList.toggle('answer-incorrect',invalid);
   });
   fitDialogs();saveCourse();
 }
@@ -1089,18 +1128,19 @@ function checkManualAnswer() {
   const context = triangleContext(), state = manualState();
   const definition = triangleDefinitions.find(item => item.id === state.selected);
   if (!context.task || !definition || context.q.accepted) return;
-  syncDraft(manualDraft(state).answer);
   if (!definition.slots.some(slot => slot.key === context.target)) {
     return manualFeedback(context.target === 'Req' ? 'בשלב הזה משתמשים בנוסחת התנגדות שקולה. אפשר למצוא אותה בלשונית נוסחאות.' : 'המשולש שבחרתם אינו מתאים לנעלם בצעד הזה. בחרו משולש אחר.');
   }
   const known = definition.slots.filter(slot => slot.key !== context.target);
   if (known.some(slot => context.values[slot.key] === undefined)) return manualFeedback('עדיין אין מספיק נתונים ידועים למשולש הזה. בחרו משולש שאפשר להציב בו שני נתונים ידועים.');
   const draft = manualDraft(state);
-  if (String(draft.values[context.target] ?? '').trim() !== '?') return manualFeedback('סמנו ? במקום הנעלם שמבקשים לחשב במשולש.', [context.target]);
+  const answer=String(draft.values[context.target]??'');
+  syncDraft(answer);
   const incorrect = known.filter(slot => !DC.accepted(draft.values[slot.key] ?? '', context.values[slot.key]));
   if (incorrect.length) return manualFeedback('בדקו את הנתונים שהצבתם במשולש. בשני המקומות הידועים צריך להקליד מספרים שמתאימים לנתוני התרגיל. בסימון ריבוע כופלים את הנתון בעצמו.', incorrect.map(slot => slot.key));
-  if (!DC.accepted(draft.answer, context.task.value)) return manualFeedback(draft.answer.trim() ? 'ההצבה במשולש נכונה. בדקו שוב את החישוב ואת התשובה שהקלדתם.' : 'ההצבה נכונה. חשבו והקלידו את התשובה בשדה שמתחת למשולש.', ['answer']);
-  checkAnswer(draft.answer,'manual');
+  if(manualTokenKind(answer)!=='number')return manualFeedback('הקלידו במשבצת של הנעלם את התוצאה המספרית שחישבתם.',[context.target]);
+  if (!DC.accepted(answer, context.task.value)) return manualFeedback('ההצבה במשולש נכונה. בדקו שוב את החישוב ואת התוצאה שהקלדתם במשבצת של הנעלם.', [context.target]);
+  checkAnswer(answer,'manual');
 }
 function triangleCard(definition, context = null) {
   const slots = definition.slots;
@@ -1171,7 +1211,7 @@ function calculateScreen() {
   try {
     calculatorValue = DC.calculate($('calc-screen').value);
     $('calc-result').textContent = String(Math.round(calculatorValue * 1e10) / 1e10);
-    $('calc-error').textContent = ''; $('calc-use').disabled = viewTab==='simulator'||!currentStep()||currentQuestion().accepted; calculatorFresh = true;
+    $('calc-error').textContent = ''; $('calc-use').disabled = !canUseCalculatorResult(); calculatorFresh = true;
   } catch (error) {
     calculatorValue = null; $('calc-result').textContent = ''; $('calc-error').textContent = error.message;
     $('calc-use').disabled = true;
@@ -1212,8 +1252,8 @@ document.addEventListener('click', event => {
   }
   if (button.hasAttribute('data-manual-list-help')) return fillManualList();
   if (button.hasAttribute('data-open-calculator')) {
-    $('calc-use').disabled = calculatorValue === null || viewTab==='simulator' || !currentStep() || currentQuestion().accepted;
-    openDialog('calculator-dialog'); return;
+    openDialog('calculator-dialog');
+    $('calc-use').disabled = calculatorValue === null || !canUseCalculatorResult();return;
   }
   if (button.dataset.closeDialog) {
     if(button.dataset.closeDialog==='profile-dialog'&&profileRequired)return;
@@ -1239,7 +1279,8 @@ document.addEventListener('click', event => {
   if (button.hasAttribute('data-reset-simulator')) { const model=activeSimulatorQuestion();model.simVoltage=model.voltage;updateSimulator();return; }
   if (button.id === 'calc-clear') { clearCalculator(); return; }
   if (button.id === 'calc-use' && calculatorValue !== null) {
-    if (calculatorReturnToFormulas && formulaView === 'manual') manualDraft().answer = DC.fmt(calculatorValue);
+    if(!canUseCalculatorResult())return;
+    if (calculatorReturnToFormulas && formulaView === 'manual') manualDraft().values[manualResultSlotKey()] = DC.fmt(calculatorValue);
     else syncDraft(DC.fmt(calculatorValue));
     $('calculator-dialog').close();
     if (!calculatorReturnToFormulas) $('answer')?.focus();
@@ -1275,10 +1316,9 @@ document.addEventListener('input', event => {
     if(manualKeypadTarget===event.target)paintManualKeypad();
     saveCourse();
   }
-  if (event.target.hasAttribute('data-manual-slot') || event.target.id === 'manual-answer') {
+  if (event.target.hasAttribute('data-manual-slot')) {
     const state = manualState(), draft = manualDraft(state);
-    if (event.target.id === 'manual-answer') draft.answer = event.target.value;
-    else draft.values[event.target.dataset.manualSlot] = event.target.value;
+    draft.values[event.target.dataset.manualSlot] = event.target.value;
     state.message = ''; state.errors = []; event.target.removeAttribute('aria-invalid');event.target.classList.remove('answer-incorrect');
     $('manual-message').textContent = '';
     if(manualKeypadTarget===event.target)paintManualKeypad();
@@ -1299,9 +1339,13 @@ document.addEventListener('change', event => {
   if (event.target.id === 'sim-animation') { activeSimulatorQuestion().simAnimate = event.target.checked; updateSimulator(); }
 });
 document.addEventListener('keydown', event => {
+  if(event.key==='Tab'&&!event.shiftKey&&event.target.hasAttribute('data-manual-slot')&&event.target===[...document.querySelectorAll('[data-manual-slot]')].at(-1))hideManualKeypad();
   if(event.key==='Escape'&&manualKeypadTarget){event.preventDefault();hideManualKeypad();$('formula-tab-manual').focus({preventScroll:true});return;}
   if(event.key==='Enter'&&event.target.matches('[data-manual-list],[data-manual-slot]')){event.preventDefault();pressManualKey('enter');return;}
-  if(event.target.matches('[data-manual-list],[data-manual-slot]')&&!event.ctrlKey&&!event.metaKey&&event.key.length===1&&!/[0-9.,xX?]/.test(event.key)){event.preventDefault();return;}
+  if(event.target.matches('[data-manual-list],[data-manual-slot]')&&!event.ctrlKey&&!event.metaKey&&event.key.length===1){
+    const allowed=event.target.hasAttribute('data-manual-list')?/[0-9.,xX?]/:/[0-9.,]/;
+    if(!allowed.test(event.key)){event.preventDefault();return;}
+  }
   if (event.target.id === 'calc-screen' && event.key === 'Enter') { event.preventDefault(); calculateScreen(); return; }
   const formulaTab = event.target.closest('.formula-tab[data-formula-tab]');
   if (formulaTab && ['ArrowLeft','ArrowRight','Home','End'].includes(event.key)) {
