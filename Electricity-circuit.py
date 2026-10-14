@@ -33,6 +33,8 @@ APP_HTML = r'''<!doctype html>
     .diagram-preview{display:block;width:100%;padding:0;background:transparent;color:inherit;border-radius:10px}.diagram-preview svg{max-width:100%}.diagram-open-label{display:block;padding:7px;color:var(--green);font-size:13px;font-weight:700;text-align:center}.diagram-preview:hover{background:var(--soft)}.diagram-toolbar{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px}.diagram-toolbar .btn{min-width:44px;min-height:44px}.diagram-viewport{overflow:auto;max-height:60vh;direction:ltr;overscroll-behavior:contain;touch-action:pan-x pan-y pinch-zoom;border:1px solid var(--line);border-radius:12px;background:var(--card)}.diagram-canvas{width:100%;min-width:100%}.diagram-canvas svg{display:block;width:100%;height:auto;max-width:none}.formula-tabs{display:flex;gap:8px;margin-bottom:16px}.formula-tab{flex:1;min-height:46px;padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--muted);font-weight:700}.formula-tab[aria-selected=true]{background:var(--ink);border-color:var(--ink);color:white}.sheet-givens{margin:10px 0}.sheet-givens .given{min-width:0}.sheet-answer input{max-width:100%;min-width:0}
     @media(max-width:570px){.app{padding:14px 12px 25px}.topbar{align-items:flex-start;padding-bottom:14px;flex-wrap:wrap}.top-tools{width:100%}.top-tools .btn{flex:1;font-size:14px}.brand-title{font-size:17px}.hero{padding:23px 0 18px}.hero-symbol{display:none}.hero-copy p{font-size:15px}.tabs{gap:5px}.tab{padding:11px 8px;font-size:14px;min-height:73px}.tab span{font-size:10px}.card{padding:16px}.level{font-size:14px}.given{min-width:85px;padding:7px 10px}.given bdi{font-size:17px}.answer-row{flex-wrap:wrap}.answer-row>.btn{width:100%}.answer-tools .btn{font-size:13px;flex:1;padding:9px}.formula-grid,.formula-networks{grid-template-columns:1fr}.formula-card{padding:13px}dialog{padding:16px;border-radius:16px}.sim-controls{grid-template-columns:1fr}.sim-controls .btn{grid-column:1}.metrics{grid-template-columns:1fr 1fr 1fr}.metric{padding:7px}.metric bdi{font-size:14px}.metric small{font-size:10px}h2{font-size:22px}.footer .text-btn{font-size:12px}}
     .sim-layout>div{min-width:0}
+    .formula-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}.formula-tab{min-width:0}.manual-entry{display:flex;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:18px}.manual-intro{margin-bottom:14px}.manual-choices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:10px 0 18px}.manual-choice{min-width:0;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:11px;padding:12px;text-align:right}.manual-choice strong{display:block;font-size:15px;line-height:1.5}.manual-choice bdi{font-size:14px;color:var(--muted);margin-top:5px}.manual-choice[aria-pressed=true]{border-color:var(--green);box-shadow:inset 0 0 0 1px var(--green);background:var(--soft)}.manual-workspace{display:grid;grid-template-columns:170px minmax(0,1fr);gap:22px;align-items:start}.manual-list{min-width:0;background:var(--soft);padding:12px;border-radius:12px}.manual-list>.btn{width:100%;margin-bottom:10px}.manual-list h3{font-size:14px;margin-bottom:10px}.manual-list-row{display:flex;direction:ltr;align-items:center;gap:6px;margin:8px 0}.manual-list-row bdi{font-weight:700;white-space:nowrap}.manual-list-row input{width:0;min-width:0;flex:1;min-height:42px;border:1px solid #a8c4b6;border-radius:7px;background:white;padding:5px;direction:ltr;text-align:center;font-size:17px}.manual-form{min-width:0}.manual-form h3{text-align:center;font-size:17px}.manual-placeholder{border:1px dashed #b9cfc2;border-radius:13px;padding:30px 15px;text-align:center;color:var(--muted)}.manual-triangle{width:100%;max-width:360px;height:auto;aspect-ratio:260/225}.manual-triangle .triangle-slot{width:32%;gap:3px}.manual-triangle .triangle-slot.top{top:18%;left:34%}.manual-triangle .triangle-slot.left{top:63%;left:12%}.manual-triangle .triangle-slot.right{top:63%;left:56%}.manual-triangle .triangle-slot input{width:100%;min-width:0;max-width:100px;min-height:40px;padding:4px;font-size:20px}.manual-answer{margin-top:15px}.manual-answer label{display:block;margin-bottom:7px;font-weight:700}.manual-answer input{width:100%;min-width:0;min-height:46px;padding:8px 10px;border:2px solid var(--green);border-radius:9px;background:white;font-size:21px;direction:ltr;text-align:left}.manual-answer .btn{width:100%;margin-top:10px}.manual-note{margin:14px 0 0}.manual-status{min-height:0}.manual-status:empty{display:none}
+    @media(max-width:570px){.formula-tab{padding:8px 5px;font-size:13px}.manual-choices{gap:7px}.manual-choice{padding:9px}.manual-choice strong{font-size:13px}.manual-choice bdi{font-size:12px}.manual-workspace{grid-template-columns:84px minmax(0,1fr);gap:10px}.manual-list{padding:6px}.manual-list>.btn{padding:7px 3px;font-size:13px}.manual-list h3{font-size:12px;line-height:1.5}.manual-list-row{gap:3px}.manual-list-row bdi{font-size:14px}.manual-list-row input{min-height:36px;padding:3px;font-size:16px}.manual-triangle .triangle-slot{gap:2px}.manual-triangle .triangle-slot strong{font-size:17px}.manual-triangle .triangle-slot input{min-height:28px;height:28px;font-size:16px;padding:2px}.manual-form h3{font-size:14px}.manual-answer label{font-size:14px}.manual-answer .btn{font-size:13px;padding:9px 6px}.manual-answer input{font-size:18px}.manual-list .small{font-size:11px}}
     @media(max-width:570px){.sim-layout{display:flex;flex-direction:column;gap:14px}.sim-layout>div:first-child{display:contents}.sim-layout .diagram{order:0;width:100%}.sim-layout .sim-controls{order:1;width:100%}.sim-layout #sim-metrics{order:2;width:100%}.table-scroll table,.table-scroll tbody{display:block;width:100%}.table-scroll caption{display:block;width:100%;white-space:normal}.table-scroll thead{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}.table-scroll tbody tr{display:block;margin-bottom:12px;border:1px solid var(--line);border-radius:10px;overflow:hidden}.table-scroll tbody td{display:flex;align-items:center;justify-content:space-between;gap:12px;white-space:normal;padding:8px 12px}.table-scroll tbody td::before{content:attr(data-label);color:var(--muted);font-size:13px}.table-scroll tbody td:last-child{border-bottom:0}}
     @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
   </style>
@@ -52,7 +54,7 @@ APP_HTML = r'''<!doctype html>
   <main id="workspace" role="tabpanel" aria-labelledby="tab-ohm"></main>
   <footer class="footer"><div>התרגול וההתקדמות בסבב פועלים במכשיר הזה. בכניסה מחדש נוצר סבב חדש.</div><div><button class="text-btn" data-open-formulas>דף נוסחאות</button><button class="text-btn" id="new-course">תרגילים חדשים</button></div></footer>
 </div>
-<dialog id="formula-dialog" aria-labelledby="formula-title"><div class="dialog-head"><h2 id="formula-title">דף נוסחאות</h2><button class="close" data-close-dialog="formula-dialog" aria-label="סגירת דף הנוסחאות">×</button></div><nav class="formula-tabs" role="tablist" aria-label="תצוגת דף הנוסחאות"><button id="formula-tab-reference" class="formula-tab" data-formula-tab="reference" role="tab" aria-selected="true" aria-controls="formula-body" tabindex="0">נוסחאות</button><button id="formula-tab-help" class="formula-tab" data-formula-tab="help" role="tab" aria-selected="false" aria-controls="formula-body" tabindex="-1">עזרה</button></nav><p class="formula-intro">החלק העליון במשולש הוא מכפלת שני החלקים התחתונים. כדי למצוא חלק תחתון, מחלקים את העליון בחלק התחתון הידוע. בלשונית עזרה מופיעים נתוני התרגיל ואפשר לענות במשולש המתאים.</p><div id="formula-body" role="tabpanel" aria-labelledby="formula-tab-reference" tabindex="0"></div></dialog>
+<dialog id="formula-dialog" aria-labelledby="formula-title"><div class="dialog-head"><h2 id="formula-title">דף נוסחאות</h2><button class="close" data-close-dialog="formula-dialog" aria-label="סגירת דף הנוסחאות">×</button></div><nav class="formula-tabs" role="tablist" aria-label="תצוגת דף הנוסחאות"><button id="formula-tab-reference" class="formula-tab" data-formula-tab="reference" role="tab" aria-selected="true" aria-controls="formula-body" tabindex="0">נוסחאות</button><button id="formula-tab-help" class="formula-tab" data-formula-tab="help" role="tab" aria-selected="false" aria-controls="formula-body" tabindex="-1">עזרה</button><button id="formula-tab-manual" class="formula-tab" data-formula-tab="manual" role="tab" aria-selected="false" aria-controls="formula-body" tabindex="-1">פתירה בעזרת המשולש</button></nav><p class="formula-intro">החלק העליון במשולש הוא מכפלת שני החלקים התחתונים. כדי למצוא חלק תחתון, מחלקים את העליון בחלק התחתון הידוע. בלשונית עזרה מופיעים נתוני התרגיל ואפשר לענות במשולש המתאים.</p><div id="formula-body" role="tabpanel" aria-labelledby="formula-tab-reference" tabindex="0"></div></dialog>
 <dialog id="diagram-dialog" aria-labelledby="diagram-title"><div class="dialog-head"><h2 id="diagram-title">הגדלת הסכמה</h2><button class="close" data-close-dialog="diagram-dialog" aria-label="סגירת הסכמה המוגדלת">×</button></div><div class="diagram-toolbar" role="group" aria-label="הגדלת הסכמה"><button class="btn secondary tiny" data-diagram-zoom="in" aria-label="הגדלה">+</button><button class="btn secondary tiny" data-diagram-zoom="out" aria-label="הקטנה">−</button><button class="btn soft tiny" data-diagram-zoom="reset">התאמה למסך</button><bdi id="diagram-zoom-label" role="status" aria-live="polite">100%</bdi></div><p class="small muted">אפשר להגדיל באמצעות הכפתורים ולגלול בתוך הסכמה.</p><div class="diagram-viewport" id="diagram-viewport" tabindex="0" role="region" aria-label="סכמה מוגדלת — אפשר לגלול לצדדים ולמעלה ולמטה"><div class="diagram-canvas" id="diagram-canvas"></div></div></dialog>
 <dialog id="calculator-dialog" class="calc-dialog" aria-labelledby="calc-title"><div class="dialog-head"><h2 id="calc-title">מחשבון</h2><button class="close" data-close-dialog="calculator-dialog" aria-label="סגירת המחשבון">×</button></div><label class="small muted" for="calc-screen">חיבור, חיסור, כפל וחילוק</label><input id="calc-screen" class="calc-screen" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" maxlength="160" placeholder="12 ÷ 3"><div id="calc-result" class="calc-result" role="status" aria-live="polite"></div><div class="calc-grid" id="calc-grid"></div><p id="calc-error" class="feedback error" role="alert"></p><div class="calc-actions"><button class="btn" id="calc-use" disabled>העברה לתשובה</button><button class="btn secondary" id="calc-clear">ניקוי</button></div><button class="text-btn" data-open-formulas>דף נוסחאות △</button><p class="small muted" style="margin-top:12px;margin-bottom:0">המחשבון שומר על סדר פעולות חשבון. אפשר להשתמש בסוגריים. אין פונקציית שורש.</p></dialog>
 <dialog id="new-course-dialog" class="confirm-dialog" aria-labelledby="new-course-title"><div class="dialog-head"><h2 id="new-course-title">להתחיל סבב חדש?</h2><button class="close" data-close-dialog="new-course-dialog" aria-label="סגירה">×</button></div><p>כל התרגילים יוחלפו, וההתקדמות בסבב הנוכחי תתחיל מחדש.</p><div class="completion-actions"><button class="btn" id="new-course-confirm">כן, תרגילים חדשים</button><button class="btn secondary" data-close-dialog="new-course-dialog">חזרה לתרגול</button></div></dialog>
@@ -309,6 +311,12 @@ const escapeHTML = value => String(value).replace(/[&<>"']/g, c => ({ '&':'&amp;
 const names = { ohm: 'חוק אום והספק', series: 'מעגל טורי', parallel: 'מעגל מקבילי' };
 const letters = ['א׳', 'ב׳', 'ג׳'];
 const units = { U: 'V', I: 'A', R: 'Ω', P: 'W' };
+const triangleDefinitions = [
+    { id:'ohm', title:'חוק אום', slots:[{key:'U',symbol:'U',unit:'V'},{key:'I',symbol:'I',unit:'A'},{key:'R',symbol:'R',unit:'Ω'}], formulas:['U = I × R','I = U ÷ R','R = U ÷ I'] },
+    { id:'power-ui', title:'הספק לפי מתח וזרם', slots:[{key:'P',symbol:'P',unit:'W'},{key:'U',symbol:'U',unit:'V'},{key:'I',symbol:'I',unit:'A'}], formulas:['P = U × I','U = P ÷ I','I = P ÷ U'] },
+    { id:'power-ir', title:'הספק לפי זרם והתנגדות', slots:[{key:'P',symbol:'P',unit:'W'},{key:'I2',symbol:'I²',unit:'I × I'},{key:'R',symbol:'R',unit:'Ω'}], formulas:['P = I² × R','R = P ÷ I²'], note:'I² פירושו I כפול I. בתרגול משתמשים כאן בזרם ידוע; לא מוציאים שורש.' },
+    { id:'power-ur', title:'הספק לפי מתח והתנגדות', slots:[{key:'U2',symbol:'U²',unit:'U × U'},{key:'P',symbol:'P',unit:'W'},{key:'R',symbol:'R',unit:'Ω'}], formulas:['U² = P × R','P = U² ÷ R','R = U² ÷ P'], note:'U² פירושו U כפול U. בתרגול משתמשים כאן במתח ידוע; לא מוציאים שורש.' },
+];
 const recentKey = 'dc.basics.recent.v1';
 let questions, tab = 'ohm', levels = { ohm:0, series:0, parallel:0 }, positions, previous = [];
 let feedback = '', feedbackType = 'success', calculatorValue = null, calculatorFresh = false;
@@ -381,7 +389,7 @@ function render(focus = false) {
   const descriptions = { ohm:'מתחילים בנתונים ידועים ומוצאים את הערך החסר.', series:'בטור הזרם זהה בכל הרכיבים. המתח מתחלק ביניהם.', parallel:level === 0 ? 'שני נגדים זהים במקביל. בכל ענף אותו מתח.' : level === 1 ? 'שני נגדים שונים במקביל. הזרמים תלויים בהתנגדויות.' : 'שלושה ענפים במקביל: נגדים זהים ושונים.' };
   $('workspace').innerHTML = `<div class="course-head"><div><h2>${names[tab]}</h2><p class="muted small" style="margin:0">${descriptions[tab]}</p></div><div class="levels" aria-label="רמות תרגול">${levelButtons}</div></div><div class="progress-row"><span>תרגיל ${index + 1} מתוך 5 · רמה ${letters[level]}</span><div class="question-dots">${dots}</div></div><div class="progress-track" role="progressbar" aria-label="תרגילים שהושלמו ברמה" aria-valuemin="0" aria-valuemax="5" aria-valuenow="${doneCount}"><div style="width:${doneCount * 20}%"></div></div><div class="exercise-grid"><section class="card"><div class="exercise-title"><div class="eyebrow">הנתונים שלכם</div><h3 style="margin-top:6px">${q.title}</h3><p class="muted small" style="margin:0">${tab === 'ohm' ? 'המקור הוא מקור מתח ישר (DC). מצאו את הנעלם המבוקש.' : 'כל ההתנגדויות ומתח המקור נתונים. פתרו לפי הסדר.'}</p></div><div class="givens">${given}</div><figure class="diagram">${diagramPreview(q)}<figcaption>${q.lamps.some(Boolean) ? 'סימון עיגול עם X הוא נורה. בתרגול הנורה היא רכיב בעל התנגדות קבועה.' : 'מלבן הוא נגד. המקור הוא DC; U מציין מתח ו־I מציין זרם.'}${tab !== 'ohm' ? ' לאחר השלמת המעגל ייפתח הסימולטור. לחצו על הסכמה להגדלה.' : ''}</figcaption></figure></section><section class="card ${done ? 'success-summary' : ''}">${active}<p id="rounding-text" class="rounding">${rounding}</p>${tools}<div class="feedback ${feedbackType}" id="form-feedback" role="status" aria-live="polite">${escapeHTML(feedback)}</div>${hints}${explain}${q.cursor ? `<div class="completed-steps"><strong class="small">החישובים שהשלמתם</strong>${rows}</div>` : ''}${next}</section></div>${done && tab !== 'ohm' ? simulatorHTML(q) : ''}`;
   if ($('formula-dialog').open) renderFormulas();
-  if (focus && !done) requestAnimationFrame(() => ($('formula-dialog').open ? $('formula-body').querySelector('[data-answer]') : $('answer'))?.focus());
+  if (focus && !done) requestAnimationFrame(() => ($('formula-dialog').open ? formulaAnswerField() : $('answer'))?.focus());
   fitDialogs(); resizeFrame();
 }
 function checkAnswer(value) {
@@ -444,6 +452,78 @@ function triangleContext() {
   if (values.U !== undefined) values.U2 = values.U * values.U;
   return { values, target, label, task, q };
 }
+function manualState() {
+  const q = currentQuestion();
+  q.manualWork ??= {};
+  return q.manualWork[q.cursor] ??= { list:{U:'',R:'',I:'',P:''}, selected:'', drafts:{}, message:'', type:'error', errors:[], listStatus:'' };
+}
+function manualDraft(state = manualState()) {
+  return state.drafts[state.selected] ??= { values:{}, answer:'' };
+}
+function manualTokenKind(value) {
+  const text = String(value).trim();
+  if (!text) return 'blank';
+  if (text === '?') return 'unknown';
+  if (text.toLowerCase() === 'x') return 'unused';
+  return /^(?:\d+(?:[.,]\d*)?|[.,]\d+)$/.test(text) && Number.isFinite(Number(text.replace(',', '.'))) ? 'number' : 'invalid';
+}
+function formulaAnswerField() {
+  return formulaView === 'manual' ? $('manual-answer') : $('formula-body').querySelector('[data-answer]');
+}
+function manualSolverHTML() {
+  const context = triangleContext(), state = manualState();
+  const definition = triangleDefinitions.find(item => item.id === state.selected);
+  const choices = triangleDefinitions.map(item => `<button type="button" class="manual-choice" data-manual-triangle="${item.id}" aria-pressed="${item.id === state.selected}"><strong>${item.title}</strong>${bdi(item.formulas[0])}</button>`).join('');
+  const list = ['U','R','I','P'].map(key => `<label class="manual-list-row" for="manual-list-${key}"><bdi>${key} =</bdi><input id="manual-list-${key}" data-manual-list="${key}" type="text" inputmode="text" lang="en" maxlength="24" autocomplete="off" autocapitalize="off" spellcheck="false" value="${escapeHTML(state.list[key])}" aria-label="${key} ברשימת הנתונים" aria-describedby="manual-token-help"${manualTokenKind(state.list[key]) === 'invalid' ? ' aria-invalid="true"' : ''}></label>`).join('');
+  let work = '<div class="manual-placeholder">בחרו משולש מהרשימה כדי להציב בו נתונים.</div>';
+  if (definition) {
+    const draft = manualDraft(state), locations = ['top','left','right'];
+    const geometry = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 225" aria-hidden="true"><path d="M130 10 L15 218 L245 218 Z" fill="#f3f6ee" stroke="#78958a" stroke-width="2.5"/><path d="M65 125 L195 125 M130 125 L130 218" stroke="#78958a" stroke-width="2"/></svg>';
+    const fields = definition.slots.map((slot,j) => `<label class="triangle-slot ${locations[j]}" for="manual-slot-${slot.key}"><strong>${slot.symbol}</strong><input id="manual-slot-${slot.key}" data-manual-slot="${slot.key}" type="text" inputmode="text" lang="en" maxlength="24" autocomplete="off" autocapitalize="off" spellcheck="false" value="${escapeHTML(draft.values[slot.key] ?? '')}" aria-label="הצבת ${slot.symbol} במשולש" aria-describedby="manual-instructions"${state.errors.includes(slot.key) ? ' aria-invalid="true"' : ''}></label>`).join('');
+    work = `<form id="manual-form" class="manual-form" novalidate><h3>${definition.title}</h3><div class="triangle manual-triangle">${geometry}${fields}</div><div class="manual-answer"><label for="manual-answer">התשובה שחישבתם${context.task ? ` (${bdi(context.task.unit)})` : ''}</label><input id="manual-answer" type="text" class="numeric" inputmode="decimal" maxlength="24" autocomplete="off" value="${escapeHTML(draft.answer)}"${state.errors.includes('answer') ? ' aria-invalid="true"' : ''}><button class="btn" type="submit"${context.task ? '' : ' disabled'}>בדיקת ההצבה והתשובה</button><button class="btn secondary tiny" type="button" data-open-calculator>מחשבון</button></div></form>`;
+  }
+  const message = state.message || (feedbackType === 'success' ? feedback : '');
+  const notice = !context.task ? '<p class="complete-badge">התרגיל הושלם. אפשר לחזור לתרגול ולהמשיך לתרגיל הבא.</p>' : context.target === 'Req' ? '<p class="hint">בצעד הזה מחשבים התנגדות שקולה בעזרת נוסחת טור או מקביל. משולשי חוק אום וההספק מתאימים לצעדים הבאים. <button class="text-btn" data-formula-tab="reference">חזרה לנוסחאות</button></p>' : '';
+  return `<div class="manual-intro"><h3>פתירה בעזרת המשולש</h3><p class="small muted">${escapeHTML(context.label)}${context.task ? ` · מחשבים: ${escapeHTML(context.task.label)}` : ''}</p><p id="manual-instructions" class="small">בחרו משולש, סמנו בו ${bdi('?')} במקום הנעלם והציבו בעצמכם את שני הנתונים הידועים. חשבו והקלידו את התשובה מתחת למשולש. תשובה נכונה תירשם ישירות בתרגיל.</p></div>${notice}<strong class="small" id="manual-choice-title">בחרו את המשולש המתאים</strong><div class="manual-choices" role="group" aria-labelledby="manual-choice-title">${choices}</div><div class="manual-workspace"><aside class="manual-list" aria-labelledby="manual-list-title"><button class="btn soft tiny" type="button" data-manual-list-help>עזרה</button><h3 id="manual-list-title">רשימת נתונים<br><span class="muted">רשות</span></h3>${list}</aside>${work}</div><p id="manual-token-help" class="small muted manual-note">הרשימה היא כלי עזר ואפשר להשאיר אותה ריקה. ${bdi('?')} = הנעלם שמחפשים; ${bdi('x')} = ערך שלא ידוע ולא התבקש לחשב. אפשר להקליד מספרים, כולל עשרוניים. כפתור עזרה ממלא רק את הרשימה.</p><p id="manual-list-status" class="small muted manual-status" role="status" aria-live="polite">${escapeHTML(state.listStatus)}</p>${definition?.note ? `<p class="small muted">${escapeHTML(definition.note)}</p>` : ''}<div id="manual-message" class="feedback ${state.message ? state.type : feedbackType}" role="status" aria-live="polite">${escapeHTML(message)}</div>`;
+}
+function fillManualList() {
+  const context = triangleContext(), state = manualState();
+  const target = context.target === 'Req' ? 'R' : context.target;
+  for (const key of ['U','R','I','P']) {
+    state.list[key] = key === target ? '?' : context.values[key] !== undefined ? DC.fmt(context.values[key]) : 'x';
+    const input = $('manual-list-' + key);
+    if (input) { input.value = state.list[key]; input.removeAttribute('aria-invalid'); }
+  }
+  state.listStatus = 'הרשימה מולאה. את הנתונים במשולש מציבים בעצמכם.';
+  $('manual-list-status').textContent = state.listStatus;
+  fitDialogs();
+}
+function manualFeedback(message, errors = []) {
+  const state = manualState(); state.message = message; state.type = 'error'; state.errors = errors;
+  const feedback = $('manual-message');
+  feedback.className = 'feedback error'; feedback.textContent = message;
+  $('manual-form')?.querySelectorAll('input').forEach(input => {
+    const invalid = errors.includes(input.dataset.manualSlot ?? 'answer');
+    if (invalid) input.setAttribute('aria-invalid','true'); else input.removeAttribute('aria-invalid');
+  });
+  fitDialogs();
+}
+function checkManualAnswer() {
+  const context = triangleContext(), state = manualState();
+  const definition = triangleDefinitions.find(item => item.id === state.selected);
+  if (!context.task || !definition) return;
+  if (!definition.slots.some(slot => slot.key === context.target)) {
+    return manualFeedback(context.target === 'Req' ? 'בשלב הזה משתמשים בנוסחת התנגדות שקולה. אפשר למצוא אותה בלשונית נוסחאות.' : 'המשולש שבחרתם אינו מתאים לנעלם בצעד הזה. בחרו משולש אחר.');
+  }
+  const known = definition.slots.filter(slot => slot.key !== context.target);
+  if (known.some(slot => context.values[slot.key] === undefined)) return manualFeedback('עדיין אין מספיק נתונים ידועים למשולש הזה. בחרו משולש שאפשר להציב בו שני נתונים ידועים.');
+  const draft = manualDraft(state);
+  if (String(draft.values[context.target] ?? '').trim() !== '?') return manualFeedback('סמנו ? במקום הנעלם שמבקשים לחשב במשולש.', [context.target]);
+  const incorrect = known.filter(slot => !DC.accepted(draft.values[slot.key] ?? '', context.values[slot.key]));
+  if (incorrect.length) return manualFeedback('בדקו את הנתונים שהצבתם במשולש. בשני המקומות הידועים צריך להקליד מספרים שמתאימים לנתוני התרגיל. בסימון ריבוע כופלים את הנתון בעצמו.', incorrect.map(slot => slot.key));
+  if (!DC.accepted(draft.answer, context.task.value)) return manualFeedback(draft.answer.trim() ? 'ההצבה במשולש נכונה. בדקו שוב את החישוב ואת התשובה שהקלדתם.' : 'ההצבה נכונה. חשבו והקלידו את התשובה בשדה שמתחת למשולש.', ['answer']);
+  checkAnswer(draft.answer);
+}
 function triangleCard(definition, context = null) {
   const slots = definition.slots;
   const enabled = !!context?.task && slots.some(slot => slot.key === context.target)
@@ -459,22 +539,22 @@ function triangleCard(definition, context = null) {
 }
 function renderFormulas() {
   const context = formulaView === 'help' ? triangleContext() : null;
-  document.querySelectorAll('[data-formula-tab]').forEach(button => {
+  document.querySelector('#formula-dialog .formula-intro').hidden = formulaView === 'manual';
+  document.querySelectorAll('.formula-tabs [data-formula-tab]').forEach(button => {
     const active = button.dataset.formulaTab === formulaView;
     button.setAttribute('aria-selected', active); button.tabIndex = active ? 0 : -1;
   });
   $('formula-body').setAttribute('aria-labelledby', 'formula-tab-' + formulaView);
+  if (formulaView === 'manual') {
+    $('formula-body').innerHTML = manualSolverHTML();
+    fitDialogs(); resizeFrame(); return;
+  }
   const sheetHelp = context?.task && (context.q.hint || context.q.solution) ? `<div class="${context.q.solution ? 'solution' : 'hint'}"><strong>${context.q.solution ? 'כך פותרים' : 'כיוון לפתרון'}</strong><p>${escapeHTML(context.task.hint)}</p><div class="math">${escapeHTML(context.task.formula)}</div>${context.q.solution ? `<div class="math">${escapeHTML(context.task.substitution)} = ${DC.fmt(context.task.value)} ${context.task.unit}</div><p>הקלידו את התוצאה בשדה המענה המודגש כדי להמשיך.</p>` : ''}</div>` : '';
-  const definitions = [
-    { title:'חוק אום', slots:[{key:'U',symbol:'U',unit:'V'},{key:'I',symbol:'I',unit:'A'},{key:'R',symbol:'R',unit:'Ω'}], formulas:['U = I × R','I = U ÷ R','R = U ÷ I'] },
-    { title:'הספק לפי מתח וזרם', slots:[{key:'P',symbol:'P',unit:'W'},{key:'U',symbol:'U',unit:'V'},{key:'I',symbol:'I',unit:'A'}], formulas:['P = U × I','U = P ÷ I','I = P ÷ U'] },
-    { title:'הספק לפי זרם והתנגדות', slots:[{key:'P',symbol:'P',unit:'W'},{key:'I2',symbol:'I²',unit:'I × I'},{key:'R',symbol:'R',unit:'Ω'}], formulas:['P = I² × R','R = P ÷ I²'], note:'I² פירושו I כפול I. בתרגול משתמשים כאן בזרם ידוע; לא מוציאים שורש.' },
-    { title:'הספק לפי מתח והתנגדות', slots:[{key:'U2',symbol:'U²',unit:'U × U'},{key:'P',symbol:'P',unit:'W'},{key:'R',symbol:'R',unit:'Ω'}], formulas:['U² = P × R','P = U² ÷ R','R = U² ÷ P'], note:'U² פירושו U כפול U. בתרגול משתמשים כאן במתח ידוע; לא מוציאים שורש.' },
-  ];
+  const definitions = triangleDefinitions;
   const alternative = context?.task && context.target === 'Req' ? `<form class="sheet-answer" data-triangle-form novalidate><label for="sheet-answer">${escapeHTML(context.task.label)} — השתמשו בנוסחת טור או מקביל שמופיעה בהמשך</label><div class="answer-row"><input id="sheet-answer" class="numeric" data-answer inputmode="decimal" type="text" maxlength="24" value="${escapeHTML(context.q.draft)}" autocomplete="off" aria-label="התנגדות שקולה"><span>${bdi('Ω')}</span><button class="btn tiny" type="submit">בדיקת תשובה</button></div></form>` : '';
   const given = context ? Object.entries(context.q.givens).map(([key, value]) => `<div class="given">${bdi(`${key} = ${DC.fmt(value)} ${units[key[0]]}`)}</div>`).join('') : '';
   const exerciseContext = context ? `<div class="formula-context"><strong>${escapeHTML(context.label)}</strong><div>${context.task ? `כעת מחשבים: ${escapeHTML(context.task.label)}. הנתונים במשולשים כוללים רק נתוני השאלה וצעדים שכבר השלמתם.` : 'אפשר לעבור על הנוסחאות ולהמשיך לתרגיל הבא.'}</div><div class="givens sheet-givens" aria-label="נתוני התרגיל">${given}</div><div class="answer-tools" style="margin:8px 0 0"><button class="btn secondary tiny" data-open-calculator>פתיחת המחשבון</button><button class="btn soft tiny" data-close-dialog="formula-dialog">חזרה לתרגול</button></div></div>` : '';
-  $('formula-body').innerHTML = `${exerciseContext}${context && feedback ? `<div class="feedback sheet-feedback ${feedbackType}" role="status" aria-live="polite">${escapeHTML(feedback)}</div>` : ''}${sheetHelp}${alternative}<div class="formula-grid">${definitions.map(def => triangleCard(def, context)).join('')}</div><div class="units-list"><span>${bdi('U')} — מתח, וולט ${bdi('V')}</span><span>${bdi('I')} — זרם, אמפר ${bdi('A')}</span><span>${bdi('R')} — התנגדות, אוהם ${bdi('Ω')}</span><span>${bdi('P')} — הספק, ואט ${bdi('W')}</span></div><div class="formula-networks"><section class="formula-card"><h3>מעגל טורי</h3><div class="math">${bdi('R_eq = R1 + R2 + R3')}<br>${bdi('I = U ÷ R_eq')}<br>${bdi('U1 = I × R1')}<br>${bdi('U = U1 + U2 + U3')}<br>${bdi('P1 = I² × R1')}</div><p class="small muted" style="margin-top:10px">R_eq מציין התנגדות שקולה. בשני רכיבים מחברים רק את R1 ואת R2. אותו זרם עובר בכל הרכיבים.</p></section><section class="formula-card"><h3>מעגל מקבילי</h3><div class="math">${bdi('R_eq = (R1 × R2) ÷ (R1 + R2)')}<br>${bdi('R_eq = 1 ÷ (1/R1 + 1/R2 + 1/R3)')}<br>${bdi('R_eq = R ÷ n')}<br>${bdi('I1 = U ÷ R1')}<br>${bdi('I_total = I1 + I2 + I3')}<br>${bdi('P1 = U × I1')}</div><p class="small muted" style="margin-top:10px">R_eq מציין התנגדות שקולה. הנוסחה R/n מתאימה רק לנגדים זהים. n הוא מספר הענפים. בכל הענפים אותו מתח.</p></section></div>`;
+  $('formula-body').innerHTML = `${formulaView === 'reference' ? '<div class="manual-entry"><button class="btn" data-formula-tab="manual">פתירה בעזרת המשולש</button><span class="small muted">בוחרים משולש, מציבים נתונים ופותרים בעצמכם.</span></div>' : ''}${exerciseContext}${context && feedback ? `<div class="feedback sheet-feedback ${feedbackType}" role="status" aria-live="polite">${escapeHTML(feedback)}</div>` : ''}${sheetHelp}${alternative}<div class="formula-grid">${definitions.map(def => triangleCard(def, context)).join('')}</div><div class="units-list"><span>${bdi('U')} — מתח, וולט ${bdi('V')}</span><span>${bdi('I')} — זרם, אמפר ${bdi('A')}</span><span>${bdi('R')} — התנגדות, אוהם ${bdi('Ω')}</span><span>${bdi('P')} — הספק, ואט ${bdi('W')}</span></div><div class="formula-networks"><section class="formula-card"><h3>מעגל טורי</h3><div class="math">${bdi('R_eq = R1 + R2 + R3')}<br>${bdi('I = U ÷ R_eq')}<br>${bdi('U1 = I × R1')}<br>${bdi('U = U1 + U2 + U3')}<br>${bdi('P1 = I² × R1')}</div><p class="small muted" style="margin-top:10px">R_eq מציין התנגדות שקולה. בשני רכיבים מחברים רק את R1 ואת R2. אותו זרם עובר בכל הרכיבים.</p></section><section class="formula-card"><h3>מעגל מקבילי</h3><div class="math">${bdi('R_eq = (R1 × R2) ÷ (R1 + R2)')}<br>${bdi('R_eq = 1 ÷ (1/R1 + 1/R2 + 1/R3)')}<br>${bdi('R_eq = R ÷ n')}<br>${bdi('I1 = U ÷ R1')}<br>${bdi('I_total = I1 + I2 + I3')}<br>${bdi('P1 = U × I1')}</div><p class="small muted" style="margin-top:10px">R_eq מציין התנגדות שקולה. הנוסחה R/n מתאימה רק לנגדים זהים. n הוא מספר הענפים. בכל הענפים אותו מתח.</p></section></div>`;
   fitDialogs(); resizeFrame();
 }
 
@@ -532,6 +612,11 @@ document.addEventListener('click', event => {
   if (button.dataset.formulaTab) {
     formulaView = button.dataset.formulaTab; renderFormulas(); $('formula-dialog').scrollTop = 0; return;
   }
+  if (button.dataset.manualTriangle) {
+    const state = manualState(); state.selected = button.dataset.manualTriangle; state.message = ''; state.errors = [];
+    renderFormulas(); return;
+  }
+  if (button.hasAttribute('data-manual-list-help')) return fillManualList();
   if (button.hasAttribute('data-open-calculator')) {
     $('calc-use').disabled = calculatorValue === null || !currentStep();
     openDialog('calculator-dialog'); return;
@@ -552,7 +637,9 @@ document.addEventListener('click', event => {
   if (button.hasAttribute('data-reset-simulator')) { q.simVoltage = q.voltage; updateSimulator(); return; }
   if (button.id === 'calc-clear') { clearCalculator(); return; }
   if (button.id === 'calc-use' && calculatorValue !== null) {
-    syncDraft(DC.fmt(calculatorValue)); $('calculator-dialog').close();
+    if (calculatorReturnToFormulas && formulaView === 'manual') manualDraft().answer = DC.fmt(calculatorValue);
+    else syncDraft(DC.fmt(calculatorValue));
+    $('calculator-dialog').close();
     if (!calculatorReturnToFormulas) $('answer')?.focus();
     return;
   }
@@ -569,11 +656,24 @@ document.addEventListener('click', event => {
   }
 });
 document.addEventListener('submit', event => {
+  if (event.target.id === 'manual-form') { event.preventDefault(); checkManualAnswer(); return; }
   if (event.target.id !== 'answer-form' && !event.target.hasAttribute('data-triangle-form')) return;
   event.preventDefault();
   checkAnswer(event.target.querySelector('[data-answer]')?.value ?? currentQuestion().draft);
 });
 document.addEventListener('input', event => {
+  if (event.target.hasAttribute('data-manual-list')) {
+    manualState().list[event.target.dataset.manualList] = event.target.value;
+    if (manualTokenKind(event.target.value) === 'invalid') event.target.setAttribute('aria-invalid','true');
+    else event.target.removeAttribute('aria-invalid');
+  }
+  if (event.target.hasAttribute('data-manual-slot') || event.target.id === 'manual-answer') {
+    const state = manualState(), draft = manualDraft(state);
+    if (event.target.id === 'manual-answer') draft.answer = event.target.value;
+    else draft.values[event.target.dataset.manualSlot] = event.target.value;
+    state.message = ''; state.errors = []; event.target.removeAttribute('aria-invalid');
+    $('manual-message').textContent = '';
+  }
   if (event.target.hasAttribute('data-answer')) syncDraft(event.target.value, event.target);
   if (event.target.id === 'sim-voltage') { currentQuestion().simVoltage = Number(event.target.value); updateSimulator(); }
   if (event.target.id === 'calc-screen') { calculatorValue = null; calculatorFresh = false; $('calc-use').disabled = true; $('calc-result').textContent = ''; }
@@ -583,10 +683,11 @@ document.addEventListener('change', event => {
 });
 document.addEventListener('keydown', event => {
   if (event.target.id === 'calc-screen' && event.key === 'Enter') { event.preventDefault(); calculateScreen(); return; }
-  const formulaTab = event.target.closest('[data-formula-tab]');
+  const formulaTab = event.target.closest('.formula-tab[data-formula-tab]');
   if (formulaTab && ['ArrowLeft','ArrowRight','Home','End'].includes(event.key)) {
     event.preventDefault();
-    formulaView = event.key === 'Home' ? 'reference' : event.key === 'End' ? 'help' : formulaView === 'reference' ? 'help' : 'reference';
+    const views = ['reference','help','manual'], index = views.indexOf(formulaView);
+    formulaView = views[event.key === 'Home' ? 0 : event.key === 'End' ? views.length - 1 : (index + (event.key === 'ArrowLeft' ? 1 : views.length - 1)) % views.length];
     renderFormulas(); $('formula-tab-' + formulaView).focus(); $('formula-dialog').scrollTop = 0; return;
   }
   const button = event.target.closest('[data-tab]');
@@ -601,7 +702,7 @@ document.querySelectorAll('dialog').forEach(dialog => {
     if (dialog.id === 'calculator-dialog' && calculatorReturnToFormulas) {
       calculatorReturnToFormulas = false;
       openDialog('formula-dialog', { preserveFormulaView:true });
-      $('formula-body').querySelector('[data-answer]')?.focus();
+      formulaAnswerField()?.focus();
     }
   });
   dialog.addEventListener('click', event => {
