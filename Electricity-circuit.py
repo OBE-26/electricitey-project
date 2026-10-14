@@ -28,7 +28,7 @@ APP_HTML = r'''<!doctype html>
     } catch { document.documentElement.style.setProperty('--text-scale', '1'); }
   </script>
   <style>
-    :root{--text-scale:1;color-scheme:light;--paper:#f4f5f1;--card:#fffefa;--ink:#182e3c;--muted:#5b6f78;--line:#dce3df;--green:#116e65;--soft:#e7f1ed;--amber:#a65b20;--shadow:0 8px 28px #182e3c08}
+    :root{--text-scale:1;color-scheme:light;--paper:#fff3d6;--card:#fffbf2;--ink:#3b3027;--muted:#74604a;--line:#e8cfa2;--green:#116e65;--soft:#ffebc4;--accent:#ffc45c;--amber:#a65b20;--shadow:0 8px 28px #7045110a}
     html:not(.ui-ready) body{visibility:hidden}
     .top-tools .btn{align-self:start}
     html{font-size:16px;-webkit-text-size-adjust:100%;text-size-adjust:100%}
@@ -94,6 +94,16 @@ APP_HTML = r'''<!doctype html>
     .manual-keypad.numeric-only button[data-manual-key="done"]{grid-column:3;grid-row:5}
     .parallel-formulas{display:flex;flex-direction:column;gap:calc(22px * var(--text-scale,1));margin-top:16px}
     .parallel-formulas .network-formula{padding:4px 0;line-height:1.5}
+    body:not(.high-contrast) .brand-icon{background:var(--accent);color:#623b05}
+    body:not(.high-contrast) .hero-symbol{background:linear-gradient(140deg,#ffe7ae,#ffcf8a);border-color:var(--line);color:#9c570d}
+    body:not(.high-contrast) .tab{background:var(--soft);color:var(--ink)}
+    body:not(.high-contrast) .tab[aria-selected=true],body:not(.high-contrast) .formula-tab[aria-selected=true]{background:var(--accent);color:var(--ink)}
+    body:not(.high-contrast) .formula-tab[aria-selected=true]{border-color:var(--accent)}
+    body:not(.high-contrast) .given,body:not(.high-contrast) .formula-context,body:not(.high-contrast) .hint,body:not(.high-contrast) .solution,body:not(.high-contrast) .close,body:not(.high-contrast) .calc-grid button.operator{background:var(--soft)}
+    body:not(.high-contrast) .given,body:not(.high-contrast) .hint{border-color:var(--line)}
+    body:not(.high-contrast) .personal-bar{background:var(--soft);border-color:var(--line)}
+    body:not(.high-contrast) .personal-progress th{background:var(--soft)}
+    body:not(.high-contrast) .triangle svg path[fill="#f3f6ee"],body:not(.high-contrast) .manual-choice svg path[fill="#f3f6ee"]{fill:#fff1d5}
   </style>
 </head>
 <body>
@@ -719,6 +729,7 @@ function newCourse() {
 }
 function currentQuestion() { return questions[tab][levels[tab]][positions[tab][levels[tab]]]; }
 function completed(q) { return q.cursor === q.steps.length; }
+function simulationReady(q) { return completed(q)||q.accepted&&q.cursor===q.steps.length-1; }
 function currentStep() { const q = currentQuestion(); return q.steps[q.cursor]; }
 function bdi(value) { return `<bdi>${escapeHTML(value)}</bdi>`; }
 function mathNotation(formula) {
@@ -788,7 +799,7 @@ function selectTab(next) {
   render();
 }
 function completedCircuits() {
-  return DC.kinds.flatMap(kind=>questions[kind].flatMap((list,level)=>list.flatMap((q,index)=>completed(q)?[{q,id:`${kind}:${level}:${index}`,label:`${names[kind]} · רמה ${letters[level]} · תרגיל ${index+1}`}]:[])));
+  return DC.kinds.flatMap(kind=>questions[kind].flatMap((list,level)=>list.flatMap((q,index)=>simulationReady(q)?[{q,id:`${kind}:${level}:${index}`,label:`${names[kind]} · רמה ${letters[level]} · תרגיל ${index+1}`}]:[])));
 }
 function activeSimulatorQuestion() { return simulatorMode==='custom' ? customSimulator : simulatorQuestion ?? currentQuestion(); }
 function formatCustomNumber(value) { return Number(value.toPrecision(6)).toString(); }
@@ -850,7 +861,7 @@ function render(focus = false) {
   const tools = `<div class="answer-tools"><button class="btn secondary tiny" data-open-formulas>דף נוסחאות △</button><button class="btn secondary tiny" data-open-calculator${q.accepted?' disabled':''}>מחשבון</button>${!done&&!q.accepted ? '<button class="btn soft tiny" data-hint>רמז</button><button class="text-btn small" data-solution>פתרון מוסבר</button>' : ''}</div>`;
   const next = done ? `<div class="completion-actions">${index < 4 ? '<button class="btn" data-next-question>לתרגיל הבא ←</button>' : level < questions[tab].length - 1 ? '<button class="btn" data-next-level>לרמה הבאה ←</button>' : '<button class="btn" data-new-course>סבב חדש</button>'}</div>${doneCount === 5 ? `<div class="level-note">השלמתם את חמשת התרגילים ברמה ${letters[level]}. ${level < questions[tab].length - 1 ? 'אפשר להתקדם לרמה הבאה.' : 'אפשר לעבור ללשונית אחרת או להתחיל סבב חדש.'}</div>` : ''}` : '';
   const descriptions = { ohm:'מתחילים בנתונים ידועים ומוצאים את הערך החסר.', series:'בטור הזרם זהה בכל הרכיבים. המתח מתחלק ביניהם.', parallel:level === 0 ? 'שני נגדים זהים במקביל. בכל ענף אותו מתח.' : level === 1 ? 'שני נגדים שונים במקביל. הזרמים תלויים בהתנגדויות.' : 'שלושה ענפים במקביל: נגדים זהים ושונים.' };
-  $('workspace').innerHTML = `<div class="course-head"><div><h2>${names[tab]}</h2><p class="muted small" style="margin:0">${descriptions[tab]}</p></div><div class="levels" aria-label="רמות תרגול">${levelButtons}</div></div><div class="progress-row"><span>תרגיל ${index + 1} מתוך 5 · רמה ${letters[level]}</span><div class="question-dots">${dots}</div></div><div class="progress-track" role="progressbar" aria-label="תרגילים שהושלמו ברמה" aria-valuemin="0" aria-valuemax="5" aria-valuenow="${doneCount}"><div style="width:${doneCount * 20}%"></div></div><div class="exercise-grid"><section class="card"><div class="exercise-title"><div class="eyebrow">הנתונים שלכם</div><h3 style="margin-top:6px">${q.title}</h3><p class="muted small" style="margin:0">${tab === 'ohm' ? 'המקור הוא מקור מתח ישר (DC). מצאו את הנעלם המבוקש.' : 'כל ההתנגדויות ומתח המקור נתונים. פתרו לפי הסדר.'}</p></div><div class="givens">${given}</div><figure class="diagram">${diagramPreview(q)}<figcaption>${q.lamps.some(Boolean) ? 'סימון עיגול עם X הוא נורה. בתרגול הנורה היא רכיב בעל התנגדות קבועה.' : 'מלבן הוא נגד. המקור הוא DC; U מציין מתח ו־I מציין זרם.'}${tab !== 'ohm' ? ' לאחר השלמת המעגל אפשר לפתוח אותו בלשונית הסימולטור. לחצו על הסכמה להגדלה.' : ''}</figcaption></figure>${done ? '<button class="btn sim-jump" data-go-simulator>סימולטור</button>' : ''}</section><section class="card ${done ? 'success-summary' : ''}">${active}<p id="rounding-text" class="rounding">${rounding}</p>${tools}<div class="feedback ${feedbackType}" id="form-feedback" role="status" aria-live="polite">${escapeHTML(feedback)}</div>${hints}${explain}${q.cursor ? `<div class="completed-steps"><strong class="small">החישובים שהשלמתם</strong>${rows}</div>` : ''}${next}</section></div>`;
+  $('workspace').innerHTML = `<div class="course-head"><div><h2>${names[tab]}</h2><p class="muted small" style="margin:0">${descriptions[tab]}</p></div><div class="levels" aria-label="רמות תרגול">${levelButtons}</div></div><div class="progress-row"><span>תרגיל ${index + 1} מתוך 5 · רמה ${letters[level]}</span><div class="question-dots">${dots}</div></div><div class="progress-track" role="progressbar" aria-label="תרגילים שהושלמו ברמה" aria-valuemin="0" aria-valuemax="5" aria-valuenow="${doneCount}"><div style="width:${doneCount * 20}%"></div></div><div class="exercise-grid"><section class="card"><div class="exercise-title"><div class="eyebrow">הנתונים שלכם</div><h3 style="margin-top:6px">${q.title}</h3><p class="muted small" style="margin:0">${tab === 'ohm' ? 'המקור הוא מקור מתח ישר (DC). מצאו את הנעלם המבוקש.' : 'כל ההתנגדויות ומתח המקור נתונים. פתרו לפי הסדר.'}</p></div><div class="givens">${given}</div><figure class="diagram">${diagramPreview(q)}<figcaption>${q.lamps.some(Boolean) ? 'סימון עיגול עם X הוא נורה. בתרגול הנורה היא רכיב בעל התנגדות קבועה.' : 'מלבן הוא נגד. המקור הוא DC; U מציין מתח ו־I מציין זרם.'}${tab !== 'ohm' ? ' לאחר השלמת המעגל אפשר לפתוח אותו בלשונית הסימולטור. לחצו על הסכמה להגדלה.' : ''}</figcaption></figure>${simulationReady(q) ? '<button class="btn sim-jump" data-go-simulator>סימולטור</button>' : ''}</section><section class="card ${done ? 'success-summary' : ''}">${active}<p id="rounding-text" class="rounding">${rounding}</p>${tools}<div class="feedback ${feedbackType}" id="form-feedback" role="status" aria-live="polite">${escapeHTML(feedback)}</div>${hints}${explain}${q.cursor ? `<div class="completed-steps"><strong class="small">החישובים שהשלמתם</strong>${rows}</div>` : ''}${next}</section></div>`;
   if ($('formula-dialog').open) renderFormulas();
   if (focus && !done) requestAnimationFrame(() => ($('formula-dialog').open ? formulaAnswerField() : q.accepted ? $('workspace').querySelector('[data-next-step]') : $('answer'))?.focus());
   renderProgress(); fitDialogs(); resizeFrame();saveCourse();
@@ -862,8 +873,16 @@ function acceptedMessage(q = currentQuestion()) {
 function nextStep() {
   const q=currentQuestion();
   if(!q.accepted)return;
+  if($('formula-dialog').open)$('formula-dialog').close();
+  hideManualKeypad();
   q.cursor++;q.accepted=false;q.draft='';q.attempts=0;q.hint=false;q.solution=false;
+  if(completed(q)) {
+    const sequence=questions[tab][levels[tab]];
+    if(positions[tab][levels[tab]]<sequence.length-1)positions[tab][levels[tab]]++;
+    else if(levels[tab]<questions[tab].length-1)levels[tab]++;
+  }
   feedback='';feedbackType='success';render(true);
+  requestAnimationFrame(()=>$('workspace').querySelector('.exercise-grid')?.scrollIntoView({block:'start'}));
 }
 function checkAnswer(value, mode = 'answer') {
   const q = currentQuestion(), step = currentStep();
@@ -1399,7 +1418,7 @@ if ('ResizeObserver' in window) new ResizeObserver(resizeFrame).observe($('app')
 
 st.set_page_config(page_title="יסודות החשמל | תרגול DC", page_icon="⚡", layout="wide")
 st.markdown("""<style>
-.stApp,[data-testid="stAppViewContainer"]{background:#f4f5f1}
+.stApp,[data-testid="stAppViewContainer"]{background:#fff3d6}
 [data-testid="stMainBlockContainer"],.block-container{max-width:1220px;padding:.5rem .25rem 1rem}
 [data-testid="stHeader"]{display:none}
 @media(max-width:600px){[data-testid="stMainBlockContainer"],.block-container{padding:.25rem 0 .5rem}}
