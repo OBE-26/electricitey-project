@@ -1,4 +1,4 @@
-""יסודות החשמל — תרגול DC למבוגרים המתחילים ללמוד חשמל.
+""יסודות החשמל — תרגול מעגלים חשמליים.
 
 Single-file Streamlit app. All browser assets are embedded; no database is needed.
 Install: python -m pip install streamlit
