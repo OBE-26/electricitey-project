@@ -7,9 +7,7 @@ Install: python -m pip install streamlit
 Run:     streamlit run Electricity-circuit.py
 
 Includes Ohm/power, series and parallel practice, interactive formula triangles,
-four-operation calculator and separate practice, simulator, formulas and progress tabs.
-The simulator uses series/parallel templates, fixed-resistance lamps, switches,
-A1/A2 contactor coils with NO/NC contacts, and ideal voltage/current/clamp meters.
+four-operation calculator and a DC circuit simulator with resistive lamp models.
 Each visit creates a fresh set of 35 exercises. Recent question signatures are
 kept in browser storage to avoid immediate repeats; profile details and progress remain in local browser storage and are not sent by this app to the server.
 """
@@ -40,15 +38,11 @@ APP_HTML = r'''<!doctype html>
     .formula-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}.formula-tab{min-width:0}.manual-entry{display:flex;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:18px}.manual-intro{margin-bottom:14px}.manual-choices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:10px 0 18px}.manual-choice{min-width:0;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:11px;padding:12px;text-align:right}.manual-choice strong{display:block;font-size:calc(15px * var(--text-scale,1));line-height:1.5}.manual-choice bdi{font-size:calc(14px * var(--text-scale,1));color:var(--muted);margin-top:5px}.manual-choice[aria-pressed=true]{border-color:var(--green);box-shadow:inset 0 0 0 1px var(--green);background:var(--soft)}.manual-workspace{display:grid;grid-template-columns:170px minmax(0,1fr);gap:22px;align-items:start}.manual-list{min-width:0;background:var(--soft);padding:12px;border-radius:12px}.manual-list>.btn{width:100%;margin-bottom:10px}.manual-list h3{font-size:calc(14px * var(--text-scale,1));margin-bottom:10px}.manual-list-row{display:flex;direction:ltr;align-items:center;gap:6px;margin:8px 0}.manual-list-row bdi{font-weight:700;white-space:nowrap}.manual-list-row input{width:0;min-width:0;flex:1;min-height:42px;border:1px solid #a8c4b6;border-radius:7px;background:white;padding:5px;direction:ltr;text-align:center;font-size:calc(17px * var(--text-scale,1))}.manual-form{min-width:0}.manual-form h3{text-align:center;font-size:calc(17px * var(--text-scale,1))}.manual-placeholder{border:1px dashed #b9cfc2;border-radius:13px;padding:30px 15px;text-align:center;color:var(--muted)}.manual-triangle{width:100%;max-width:360px;height:auto;aspect-ratio:260/225}.manual-triangle .triangle-slot{width:32%;gap:3px}.manual-triangle .triangle-slot.top{top:18%;left:34%}.manual-triangle .triangle-slot.left{top:63%;left:12%}.manual-triangle .triangle-slot.right{top:63%;left:56%}.manual-triangle .triangle-slot input{width:100%;min-width:0;max-width:100px;min-height:40px;padding:4px;font-size:calc(20px * var(--text-scale,1))}.manual-answer{margin-top:15px}.manual-answer label{display:block;margin-bottom:7px;font-weight:700}.manual-answer input{width:100%;min-width:0;min-height:46px;padding:8px 10px;border:2px solid var(--green);border-radius:9px;background:white;font-size:calc(21px * var(--text-scale,1));direction:ltr;text-align:left}.manual-answer .btn{width:100%;margin-top:10px}.manual-note{margin:14px 0 0}.manual-status{min-height:0}.manual-status:empty{display:none}
     @media(max-width:570px){.formula-tab{padding:8px 5px;font-size:calc(13px * var(--text-scale,1))}.manual-choices{gap:7px}.manual-choice{padding:9px}.manual-choice strong{font-size:calc(13px * var(--text-scale,1))}.manual-choice bdi{font-size:calc(12px * var(--text-scale,1))}.manual-workspace{grid-template-columns:84px minmax(0,1fr);gap:10px}.manual-list{padding:6px}.manual-list>.btn{padding:7px 3px;font-size:calc(13px * var(--text-scale,1))}.manual-list h3{font-size:calc(12px * var(--text-scale,1));line-height:1.5}.manual-list-row{gap:3px}.manual-list-row bdi{font-size:calc(14px * var(--text-scale,1))}.manual-list-row input{min-height:36px;padding:3px;font-size:calc(16px * var(--text-scale,1))}.manual-triangle .triangle-slot{gap:2px}.manual-triangle .triangle-slot strong{font-size:calc(17px * var(--text-scale,1))}.manual-triangle .triangle-slot input{min-height:28px;height:28px;font-size:calc(16px * var(--text-scale,1));padding:2px}.manual-form h3{font-size:calc(14px * var(--text-scale,1))}.manual-answer label{font-size:calc(14px * var(--text-scale,1))}.manual-answer .btn{font-size:calc(13px * var(--text-scale,1));padding:9px 6px}.manual-answer input{font-size:calc(18px * var(--text-scale,1))}.manual-list .small{font-size:calc(11px * var(--text-scale,1))}}
     @media(max-width:570px){.sim-layout{display:flex;flex-direction:column;gap:14px}.sim-layout>div:first-child{display:contents}.sim-layout .diagram{order:0;width:100%}.sim-layout .sim-controls{order:1;width:100%}.sim-layout #sim-metrics{order:2;width:100%}.table-scroll table,.table-scroll tbody{display:block;width:100%}.table-scroll caption{display:block;width:100%;white-space:normal}.table-scroll thead{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}.table-scroll tbody tr{display:block;margin-bottom:12px;border:1px solid var(--line);border-radius:10px;overflow:hidden}.table-scroll tbody td{display:flex;align-items:center;justify-content:space-between;gap:12px;white-space:normal;padding:8px 12px}.table-scroll tbody td::before{content:attr(data-label);color:var(--muted);font-size:calc(13px * var(--text-scale,1))}.table-scroll tbody td:last-child{border-bottom:0}}
-    .skip-link{position:fixed;top:-100px;right:12px;z-index:10000;background:#182e3c;color:white;padding:12px 18px;border-radius:8px}.skip-link:focus{top:12px}.top-tools{max-width:720px}.top-tools .btn{min-width:0;overflow-wrap:anywhere}.profile-dialog{max-width:650px}.profile-fields{display:grid;grid-template-columns:1fr 1fr;gap:14px}.profile-fields label{display:block;font-weight:700}.profile-fields input{display:block;min-width:0;width:100%;min-height:46px;padding:9px;border:1px solid #a8c4b6;border-radius:9px;background:white;color:var(--ink)}.terms-document{margin:18px 0;border:1px solid var(--line);border-radius:12px;padding:13px}.terms-document summary,.profile-accessibility summary{cursor:pointer;font-weight:700;min-height:44px;align-content:center}.terms-document p,.terms-document li{font-size:calc(14px * var(--text-scale,1))}.terms-document h3{font-size:calc(17px * var(--text-scale,1));margin-top:18px}.consent-row{display:flex;align-items:flex-start;gap:10px;margin:18px 0;font-size:calc(14px * var(--text-scale,1))}.consent-row input{flex:0 0 22px;width:22px;height:22px;margin:2px 0;accent-color:var(--green)}.profile-accessibility{margin-top:18px}.accessibility-dialog{max-width:650px}.accessibility-options{display:grid;gap:12px;margin:14px 0}.accessibility-options label{display:flex;align-items:center;gap:10px;min-height:44px}.accessibility-options input[type=checkbox]{width:22px;height:22px;accent-color:var(--green)}.accessibility-options select{min-height:44px;padding:7px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink)}.text-scale-150 .manual-workspace{grid-template-columns:1fr}.text-scale-150 .manual-list{max-width:none}.text-scale-150 .manual-list-row input{max-width:220px}.high-contrast{--paper:#fff;--card:#fff;--ink:#000;--muted:#242424;--line:#333;--green:#005b4f;--soft:#e8f4ed}.high-contrast .triangle svg path{stroke:#000}.high-contrast .manual-choice,.high-contrast .formula-tab,.high-contrast .level{border-color:#000}.reduce-motion *,.reduce-motion *::before,.reduce-motion *::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}.highlight-links a,.highlight-links .text-btn{text-decoration:underline;text-decoration-thickness:2px}.personal-progress{margin-top:28px}.personal-progress h2:focus,#sim-title:focus{outline:3px solid #c38330;outline-offset:4px}.progress-heading{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}.personal-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:18px 0}.personal-stat{border:1px solid var(--line);border-radius:12px;padding:13px}.personal-stat strong{display:block;font-size:calc(25px * var(--text-scale,1));color:var(--green)}.personal-chart{margin:22px 0}.personal-chart-row{display:grid;grid-template-columns:115px minmax(0,1fr) 58px;align-items:center;gap:12px;margin:16px 0;font-size:calc(14px * var(--text-scale,1))}.personal-bar{height:25px;border-radius:6px;overflow:hidden;background:#e2e9e2;border:1px solid #c9d8cd}.personal-bar>div{height:100%;background:var(--green);min-width:0}.personal-rate{direction:ltr;text-align:left;font-weight:700}.personal-progress .table-scroll th,.personal-progress .table-scroll td{white-space:normal}.personal-progress .table-scroll td:first-child{font-weight:700}.sim-jump{margin-top:10px}.simulator{background:#050505;color:#fff;border-color:#555}.simulator .eyebrow,.simulator .muted,.simulator .small,.simulator .metric small,.simulator caption{color:#fff}.simulator .sim-controls,.simulator .metric,.simulator th,.simulator .btn.secondary{background:#111;color:#fff;border-color:#666}.simulator .sim-value,.simulator .metric bdi{color:#fff}.simulator td[data-label="זרם"] bdi,.simulator .metric:nth-child(2) bdi{color:#ff6565}.simulator td[data-label="מתח"] bdi{color:#65e680}.simulator .diagram-preview,.simulator .diagram-preview:hover{background:#000;color:#fff}.simulator .diagram-open-label{color:#fff}.simulator .metric,.simulator .table-scroll td,.simulator .table-scroll tbody tr{border-color:#666}.simulator th{color:#fff}.simulator input[type=range],.simulator input[type=checkbox]{accent-color:#fff}.sim-legend{display:flex;gap:18px;flex-wrap:wrap;font-size:calc(13px * var(--text-scale,1));margin:12px 0;color:#fff}.sim-legend .current{color:#ff6565}.sim-legend .voltage{color:#65e680}.simulator .table-scroll tbody td::before{color:#fff}.dark-diagram .diagram-viewport{background:#000;border-color:#666}.manual-choice svg{display:block;max-width:115px;width:100%;height:auto;margin:6px auto}.manual-choice math{font-size:calc(15px * var(--text-scale,1))}.formula-lines math{margin:3px 0}.mathml{font-family:"Cambria Math","STIX Two Math","Times New Roman",serif;direction:ltr;unicode-bidi:isolate;max-width:100%}.formula-networks .math{overflow-x:auto;max-width:100%}.formula-card .mathml{font-size:calc(20px * var(--text-scale,1))}select:focus-visible,textarea:focus-visible,[tabindex]:focus-visible{outline:3px solid #c38330;outline-offset:3px}
+    .skip-link{position:fixed;top:-100px;right:12px;z-index:10000;background:#182e3c;color:white;padding:12px 18px;border-radius:8px}.skip-link:focus{top:12px}.top-tools{max-width:720px}.top-tools .btn{min-width:0;overflow-wrap:anywhere}.profile-dialog{max-width:650px}.profile-fields{display:grid;grid-template-columns:1fr 1fr;gap:14px}.profile-fields label{display:block;font-weight:700}.profile-fields input{display:block;min-width:0;width:100%;min-height:46px;padding:9px;border:1px solid #a8c4b6;border-radius:9px;background:white;color:var(--ink)}.terms-document{margin:18px 0;border:1px solid var(--line);border-radius:12px;padding:13px}.terms-document summary,.profile-accessibility summary{cursor:pointer;font-weight:700;min-height:44px;align-content:center}.terms-document p,.terms-document li{font-size:calc(14px * var(--text-scale,1))}.terms-document h3{font-size:calc(17px * var(--text-scale,1));margin-top:18px}.consent-row{display:flex;align-items:flex-start;gap:10px;margin:18px 0;font-size:calc(14px * var(--text-scale,1))}.consent-row input{flex:0 0 22px;width:22px;height:22px;margin:2px 0;accent-color:var(--green)}.profile-accessibility{margin-top:18px}.accessibility-dialog{max-width:650px}.accessibility-options{display:grid;gap:12px;margin:14px 0}.accessibility-options label{display:flex;align-items:center;gap:10px;min-height:44px}.accessibility-options input[type=checkbox]{width:22px;height:22px;accent-color:var(--green)}.accessibility-options select{min-height:44px;padding:7px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink)}.text-scale-150 .manual-workspace{grid-template-columns:1fr}.text-scale-150 .manual-list{max-width:none}.text-scale-150 .manual-list-row input{max-width:220px}.high-contrast{--paper:#fff;--card:#fff;--ink:#000;--muted:#242424;--line:#333;--green:#005b4f;--soft:#e8f4ed}.high-contrast .triangle svg path{stroke:#000}.high-contrast .manual-choice,.high-contrast .formula-tab,.high-contrast .level{border-color:#000}.reduce-motion *,.reduce-motion *::before,.reduce-motion *::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}.highlight-links a,.highlight-links .text-btn{text-decoration:underline;text-decoration-thickness:2px}.personal-progress{margin-top:28px}.personal-progress h2:focus,#sim-title:focus{outline:3px solid #c38330;outline-offset:4px}.progress-heading{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}.personal-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:18px 0}.personal-stat{border:1px solid var(--line);border-radius:12px;padding:13px}.personal-stat strong{display:block;font-size:calc(25px * var(--text-scale,1));color:var(--green)}.personal-chart{margin:22px 0}.personal-chart-row{display:grid;grid-template-columns:115px minmax(0,1fr) 58px;align-items:center;gap:12px;margin:16px 0;font-size:calc(14px * var(--text-scale,1))}.personal-bar{height:25px;border-radius:6px;overflow:hidden;background:#e2e9e2;border:1px solid #c9d8cd}.personal-bar>div{height:100%;background:#116e65;min-width:0}.personal-rate{direction:ltr;text-align:left;font-weight:700}.personal-progress .table-scroll th,.personal-progress .table-scroll td{white-space:normal}.personal-progress .table-scroll td:first-child{font-weight:700}.sim-jump{margin-top:10px}.simulator{background:#050505;color:#fff;border-color:#555}.simulator .eyebrow,.simulator .muted,.simulator .small,.simulator .metric small,.simulator caption{color:#fff}.simulator .sim-controls,.simulator .metric,.simulator th,.simulator .btn.secondary{background:#111;color:#fff;border-color:#666}.simulator .sim-value,.simulator .metric bdi{color:#fff}.simulator td[data-label="זרם"] bdi,.simulator .metric:nth-child(2) bdi{color:#ff6565}.simulator td[data-label="מתח"] bdi{color:#65e680}.simulator .diagram-preview,.simulator .diagram-preview:hover{background:#000;color:#fff}.simulator .diagram-open-label{color:#fff}.simulator .metric,.simulator .table-scroll td,.simulator .table-scroll tbody tr{border-color:#666}.simulator th{color:#fff}.simulator input[type=range],.simulator input[type=checkbox]{accent-color:#fff}.sim-legend{display:flex;gap:18px;flex-wrap:wrap;font-size:calc(13px * var(--text-scale,1));margin:12px 0;color:#fff}.sim-legend .current{color:#ff6565}.sim-legend .voltage{color:#65e680}.simulator .table-scroll tbody td::before{color:#fff}.dark-diagram .diagram-viewport{background:#000;border-color:#666}.manual-choice svg{display:block;max-width:115px;width:100%;height:auto;margin:6px auto}.manual-choice math{font-size:calc(15px * var(--text-scale,1))}.formula-lines math{margin:3px 0}.mathml{font-family:"Cambria Math","STIX Two Math","Times New Roman",serif;direction:ltr;unicode-bidi:isolate;max-width:100%}.formula-networks .math{overflow-x:auto;max-width:100%}.formula-card .mathml{font-size:calc(20px * var(--text-scale,1))}select:focus-visible,textarea:focus-visible,[tabindex]:focus-visible{outline:3px solid #c38330;outline-offset:3px}
     @media(max-width:570px){.top-tools{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));max-width:none}.profile-fields{grid-template-columns:1fr}.personal-summary{gap:6px}.personal-stat{padding:9px}.personal-stat strong{font-size:calc(21px * var(--text-scale,1))}.personal-stat .small{font-size:calc(11px * var(--text-scale,1))}.personal-chart-row{grid-template-columns:82px minmax(0,1fr) 43px;gap:7px;font-size:calc(12px * var(--text-scale,1))}.personal-chart-row .personal-rate{font-size:calc(12px * var(--text-scale,1))}.personal-progress .table-scroll tbody td{gap:10px}.personal-progress .table-scroll tbody td::before{max-width:55%}.text-scale-150 .top-tools,.text-scale-150 .tabs,.text-scale-150 .formula-tabs,.text-scale-150 .manual-choices{grid-template-columns:1fr}.text-scale-150 .personal-summary{grid-template-columns:1fr}.text-scale-150 .personal-chart-row{grid-template-columns:1fr;gap:5px}.text-scale-150 .personal-rate{text-align:right}}
     @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
 
     .text-scale-125 .triangle:not(.manual-triangle){height:265px}.text-scale-150 .triangle:not(.manual-triangle){height:300px}.text-scale-125 .triangle:not(.manual-triangle) .triangle-slot.top,.text-scale-150 .triangle:not(.manual-triangle) .triangle-slot.top{top:18%}.text-scale-125 .triangle:not(.manual-triangle) .triangle-slot.left,.text-scale-125 .triangle:not(.manual-triangle) .triangle-slot.right,.text-scale-150 .triangle:not(.manual-triangle) .triangle-slot.left,.text-scale-150 .triangle:not(.manual-triangle) .triangle-slot.right{top:63%}
-    :root{--paper:#f5f8fc;--card:#fff;--ink:#162d4b;--muted:#52677e;--line:#dbe4ef;--green:#245fce;--soft:#eaf1ff;--shadow:0 8px 28px #19396506}
-    .app{max-width:1320px}.topbar{padding-bottom:16px}.brand-icon{background:var(--green)}.top-tools{max-width:none}.hero{padding:20px 0 8px}.hero-symbol,.hero .pills{display:none}.hero-copy{max-width:none}.hero h1{font-size:clamp(25px,4vw,34px);margin-bottom:6px}.hero-copy p{font-size:16px;margin-bottom:12px}.app-tabs{grid-template-columns:repeat(4,minmax(0,1fr));padding:6px;background:#e9eff8;border-radius:16px}.app-tabs .tab{background:transparent;min-height:58px;text-align:center}.app-tabs .tab[aria-selected=true]{background:var(--card);color:var(--green);box-shadow:0 2px 10px #1b3b7010}.topic-tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px}.topic-tabs .level[aria-pressed=true]{background:var(--soft)}.personal-progress{margin-top:0}.given,.sim-controls,th,.formula-context{background:#f1f5fc}.answer-wrap input{border-color:#9cb8ea}.formula-page{padding:22px}.formula-tabs{max-width:800px}.simulator{margin-top:0;background:var(--card);color:var(--ink);border-color:var(--line)}.simulator .eyebrow,.simulator .sim-value{color:var(--green)}.simulator .muted,.simulator .small,.simulator .metric small,.simulator caption{color:var(--muted)}.simulator .metric,.simulator th,.simulator .btn.secondary{background:var(--card);color:var(--ink);border-color:var(--line)}.simulator .metric bdi{color:var(--ink)}.simulator .sim-controls{background:#f1f5fc;color:var(--ink);border-color:var(--line)}.simulator .table-scroll td,.simulator .table-scroll tbody tr{border-color:var(--line)}.simulator td[data-label="זרם"] bdi{color:#be4141}.simulator td[data-label="מתח"] bdi{color:#147565}.simulator .table-scroll tbody td::before{color:var(--muted)}.simulator input[type=range],.simulator input[type=checkbox]{accent-color:var(--green)}.lab-toolbar,.library-buttons,.lab-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.lab-toolbar{margin:16px 0}.lab-toolbar>label{display:flex;align-items:center;gap:8px}.lab-toolbar select,.lab-toolbar input,.part-row input,.part-row select,.meter-controls select{min-height:44px;min-width:0;padding:8px 10px;border:1px solid #b5c8e2;border-radius:9px;background:white;color:var(--ink);max-width:100%}.lab-toolbar input{width:110px;direction:ltr}.lab-toolbar .toggle{min-height:44px}.lab-toolbar .toggle input{width:20px;height:20px;min-height:20px;padding:0;flex:0 0 20px}.lab-grid{display:grid;grid-template-columns:minmax(0,1fr) 310px;gap:20px;align-items:start}.lab-stage{border:1px solid var(--line);background:#fafcff;border-radius:14px;overflow:auto;direction:ltr}.lab-stage svg{display:block;min-width:660px;width:100%;height:auto}.lab-stage svg [role=button]{cursor:pointer}.lab-stage svg [role=button]:focus{outline:none;filter:drop-shadow(0 0 4px #245fce)}.library{padding:16px;background:#f1f5fc;border-radius:13px;margin-bottom:14px}.library h3{font-size:18px;margin-bottom:10px}.library-buttons{display:grid;grid-template-columns:1fr 1fr}.library-buttons .btn{font-size:14px;background:white;color:var(--green);border:1px solid #c6d7f3;min-height:52px}.part-row{padding:13px;border:1px solid var(--line);border-radius:12px;margin-bottom:10px;background:white}.part-head{display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:10px}.part-fields{display:grid;grid-template-columns:1fr 1fr;gap:8px}.part-fields label{font-size:13px;display:grid;gap:4px;min-width:0}.part-fields input,.part-fields select{width:100%}.control-row{margin-top:10px;padding-top:10px;border-top:1px solid var(--line)}.control-row .lab-actions{justify-content:space-between;margin-bottom:8px}.part-delete{background:transparent;color:#985046;min-height:40px;padding:5px 9px}.control-badge{font-size:12px;padding:3px 8px;border-radius:20px;background:#eef2f7;color:var(--muted)}.control-badge.on{color:#116747;background:#e4f5ec}.lab-grid .metrics{grid-template-columns:repeat(3,minmax(0,1fr))}.lab-grid .metric bdi{font-size:18px}.meter-card{padding:16px;border:1px solid #c6d7f3;border-radius:13px;background:#f5f8ff;margin-top:16px}.meter-top{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}.meter-buttons{display:flex;gap:6px;flex-wrap:wrap}.meter-buttons .btn{font-size:14px}.meter-buttons [aria-pressed=true]{background:var(--green);color:white;border-color:var(--green)}.meter-reading{display:block;direction:ltr;font-variant-numeric:tabular-nums;font-size:32px;font-weight:700;letter-spacing:.03em;padding:12px 0}.meter-controls{display:grid;grid-template-columns:1fr 1fr;gap:10px}.meter-controls label{display:grid;gap:5px;font-size:13px;min-width:0}.meter-note{margin-bottom:0;margin-top:10px}.lab-legend{display:flex;gap:14px;flex-wrap:wrap;margin:12px 0;font-size:13px;color:var(--muted)}.lab-legend .current{color:#be4141}.lab-legend .voltage{color:#147565}.lab-note{font-size:13px;padding:12px 0;color:var(--muted);margin:0}.coil-section{margin-top:16px;border-top:1px solid var(--line);padding-top:14px}.coil-section h3{font-size:18px}.coil-section svg{max-width:100%;height:auto;display:block}.lab-table{margin-top:16px;border:1px solid var(--line);border-radius:10px;padding:8px 12px}.lab-table summary{cursor:pointer;min-height:40px;align-content:center;font-weight:700;font-size:14px}.lab-status{font-size:14px;margin:10px 0}.lab-status:empty{display:none}.high-contrast{--green:#123d88;--line:#333;--soft:#e9f0ff}.high-contrast .lab-stage,.high-contrast .library,.high-contrast .meter-card{background:white}.high-contrast .control-badge{color:#111}.text-scale-150 .lab-grid{grid-template-columns:1fr}.text-scale-150 .part-fields{grid-template-columns:1fr}.dark-diagram .diagram-viewport{background:#fafcff;border-color:var(--line)}
-    @media(max-width:1000px){.lab-grid{display:flex;flex-direction:column}.lab-results{display:contents}.lab-stage{order:0;width:100%}.lab-legend{order:1}.lab-editor{order:2;width:100%;display:grid;grid-template-columns:1fr 1fr;gap:12px}.library{grid-column:1/-1}.part-row{margin-bottom:0}#lab-metrics{order:3;width:100%}.meter-card{order:4;width:100%}.coil-section{order:5;width:100%}.lab-note{order:6}.topbar{flex-wrap:wrap}}
-    @media(max-width:570px){.app-tabs{grid-template-columns:repeat(2,minmax(0,1fr));gap:4px}.app-tabs .tab{min-height:53px;padding:8px}.app-tabs .tab span{font-size:11px}.hero h1{font-size:25px}.hero .eyebrow{display:none}.hero-copy p{font-size:14px}.top-tools{grid-template-columns:repeat(3,minmax(0,1fr));width:100%}.top-tools .btn{font-size:12px;padding:7px}.topic-tabs .level{flex:1;font-size:13px;padding:9px 6px}.formula-page{padding:14px}.lab-editor,.meter-controls{grid-template-columns:1fr}.lab-grid .metrics{grid-template-columns:1fr 1fr}.lab-toolbar>label{flex:1;justify-content:space-between;min-width:145px}.lab-toolbar>.btn{flex:1}.lab-stage svg{min-width:660px}.lab-grid .metric bdi{font-size:17px}.meter-buttons{width:100%}.meter-buttons .btn{flex:1;padding:8px 6px;font-size:13px}.simulator .sim-head h2{font-size:24px}.coil-section{overflow:auto}.coil-section svg{min-width:520px}.lab-toolbar .toggle{margin:0}.formula-tabs{flex-wrap:wrap}.formula-tab{min-width:120px}}
     body{font-size:calc(16px * var(--text-scale,1))}.text-scale-125 .progress-row,.text-scale-150 .progress-row{flex-wrap:wrap}.text-scale-125 .manual-triangle input,.text-scale-150 .manual-triangle input{height:40px;min-height:40px}.attempt-values{display:inline-flex;gap:5px;flex-wrap:wrap;align-items:center}
   </style>
 </head>
@@ -57,29 +51,18 @@ APP_HTML = r'''<!doctype html>
 <div class="app" id="app">
   <header class="topbar">
     <div class="identity"><div class="brand-icon" aria-hidden="true">ϟ</div><div><div class="brand-title">יסודות החשמל</div><div class="eyebrow">תרגול למתחילים · DC</div></div></div>
-    <div class="top-tools"><button class="btn secondary tiny" data-open-calculator>מחשבון</button><button class="btn secondary tiny" data-open-profile id="profile-label">הפרופיל שלי</button><button class="btn secondary tiny" data-open-accessibility>נגישות</button><button class="btn secondary tiny" id="text-size" aria-pressed="false" aria-label="הגדלת טקסט">א+</button></div>
+    <div class="top-tools"><button class="btn secondary" data-open-formulas>דף נוסחאות △</button><button class="btn secondary" data-open-calculator>מחשבון</button><button class="btn secondary" id="text-size" aria-pressed="false" aria-label="הגדלת טקסט">א+</button><button class="btn secondary" data-open-profile id="profile-label">הפרופיל שלי</button><button class="btn secondary" data-show-progress>התקדמות אישית</button><button class="btn secondary" data-open-accessibility>נגישות</button></div>
   </header>
   <section class="hero"><div class="hero-copy"><div class="eyebrow">לומדים להבין, ואז לחשב</div><h1>חשמל, צעד אחרי צעד.</h1><p>תרגול קצר של חוק אום, הספק ומעגלים. מתחילים במספרים שלמים ומתקדמים לעשרוניים — עם מחשבון, רמזים ודף נוסחאות בכל שלב.</p><div class="pills"><span class="pill">מקור DC בלבד</span><span class="pill">ללא חישובי שורש</span><span class="pill">5 תרגילים בכל רמה</span><span class="pill">תרגילים חדשים בכל כניסה</span></div></div><div class="hero-symbol" aria-hidden="true">U = I × R<small>להבין את הקשר בין הנתונים</small></div></section>
-  <nav class="tabs app-tabs" role="tablist" aria-label="מסכי האפליקציה">
-    <button id="page-tab-practice" class="tab" data-page="practice" role="tab" aria-controls="practice-panel" aria-selected="true" tabindex="0">תרגול<span>שאלות לפי נושא ורמה</span></button>
-    <button id="page-tab-simulator" class="tab" data-page="simulator" role="tab" aria-controls="simulator-panel" aria-selected="false" tabindex="-1">סימולטור<span>בונים, מפעילים ומודדים</span></button>
-    <button id="page-tab-formulas" class="tab" data-page="formulas" role="tab" aria-controls="formula-dialog" aria-selected="false" tabindex="-1">נוסחאות<span>משולשים וכלי עזר</span></button>
-    <button id="page-tab-progress" class="tab" data-page="progress" role="tab" aria-controls="progress-panel" aria-selected="false" tabindex="-1">התקדמות<span>התוצאות והדרך שלכם</span></button>
+  <nav class="tabs" role="tablist" aria-label="תחומי התרגול">
+    <button id="tab-ohm" class="tab" data-tab="ohm" role="tab" aria-controls="workspace" aria-selected="true" tabindex="0">חוק אום והספק<span>מתח · זרם · התנגדות · הספק</span></button>
+    <button id="tab-series" class="tab" data-tab="series" role="tab" aria-controls="workspace" aria-selected="false" tabindex="-1">מעגל טורי<span>אותו זרם בכל הרכיבים</span></button>
+    <button id="tab-parallel" class="tab" data-tab="parallel" role="tab" aria-controls="workspace" aria-selected="false" tabindex="-1">מעגל מקבילי<span>אותו מתח בכל הענפים</span></button>
   </nav>
-  <main id="learning-main" tabindex="-1" aria-label="תרגול, סימולציה והתקדמות"><div id="storage-notice" class="feedback error" role="status" hidden></div>
-  <section id="practice-panel" role="tabpanel" aria-labelledby="page-tab-practice">
-  <nav class="topic-tabs" aria-label="נושא התרגול">
-    <button id="tab-ohm" class="level" data-tab="ohm" aria-controls="workspace" aria-pressed="true" tabindex="0">חוק אום והספק<span>מתח · זרם · התנגדות · הספק</span></button>
-    <button id="tab-series" class="level" data-tab="series" aria-controls="workspace" aria-pressed="false" tabindex="-1">מעגל טורי<span>אותו זרם בכל הרכיבים</span></button>
-    <button id="tab-parallel" class="level" data-tab="parallel" aria-controls="workspace" aria-pressed="false" tabindex="-1">מעגל מקבילי<span>אותו מתח בכל הענפים</span></button>
-  </nav>
-  <section id="workspace" aria-labelledby="tab-ohm"></section></section>
-  <section id="simulator-panel" class="card simulator" role="tabpanel" aria-labelledby="page-tab-simulator" hidden></section>
-  <section id="formula-dialog" class="card formula-page" role="tabpanel" aria-labelledby="page-tab-formulas" hidden><div class="dialog-head"><h2 id="formula-title">דף נוסחאות</h2><button class="btn secondary tiny" data-page="practice">חזרה לתרגול</button></div><nav class="formula-tabs" role="tablist" aria-label="תצוגת דף הנוסחאות"><button id="formula-tab-reference" class="formula-tab" data-formula-tab="reference" role="tab" aria-selected="true" aria-controls="formula-body" tabindex="0">נוסחאות</button><button id="formula-tab-help" class="formula-tab" data-formula-tab="help" role="tab" aria-selected="false" aria-controls="formula-body" tabindex="-1">עזרה</button><button id="formula-tab-manual" class="formula-tab" data-formula-tab="manual" role="tab" aria-selected="false" aria-controls="formula-body" tabindex="-1">פתירה בעזרת המשולש</button></nav><p class="formula-intro">החלק העליון במשולש הוא מכפלת שני החלקים התחתונים. כדי למצוא חלק תחתון, מחלקים את העליון בחלק התחתון הידוע. בלשונית עזרה מופיעים נתוני התרגיל ואפשר לענות במשולש המתאים.</p><div id="formula-body" role="tabpanel" aria-labelledby="formula-tab-reference" tabindex="0"></div></section>
-  <section id="progress-panel" role="tabpanel" aria-labelledby="page-tab-progress" hidden><section id="personal-progress" class="card personal-progress" aria-labelledby="personal-progress-title"></section></section></main>
+  <main id="learning-main" tabindex="-1" aria-label="תרגול והתקדמות"><div id="storage-notice" class="feedback error" role="status" hidden></div><section id="workspace" role="tabpanel" aria-labelledby="tab-ohm"></section><section id="personal-progress" class="card personal-progress" aria-labelledby="personal-progress-title"></section></main>
   <footer class="footer"><div>הפרופיל וההתקדמות האישית נשמרים בדפדפן במכשיר הזה. בכניסה מחדש נוצר סבב תרגול חדש.</div><div><button class="text-btn" data-open-formulas>דף נוסחאות</button><button class="text-btn" id="new-course">איפוס תרגילים</button><button class="text-btn" data-open-terms>תנאי שימוש ופרטיות</button><button class="text-btn" data-open-accessibility>הצהרת נגישות</button></div></footer>
 </div>
-
+<dialog id="formula-dialog" aria-labelledby="formula-title"><div class="dialog-head"><h2 id="formula-title">דף נוסחאות</h2><button class="close" data-close-dialog="formula-dialog" aria-label="סגירת דף הנוסחאות">×</button></div><nav class="formula-tabs" role="tablist" aria-label="תצוגת דף הנוסחאות"><button id="formula-tab-reference" class="formula-tab" data-formula-tab="reference" role="tab" aria-selected="true" aria-controls="formula-body" tabindex="0">נוסחאות</button><button id="formula-tab-help" class="formula-tab" data-formula-tab="help" role="tab" aria-selected="false" aria-controls="formula-body" tabindex="-1">עזרה</button><button id="formula-tab-manual" class="formula-tab" data-formula-tab="manual" role="tab" aria-selected="false" aria-controls="formula-body" tabindex="-1">פתירה בעזרת המשולש</button></nav><p class="formula-intro">החלק העליון במשולש הוא מכפלת שני החלקים התחתונים. כדי למצוא חלק תחתון, מחלקים את העליון בחלק התחתון הידוע. בלשונית עזרה מופיעים נתוני התרגיל ואפשר לענות במשולש המתאים.</p><div id="formula-body" role="tabpanel" aria-labelledby="formula-tab-reference" tabindex="0"></div></dialog>
 <dialog id="diagram-dialog" aria-labelledby="diagram-title"><div class="dialog-head"><h2 id="diagram-title">הגדלת הסכמה</h2><button class="close" data-close-dialog="diagram-dialog" aria-label="סגירת הסכמה המוגדלת">×</button></div><div class="diagram-toolbar" role="group" aria-label="הגדלת הסכמה"><button class="btn secondary tiny" data-diagram-zoom="in" aria-label="הגדלה">+</button><button class="btn secondary tiny" data-diagram-zoom="out" aria-label="הקטנה">−</button><button class="btn soft tiny" data-diagram-zoom="reset">התאמה למסך</button><bdi id="diagram-zoom-label" role="status" aria-live="polite">100%</bdi></div><p class="small muted">אפשר להגדיל באמצעות הכפתורים ולגלול בתוך הסכמה.</p><div class="diagram-viewport" id="diagram-viewport" tabindex="0" role="region" aria-label="סכמה מוגדלת — אפשר לגלול לצדדים ולמעלה ולמטה"><div class="diagram-canvas" id="diagram-canvas"></div></div></dialog>
 <dialog id="calculator-dialog" class="calc-dialog" aria-labelledby="calc-title"><div class="dialog-head"><h2 id="calc-title">מחשבון</h2><button class="close" data-close-dialog="calculator-dialog" aria-label="סגירת המחשבון">×</button></div><label class="small muted" for="calc-screen">חיבור, חיסור, כפל וחילוק</label><input id="calc-screen" class="calc-screen" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" maxlength="160" placeholder="12 ÷ 3"><div id="calc-result" class="calc-result" role="status" aria-live="polite"></div><div class="calc-grid" id="calc-grid"></div><p id="calc-error" class="feedback error" role="alert"></p><div class="calc-actions"><button class="btn" id="calc-use" disabled>העברה לתשובה</button><button class="btn secondary" id="calc-clear">ניקוי</button></div><button class="text-btn" data-open-formulas>דף נוסחאות △</button><p class="small muted" style="margin-top:12px;margin-bottom:0">המחשבון שומר על סדר פעולות חשבון. אפשר להשתמש בסוגריים. אין פונקציית שורש.</p></dialog>
 <dialog id="new-course-dialog" class="confirm-dialog" aria-labelledby="new-course-title"><div class="dialog-head"><h2 id="new-course-title">להתחיל סבב חדש?</h2><button class="close" data-close-dialog="new-course-dialog" aria-label="סגירה">×</button></div><p>התרגילים בסבב יוחלפו. ההתקדמות האישית, הגרף, הטבלה והפרופיל שלכם יישמרו.</p><div class="completion-actions"><button class="btn" id="new-course-confirm">כן, תרגילים חדשים</button><button class="btn secondary" data-close-dialog="new-course-dialog">חזרה לתרגול</button></div></dialog>
@@ -408,8 +391,7 @@ function applyPreferences() {
   $('text-size').setAttribute('aria-pressed',prefs.textScale!==100);
   document.querySelectorAll('[data-preference]').forEach(input => { const value = prefs[input.dataset.preference]; if (input.type==='checkbox') input.checked=value; else input.value=String(value); });
   if (typeof questions !== 'undefined' && questions && prefs.motion) for (const levels of Object.values(questions)) for (const list of levels) for (const q of list) q.simAnimate=false;
-  lab.animate = lab.animate && !prefs.motion;
-  if ($('lab-diagram')) updateSimulator();
+  if ($('sim-diagram')) updateSimulator();
   fitDialogs(); resizeFrame();
 }
 function paintProfileButton() { $('profile-label').textContent = profileReady() ? `שלום, ${personal.profile.name}` : 'הפרופיל שלי'; }
@@ -467,7 +449,7 @@ function renderProgress() {
   const table=rows.map(({name,value,accuracy,average})=>`<tr><td data-label="נושא">${name}</td><td data-label="שלבים שנוסו">${value.attempted}</td><td data-label="שלבים שהושלמו">${value.solved}</td><td data-label="דיוק בניסיון ראשון">${accuracy===null?'—':accuracy+'%'}</td><td data-label="ניסיונות"><span class="attempt-values">${value.attempts}<span class="small muted"> · ממוצע ${average}</span></span></td><td data-label="שלבים עם עזרה">${value.helped}</td></tr>`).join('');
   $('personal-progress').innerHTML=`<div class="progress-heading"><div><div class="eyebrow">לומדים להכיר את ההתקדמות</div><h2 id="personal-progress-title" tabindex="-1">ההתקדמות האישית${profileReady()?' של '+escapeHTML(personal.profile.name):''}</h2></div><button class="btn secondary tiny" data-new-course>איפוס תרגילים</button></div><p class="small muted">הנתונים נשמרים במכשיר הזה ומצטברים בין סבבי תרגול. איפוס תרגילים שומר על ההתקדמות האישית.</p><div class="personal-summary"><div class="personal-stat"><strong>${total.exercises}</strong><span class="small">תרגילים שהושלמו</span></div><div class="personal-stat"><strong>${rate(total)===null?'—':rate(total)+'%'}</strong><span class="small">דיוק בניסיון הראשון</span></div><div class="personal-stat"><strong>${total.attempts}</strong><span class="small">ניסיונות בסך הכול</span></div></div><h3>דיוק בניסיון הראשון לפי נושא</h3><div class="personal-chart" aria-label="גרף דיוק לפי נושא">${chart}</div><div class="table-scroll"><table><caption class="small muted">פירוט התרגול לפי נושאים</caption><thead><tr><th scope="col">נושא</th><th scope="col">שלבים שנוסו</th><th scope="col">שלבים שהושלמו</th><th scope="col">דיוק בניסיון ראשון</th><th scope="col">ניסיונות</th><th scope="col">שלבים עם עזרה</th></tr></thead><tbody>${table}</tbody></table></div><p class="small muted">הדיוק מחושב לפי השליחה הראשונה בכל צעד. מספר הניסיונות כולל בדיקות תשובה והצבה במשולש. עזרה כוללת רמזים, פתרון מוסבר, לשונית עזרה ומילוי רשימת הנתונים. עזרה נספרת פעם אחת בכל צעד, גם אם נעזרים שוב. גם רמז שמוצג אחרי טעות נחשב עזרה. שאלות הספק במעגל טורי או מקבילי נספרות גם בהספק וגם בנושא המעגל.</p>`;
 }
-function showProgress() { selectPage('progress'); $('personal-progress').scrollIntoView({behavior:personal.preferences.motion?'auto':'smooth',block:'start'});$('personal-progress-title').focus({preventScroll:true}); }
+function showProgress() { $('personal-progress').scrollIntoView({behavior:personal.preferences.motion?'auto':'smooth',block:'start'});$('personal-progress-title').focus({preventScroll:true}); }
 function initializePersonal() {
   document.querySelectorAll('[data-terms-document]').forEach(node=>node.innerHTML=termsHTML());
   $('profile-birth').max=localDateValue();
@@ -526,9 +508,9 @@ function diagramPreview(q, options = {}) {
 }
 function openDiagram(source) {
   diagramZoom = 1;
-  diagramSource=source;
   $('diagram-dialog').classList.toggle('dark-diagram',source==='simulator');
-  $('diagram-canvas').innerHTML = source==='simulator' ? labCircuitSVG(Lab.solve(lab)) : circuitSVG(currentQuestion());
+  const q = currentQuestion();
+  $('diagram-canvas').innerHTML = circuitSVG(q, source === 'simulator' ? { complete:true, voltage:q.simVoltage, animate:q.simAnimate } : {});
   $('diagram-canvas').style.width = '100%';
   openDialog('diagram-dialog');
   zoomDiagram('reset');
@@ -555,7 +537,7 @@ function contextTitle(q, step) {
 function render(focus = false) {
   const level = levels[tab], sequence = questions[tab][level], index = positions[tab][level], q = sequence[index], done = completed(q), step = currentStep();
   const doneCount = sequence.filter(completed).length;
-  document.querySelectorAll('[data-tab]').forEach(button => { const active = button.dataset.tab === tab; button.setAttribute('aria-pressed', active); button.tabIndex = 0; });
+  document.querySelectorAll('[data-tab]').forEach(button => { const active = button.dataset.tab === tab; button.setAttribute('aria-selected', active); button.tabIndex = active ? 0 : -1; });
   $('workspace').setAttribute('aria-labelledby', 'tab-' + tab);
   const levelButtons = questions[tab].map((list, j) => `<button class="level" data-level="${j}" aria-pressed="${j === level}">רמה ${letters[j]}<small>${j === 0 ? 'מספרים שלמים' : j === 1 ? 'מספרים עשרוניים' : 'שלושה ענפים'} · ${list.filter(completed).length}/5</small></button>`).join('');
   const given = Object.entries(q.givens).map(([key, value]) => `<div class="given"><small>${key === 'U' ? 'מתח המקור' : key === 'I' ? 'זרם נתון' : key === 'P' ? 'הספק נתון' : /^R\d/.test(key) ? `התנגדות ${key}${q.lamps[Number(key.slice(1)) - 1] ? ' · נורה' : ''}` : 'התנגדות נתונה'}</small>${bdi(`${key} = ${DC.fmt(value)} ${units[key[0]]}`)}</div>`).join('');
@@ -570,9 +552,9 @@ function render(focus = false) {
   const tools = `<div class="answer-tools"><button class="btn secondary tiny" data-open-formulas>דף נוסחאות △</button><button class="btn secondary tiny" data-open-calculator>מחשבון</button>${!done ? '<button class="btn soft tiny" data-hint>רמז</button><button class="text-btn small" data-solution>פתרון מוסבר</button>' : ''}</div>`;
   const next = done ? `<div class="completion-actions">${index < 4 ? '<button class="btn" data-next-question>לתרגיל הבא ←</button>' : level < questions[tab].length - 1 ? '<button class="btn" data-next-level>לרמה הבאה ←</button>' : '<button class="btn" data-new-course>סבב חדש</button>'}</div>${doneCount === 5 ? `<div class="level-note">השלמתם את חמשת התרגילים ברמה ${letters[level]}. ${level < questions[tab].length - 1 ? 'אפשר להתקדם לרמה הבאה.' : 'אפשר לעבור ללשונית אחרת או להתחיל סבב חדש.'}</div>` : ''}` : '';
   const descriptions = { ohm:'מתחילים בנתונים ידועים ומוצאים את הערך החסר.', series:'בטור הזרם זהה בכל הרכיבים. המתח מתחלק ביניהם.', parallel:level === 0 ? 'שני נגדים זהים במקביל. בכל ענף אותו מתח.' : level === 1 ? 'שני נגדים שונים במקביל. הזרמים תלויים בהתנגדויות.' : 'שלושה ענפים במקביל: נגדים זהים ושונים.' };
-  $('workspace').innerHTML = `<div class="course-head"><div><h2>${names[tab]}</h2><p class="muted small" style="margin:0">${descriptions[tab]}</p></div><div class="levels" aria-label="רמות תרגול">${levelButtons}</div></div><div class="progress-row"><span>תרגיל ${index + 1} מתוך 5 · רמה ${letters[level]}</span><div class="question-dots">${dots}</div></div><div class="progress-track" role="progressbar" aria-label="תרגילים שהושלמו ברמה" aria-valuemin="0" aria-valuemax="5" aria-valuenow="${doneCount}"><div style="width:${doneCount * 20}%"></div></div><div class="exercise-grid"><section class="card"><div class="exercise-title"><div class="eyebrow">הנתונים שלכם</div><h3 style="margin-top:6px">${q.title}</h3><p class="muted small" style="margin:0">${tab === 'ohm' ? 'המקור הוא מקור מתח ישר (DC). מצאו את הנעלם המבוקש.' : 'כל ההתנגדויות ומתח המקור נתונים. פתרו לפי הסדר.'}</p></div><div class="givens">${given}</div><figure class="diagram">${diagramPreview(q)}<figcaption>${q.lamps.some(Boolean) ? 'סימון עיגול עם X הוא נורה. בתרגול הנורה היא רכיב בעל התנגדות קבועה.' : 'מלבן הוא נגד. המקור הוא DC; U מציין מתח ו־I מציין זרם.'} לחצו על הסכמה להגדלה.</figcaption></figure><button class="btn sim-jump" data-go-simulator>פתח בסימולטור ←</button><p class="small muted" style="margin-top:8px">המעגל ונתוניו ייטענו לניסוי ומדידה.</p></section><section class="card ${done ? 'success-summary' : ''}">${active}<p id="rounding-text" class="rounding">${rounding}</p>${tools}<div class="feedback ${feedbackType}" id="form-feedback" role="status" aria-live="polite">${escapeHTML(feedback)}</div>${hints}${explain}${q.cursor ? `<div class="completed-steps"><strong class="small">החישובים שהשלמתם</strong>${rows}</div>` : ''}${next}</section></div>`;
-  if (activePage === 'formulas') renderFormulas();
-  if (focus && !done) requestAnimationFrame(() => (activePage === 'formulas' ? formulaAnswerField() : $('answer'))?.focus());
+  $('workspace').innerHTML = `<div class="course-head"><div><h2>${names[tab]}</h2><p class="muted small" style="margin:0">${descriptions[tab]}</p></div><div class="levels" aria-label="רמות תרגול">${levelButtons}</div></div><div class="progress-row"><span>תרגיל ${index + 1} מתוך 5 · רמה ${letters[level]}</span><div class="question-dots">${dots}</div></div><div class="progress-track" role="progressbar" aria-label="תרגילים שהושלמו ברמה" aria-valuemin="0" aria-valuemax="5" aria-valuenow="${doneCount}"><div style="width:${doneCount * 20}%"></div></div><div class="exercise-grid"><section class="card"><div class="exercise-title"><div class="eyebrow">הנתונים שלכם</div><h3 style="margin-top:6px">${q.title}</h3><p class="muted small" style="margin:0">${tab === 'ohm' ? 'המקור הוא מקור מתח ישר (DC). מצאו את הנעלם המבוקש.' : 'כל ההתנגדויות ומתח המקור נתונים. פתרו לפי הסדר.'}</p></div><div class="givens">${given}</div><figure class="diagram">${diagramPreview(q)}<figcaption>${q.lamps.some(Boolean) ? 'סימון עיגול עם X הוא נורה. בתרגול הנורה היא רכיב בעל התנגדות קבועה.' : 'מלבן הוא נגד. המקור הוא DC; U מציין מתח ו־I מציין זרם.'}${tab !== 'ohm' ? ' לאחר השלמת המעגל ייפתח הסימולטור. לחצו על הסכמה להגדלה.' : ''}</figcaption></figure>${done ? '<button class="btn sim-jump" data-go-simulator>סימולציה</button>' : ''}</section><section class="card ${done ? 'success-summary' : ''}">${active}<p id="rounding-text" class="rounding">${rounding}</p>${tools}<div class="feedback ${feedbackType}" id="form-feedback" role="status" aria-live="polite">${escapeHTML(feedback)}</div>${hints}${explain}${q.cursor ? `<div class="completed-steps"><strong class="small">החישובים שהשלמתם</strong>${rows}</div>` : ''}${next}</section></div>${done ? simulatorHTML(q) : ''}`;
+  if ($('formula-dialog').open) renderFormulas();
+  if (focus && !done) requestAnimationFrame(() => ($('formula-dialog').open ? formulaAnswerField() : $('answer'))?.focus());
   renderProgress(); fitDialogs(); resizeFrame();
 }
 function checkAnswer(value, mode = 'answer') {
@@ -598,241 +580,20 @@ function syncDraft(value, source) {
   currentQuestion().draft = value;
   document.querySelectorAll('[data-answer]').forEach(field => { if (field !== source) field.value = value; field.removeAttribute('aria-invalid'); });
 }
-// Template-based DC laboratory. Ideal meters and contacts; fixed-resistance lamps.
-const Lab = (() => {
-  function create() {
-    return {topology:'series',voltage:24,powered:false,animate:true,independentControl:false,controlVoltage:24,
-      nextId:3,loads:[{id:'l1',serial:1,kind:'resistor',r:12,nominal:24,controls:[]},{id:'l2',serial:2,kind:'lamp',r:24,nominal:24,controls:[]}],
-      targetLoad:'l1',meter:{tool:'voltage',red:'p',black:'n',nextProbe:'red',path:'main'},origin:''};
-  }
-  const tag = load => `${load.kind==='lamp'?'H':'R'}${load.serial}`;
-  const controlTag = part => `${part.kind==='switch'?'S':'K'}${part.serial}`;
-  function solve(state) {
-    const voltage=state.powered?state.voltage:0, controlVoltage=state.independentControl?state.controlVoltage:voltage;
-    const coils=state.loads.flatMap(load=>load.controls.filter(part=>part.kind==='contactor').map(part=>{
-      const u=part.command?controlVoltage:0;
-      return {id:part.id,tag:controlTag(part),voltage:u,current:u/part.coilR,power:u*u/part.coilR,
-        energized:part.command&&u>0&&u>=part.pickup,part};
-    }));
-    const coilMap=new Map(coils.map(coil=>[coil.id,coil]));
-    const groups=state.loads.map(load=>({id:load.id,label:tag(load),parts:[{...load,label:tag(load)},...load.controls.map(part=>{
-      const closed=part.kind==='switch'?part.closed:(part.mode==='NC'?!coilMap.get(part.id).energized:coilMap.get(part.id).energized);
-      return {...part,label:controlTag(part)+(part.kind==='contactor'?' '+part.mode:''),r:closed?0:Infinity,closed};
-    })]}));
-    const lanes=state.topology==='parallel'?groups:[{id:'series',label:'מעגל כוח',parts:groups.flatMap(group=>group.parts)}];
-    const nodes=[{id:'p',label:'מקור +',potential:voltage},{id:'n',label:'מקור −',potential:0}];
-    let short=false;
-    const branches=lanes.filter(lane=>lane.parts.length).map(lane=>{
-      const resistances=lane.parts.map(part=>part.r),isOpen=resistances.some(r=>!Number.isFinite(r));
-      const resistance=isOpen?Infinity:resistances.reduce((sum,r)=>sum+r,0),isShort=!isOpen&&resistance===0;
-      short ||= isShort;
-      const current=isShort?null:isOpen?0:voltage/resistance;
-      const potentials=Array(lane.parts.length+1).fill(null);potentials[0]=voltage;potentials[potentials.length-1]=0;
-      if(!isOpen&&!isShort){for(let j=1;j<potentials.length-1;j++)potentials[j]=potentials[j-1]-current*resistances[j-1];}
-      if(isOpen){
-        for(let j=0;j<resistances.length&&Number.isFinite(resistances[j]);j++)potentials[j+1]=voltage;
-        for(let j=resistances.length-1;j>=0&&Number.isFinite(resistances[j]);j--)potentials[j]=0;
-      }
-      const nodeIds=potentials.map((_,j)=>j===0?'p':j===potentials.length-1?'n':`${lane.id}:${j}`);
-      for(let j=1;j<potentials.length-1;j++)nodes.push({id:nodeIds[j],label:`${lane.label} · נקודה ${j}`,potential:potentials[j]});
-      const parts=lane.parts.map((part,j)=>({...part,from:nodeIds[j],to:nodeIds[j+1],
-        current,drop:potentials[j]===null||potentials[j+1]===null?null:potentials[j]-potentials[j+1],
-        power:current===null?null:Number.isFinite(part.r)?current*current*part.r:0}));
-      return {id:lane.id,label:lane.label,parts,current,resistance,isOpen,isShort};
-    });
-    for(const coil of coils){
-      const domain=state.independentControl?'control':'main';
-      nodes.push({id:`coil:${coil.id}:a1`,label:coil.tag+' · A1',potential:coil.voltage,domain},{id:`coil:${coil.id}:a2`,label:coil.tag+' · A2',potential:0,domain});
-    }
-    const loadCurrent=short?null:branches.reduce((sum,branch)=>sum+branch.current,0);
-    const coilCurrent=coils.reduce((sum,coil)=>sum+coil.current,0),coilPower=coils.reduce((sum,coil)=>sum+coil.power,0);
-    const sourceCurrent=loadCurrent===null?null:loadCurrent+(state.independentControl?0:coilCurrent);
-    const req=short?0:state.topology==='series'?(branches[0]?.resistance??Infinity):
-      (()=>{const conductance=branches.reduce((sum,branch)=>sum+1/branch.resistance,0);return conductance?1/conductance:Infinity;})();
-    const paths=[{id:'source',label:'מוליך המקור הראשי',current:sourceCurrent},{id:'main',label:'מעגל הכוח כולו',current:loadCurrent},
-      ...branches.map(branch=>({id:'branch:'+branch.id,label:state.topology==='parallel'?'ענף '+branch.label:branch.label,current:branch.current})),
-      ...coils.map(coil=>({id:'coil:'+coil.id,label:coil.tag+' · מוליך A1 של הסליל',current:coil.current}))];
-    return {voltage,controlVoltage,coils,branches,nodes,paths,short,loadCurrent,coilCurrent,coilPower,sourceCurrent,req,
-      power:sourceCurrent===null?null:voltage*sourceCurrent,loadPower:loadCurrent===null?null:voltage*loadCurrent};
-  }
-  function measure(model,meter) {
-    if(meter.tool==='voltage'){
-      const red=model.nodes.find(node=>node.id===meter.red),black=model.nodes.find(node=>node.id===meter.black);
-      return {value:!red||!black||red.potential===null||black.potential===null||(red.domain??'main')!==(black.domain??'main')?null:red.potential-black.potential,unit:'V'};
-    }
-    return {value:model.paths.find(path=>path.id===meter.path)?.current??null,unit:'A'};
-  }
-  return {create,solve,measure,tag,controlTag};
-})();
-let activePage='practice',lab=Lab.create(),labSnapshot=null,diagramSource='exercise';
-const pagePanels={practice:'practice-panel',simulator:'simulator-panel',formulas:'formula-dialog',progress:'progress-panel'};
-const labNumber=value=>value===null?'—':!Number.isFinite(value)?'∞':new Intl.NumberFormat('en-US',{maximumFractionDigits:4}).format(Math.abs(value)<1e-10?0:value);
-const labValue=(value,unit)=>bdi(`${labNumber(value)} ${unit}`);
-function selectPage(page,{focus=false}={}) {
-  if(!pagePanels[page])return;
-  activePage=page;
-  for(const [name,id]of Object.entries(pagePanels))$(id).hidden=name!==page;
-  document.querySelectorAll('[data-page][role=tab]').forEach(button=>{const selected=button.dataset.page===page;button.setAttribute('aria-selected',selected);button.tabIndex=selected?0:-1;});
-  document.querySelector('.hero').hidden=page!=='practice';
-  if(page==='simulator')renderSimulator();
-  if(page==='formulas')renderFormulas();
-  if(page==='progress')renderProgress();
-  if(focus)$('page-tab-'+page).focus({preventScroll:true});
-  resizeFrame();
+function simulatorHTML(q) {
+  return `<section class="card simulator" id="simulator-section" aria-labelledby="sim-title"><div class="sim-head"><div><div class="eyebrow">אחרי החישוב — רואים את המעגל</div><h2 id="sim-title" tabindex="-1" style="margin:5px 0">סימולטור DC</h2></div><button class="btn secondary tiny" data-open-formulas>דף נוסחאות △</button></div><div class="sim-layout"><div><figure class="diagram" id="sim-diagram">${diagramPreview(q, { complete:true, voltage:q.simVoltage, animate:q.simAnimate })}</figure><div class="sim-legend"><span class="current">→ I — זרם</span><span class="voltage">ΔU — מפל מתח</span><span>רכיבים ונתונים נוספים — לבן</span></div><div id="sim-metrics">${simMetrics(q)}</div></div><div class="sim-controls"><label for="sim-voltage">שינוי מתח המקור</label><div class="sim-value" id="sim-voltage-label">${bdi(`${DC.fmt(q.simVoltage)} V`)}</div><input id="sim-voltage" type="range" min="0" max="${DC.fmt(q.voltage * 2)}" step="0.1" value="${q.simVoltage}" aria-describedby="sim-note"><label class="toggle"><input id="sim-animation" type="checkbox" ${personal.preferences.motion ? 'disabled' : ''} ${q.simAnimate ? 'checked' : ''}>הנפשת מסלול הזרם</label><button class="btn secondary tiny" data-reset-simulator>חזרה למתח התרגיל</button><p class="small muted" id="sim-note" style="margin:6px 0 0">החצים מציגים זרם מוסכם: מהפלוס אל המינוס דרך המעגל החיצוני. הבהירות ממחישה את ההספק בנורה בעלת התנגדות קבועה. שינוי המתח כאן אינו משנה את תשובות התרגיל.</p></div></div></section>`;
 }
-function loadQuestionIntoLab() {
-  const q=currentQuestion(),physics=DC.physics(q.kind,q.voltage,q.resistances),fresh=Lab.create();
-  fresh.topology=q.kind==='parallel'?'parallel':'series';fresh.voltage=q.voltage;fresh.powered=true;fresh.animate=!personal.preferences.motion;
-  fresh.origin=`${names[q.kind]} · רמה ${letters[levels[tab]]} · תרגיל ${positions[tab][levels[tab]]+1}: ${q.title}`;
-  fresh.loads=q.resistances.map((r,j)=>({id:'l'+(j+1),serial:j+1,kind:q.lamps[j]?'lamp':'resistor',r,nominal:physics.drops[j]||q.voltage,controls:[]}));
-  fresh.nextId=fresh.loads.length+1;fresh.targetLoad=fresh.loads[0].id;
-  lab=fresh;labSnapshot=JSON.parse(JSON.stringify(fresh));selectPage('simulator');
-  $('sim-title').focus({preventScroll:true});$('learning-main').scrollIntoView({block:'start',behavior:personal.preferences.motion?'auto':'smooth'});
-}
-function findLabControl(id) {return lab.loads.flatMap(load=>load.controls).find(part=>part.id===id);}
-function labIcon(kind) {
-  const symbol=kind==='power'?'<path d="M12 3 V12 M7 6 A8 8 0 1 0 17 6"/>':kind==='lamp'?'<circle cx="12" cy="12" r="8"/><path d="M7 7 L17 17 M7 17 L17 7"/>':kind==='switch'?'<path d="M1 16 H5 L18 7 M19 16 H23"/><circle cx="5" cy="16" r="1.5"/><circle cx="19" cy="16" r="1.5"/>':kind==='contactor'?'<rect x="5" y="5" width="14" height="14"/><path d="M1 12 H5 M19 12 H23 M9 8 V16 M9 12 L15 8 M9 12 L15 16"/>':'<path d="M1 12 H5 M19 12 H23"/><rect x="5" y="8" width="14" height="8"/>';
-  return `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true">${symbol}</svg>`;
-}
-function simulatorHTML() {
-  const hasCoils=lab.loads.some(load=>load.controls.some(part=>part.kind==='contactor'));
-  return `<div class="sim-head"><div><div class="eyebrow">מעבדת חשמל · DC</div><h2 id="sim-title" tabindex="-1">בונים מעגל. רואים מה קורה.</h2><p class="small muted" style="margin:0">בחרו תבנית, הוסיפו רכיבים והפעילו את המקור.</p></div><div class="lab-actions"><button class="btn secondary tiny" data-lab-new>מעגל ידני חדש</button>${labSnapshot?'<button class="btn secondary tiny" data-lab-restore>שחזור נתוני השאלה</button><button class="btn soft tiny" data-page="practice">חזרה לשאלה</button>':''}</div></div>
-    ${lab.origin?`<div class="feedback success"><strong>נטען מהשאלה</strong> · ${escapeHTML(lab.origin)}<div class="small">השינויים כאן הם לניסוי; התרגיל והתשובות שלכם נשמרים.</div></div>`:''}
-    <div class="lab-toolbar"><button class="btn" id="lab-power" data-lab-power aria-pressed="${lab.powered}">${labIcon('power')}${lab.powered?'כיבוי המעגל':'הפעלת המעגל'}</button><label>תבנית<select id="lab-topology"><option value="series" ${lab.topology==='series'?'selected':''}>מעגל טורי</option><option value="parallel" ${lab.topology==='parallel'?'selected':''}>מעגל מקבילי</option></select></label><label for="lab-voltage">מקור DC ${bdi('V')}<input id="lab-voltage" type="number" min="0" max="1000" step="any" value="${lab.voltage}" inputmode="decimal"></label><label class="toggle"><input id="lab-animation" type="checkbox" ${lab.animate&&!personal.preferences.motion?'checked':''} ${personal.preferences.motion?'disabled':''}>הנפשת זרם</label><button class="btn secondary tiny" data-open-diagram="simulator">הגדלת המעגל ⤢</button></div>
-    <p id="lab-error" class="feedback error" role="alert" hidden></p>
-    <div class="lab-grid"><div class="lab-results"><div class="lab-stage" id="lab-diagram" aria-label="שרטוט המעגל; גלילה אופקית מאפשרת לראות את כל הרכיבים" tabindex="0"></div><div class="lab-legend"><span class="current">→ זרם מוסכם: מפלוס למינוס</span><span class="voltage">ΔU מתח על הרכיב</span><span>לחצו על מתג כדי לפתוח או לסגור</span></div><div id="lab-metrics"></div>
-    <section class="meter-card" aria-labelledby="meter-title"><div class="meter-top"><h3 id="meter-title" style="margin:0">כלי מדידה</h3><div class="meter-buttons">${[['voltage','מד מתח'],['ammeter','מד זרם'],['clamp','צבת זרם DC']].map(([tool,label])=>`<button class="btn secondary tiny" data-lab-meter="${tool}" aria-pressed="${lab.meter.tool===tool}">${label}</button>`).join('')}</div></div><output class="meter-reading" id="lab-reading" aria-live="polite"></output><div id="lab-meter-controls" class="meter-controls"></div><p id="lab-meter-note" class="small muted meter-note"></p></section>
-    ${hasCoils?`<section class="coil-section"><h3>מעגל פיקוד · סלילים ומגעים</h3><div class="lab-toolbar"><label class="toggle"><input id="lab-independent" type="checkbox" ${lab.independentControl?'checked':''}>מקור פיקוד נפרד</label>${lab.independentControl?`<label>מתח פיקוד ${bdi('V')}<input id="lab-control-voltage" type="number" min="0" max="1000" step="any" value="${lab.controlVoltage}" inputmode="decimal"></label>`:'<span class="small muted">הסלילים מוזנים מהמקור הראשי; זרמם נכלל בזרם המקור.</span>'}</div><div id="lab-coils"></div></section>`:''}
-    <p class="lab-note">מודל DC לימודי: נגד ונורה בעלי התנגדות קבועה; הבהירות תלויה בהספק ביחס למתח הנומינלי שהוגדר. המגעים וכלי המדידה אידיאליים. הסליל מופעל כאשר המתח מגיע לסף שהוגדר.</p></div>
-    <aside class="lab-editor" aria-label="רכיבי המעגל"><section class="library"><h3>הוספת רכיבים</h3><div class="library-buttons"><button class="btn" data-lab-add="resistor">${labIcon('resistor')} נגד</button><button class="btn" data-lab-add="lamp">${labIcon('lamp')} מנורה</button><button class="btn" data-lab-add="switch">${labIcon('switch')} מתג</button><button class="btn" data-lab-add="contactor">${labIcon('contactor')} מגען</button></div><label class="small" for="lab-target" style="display:block;margin-top:12px">המתג או מגע המגען יתווספו בטור לרכיב:</label><select id="lab-target" style="width:100%;min-height:44px;margin-top:5px">${lab.loads.map(load=>`<option value="${load.id}" ${lab.targetLoad===load.id?'selected':''}>${Lab.tag(load)} · ${load.kind==='lamp'?'מנורה':'נגד'}${lab.topology==='parallel'?' · ענף':''}</option>`).join('')}</select><p class="small muted" style="margin:8px 0 0">${lab.topology==='parallel'?'כל נגד או מנורה חדשים יוצרים ענף מקביל. רכיבי הפיקוד מחוברים בטור בענף שנבחר.':'הרכיבים מחוברים בטור. פתיחת מתג מנתקת את מעגל הכוח כולו.'}</p></section>${lab.loads.map(load=>labPartEditor(load)).join('')}</aside></div>`;
-}
-function labPartEditor(load) {
-  return `<section class="part-row"><div class="part-head"><strong>${bdi(Lab.tag(load))} · ${load.kind==='lamp'?'מנורה':'נגד'}${lab.topology==='parallel'?' / ענף':''}</strong><button class="part-delete" data-lab-remove-load="${load.id}" aria-label="מחיקת ${Lab.tag(load)} ורכיבי הפיקוד שלו">מחיקה ×</button></div><div class="part-fields"><label>סוג רכיב<select data-lab-load="${load.id}" data-lab-field="kind"><option value="resistor" ${load.kind==='resistor'?'selected':''}>נגד</option><option value="lamp" ${load.kind==='lamp'?'selected':''}>מנורה</option></select></label><label>התנגדות ${bdi('Ω')}<input type="number" min="0.1" max="1000000" step="any" inputmode="decimal" data-lab-load="${load.id}" data-lab-field="r" value="${load.r}"></label>${load.kind==='lamp'?`<label>מתח נומינלי ${bdi('V')}<input type="number" min="0.1" max="1000" step="any" inputmode="decimal" data-lab-load="${load.id}" data-lab-field="nominal" value="${load.nominal}"></label><span class="small muted" style="align-self:center">הספק נומינלי ${labValue(load.nominal*load.nominal/load.r,'W')}</span>`:''}</div>${load.controls.map(part=>`<div class="control-row"><div class="lab-actions"><strong class="small">${bdi(Lab.controlTag(part))} · ${part.kind==='switch'?'מתג':'מגען'}</strong><button class="part-delete" data-lab-remove-control="${part.id}" aria-label="מחיקת ${Lab.controlTag(part)}">×</button></div>${part.kind==='switch'?`<button class="btn secondary tiny" data-lab-toggle="${part.id}" aria-pressed="${part.closed}">${part.closed?'פתיחת המתג':'סגירת המתג'}</button>`:`<div class="lab-actions"><button class="btn secondary tiny" data-lab-toggle="${part.id}" aria-pressed="${part.command}">${part.command?'פתיחת מתג הפיקוד':'סגירת מתג הפיקוד'}</button><span class="control-badge" data-lab-coil-status="${part.id}"></span></div><div class="part-fields"><label>מגע במעגל הכוח<select data-lab-control="${part.id}" data-lab-field="mode"><option value="NO" ${part.mode==='NO'?'selected':''}>NO · פתוח במנוחה</option><option value="NC" ${part.mode==='NC'?'selected':''}>NC · סגור במנוחה</option></select></label><label>סף הפעלת סליל ${bdi('V')}<input type="number" min="0.1" max="1000" step="any" inputmode="decimal" data-lab-control="${part.id}" data-lab-field="pickup" value="${part.pickup}"></label><label>התנגדות סליל ${bdi('Ω')}<input type="number" min="0.1" max="1000000" step="any" inputmode="decimal" data-lab-control="${part.id}" data-lab-field="coilR" value="${part.coilR}"></label></div>`}</div>`).join('')}</section>`;
-}
-function renderSimulator() { $('simulator-panel').innerHTML=simulatorHTML();updateSimulator(); }
-function labMetrics(model) {
-  const summary=[['זרם מקור ראשי',model.sourceCurrent,'A'],['זרם מעגל כוח',model.loadCurrent,'A'],['הספק מקור ראשי',model.power,'W'],['התנגדות שקולה בכוח',model.req,'Ω'],['זרם סלילים',model.coilCurrent,'A'],['מתח מקור',model.voltage,'V']];
-  return `${model.short?'<p class="feedback error">קצר אידיאלי: קיים מסלול סגור ללא התנגדות. הוסיפו נגד או מנורה כדי לחשב זרם.</p>':''}${!lab.loads.length?'<p class="feedback">המעגל ריק. הוסיפו נגד או מנורה כדי להתחיל.</p>':''}<div class="metrics">${summary.map(([label,value,unit])=>`<div class="metric"><small>${label}</small>${labValue(value,unit)}</div>`).join('')}</div><details class="lab-table"><summary>מדידות לפי רכיב · מתח, זרם והספק</summary><div class="table-scroll"><table><caption class="small muted" style="text-align:right;margin-bottom:5px">מדידות הרכיבים במעגל הכוח</caption><thead><tr><th scope="col">רכיב</th><th scope="col">מתח</th><th scope="col">זרם</th><th scope="col">הספק</th></tr></thead><tbody>${model.branches.flatMap(branch=>branch.parts).map(part=>`<tr><td data-label="רכיב">${bdi(part.label)}${part.kind==='lamp'?' · מנורה':part.kind==='switch'?' · '+(part.closed?'סגור':'פתוח'):part.kind==='contactor'?' · '+(part.closed?'סגור':'פתוח'):''}</td><td data-label="מתח">${labValue(part.drop,'V')}</td><td data-label="זרם">${labValue(part.current,'A')}</td><td data-label="הספק">${labValue(part.power,'W')}</td></tr>`).join('')}</tbody></table></div></details>`;
-}
-function updateLabMeter(model) {
-  const meter=lab.meter;
-  if(!model.nodes.some(node=>node.id===meter.red))meter.red='p';
-  if(!model.nodes.some(node=>node.id===meter.black))meter.black='n';
-  if(!model.paths.some(path=>path.id===meter.path))meter.path='main';
-  const reading=Lab.measure(model,meter);
-  $('lab-reading').textContent=reading.value===null?'לא ניתן למדוד':`${labNumber(reading.value)} ${reading.unit}`;
-  const option=(list,selected)=>list.map(item=>`<option value="${item.id}" ${selected===item.id?'selected':''}>${escapeHTML(item.label)}</option>`).join('');
-  $('lab-meter-controls').innerHTML=meter.tool==='voltage'?`<label>גשוש אדום (+)<select id="lab-probe-red">${option(model.nodes,meter.red)}</select></label><label>גשוש שחור (−)<select id="lab-probe-black">${option(model.nodes,meter.black)}</select></label>`:`<label>מקום המדידה<select id="lab-meter-path">${option(model.paths,meter.path)}</select></label>`;
-  $('lab-meter-note').textContent=reading.value===null?'אין ערך מדידה מוגדר: נקודה צפה, מקורות נפרדים ללא ייחוס משותף או קצר אידיאלי. בחרו שתי נקודות באותו מעגל סגור.':meter.tool==='voltage'?`בחרו שתי נקודות באמצעות הרשימות או לחיצה על הנקודות בשרטוט. הלחיצה הבאה תציב את הגשוש ${meter.nextProbe==='red'?'האדום':'השחור'}. הסימן הוא אדום פחות שחור.`:meter.tool==='ammeter'?'מד זרם אידיאלי מוכנס בטור במוליך הנבחר; אפשר לבחור גם בלחיצה על המוליך.':'צבת DC מודדת מוליך יחיד בלי לפתוח את המעגל. בחרו מוליך ברשימה או בשרטוט.';
-  document.querySelectorAll('[data-lab-meter]').forEach(button=>button.setAttribute('aria-pressed',button.dataset.labMeter===meter.tool));
+function simMetrics(q) {
+  const m = DC.physics(q.kind, q.simVoltage, q.resistances);
+  return `<div class="metrics"><div class="metric"><small>נגד שקול</small>${bdi(`${DC.fmt(m.req)} Ω`)}</div><div class="metric"><small>זרם כולל</small>${bdi(`${DC.fmt(m.total)} A`)}</div><div class="metric"><small>הספק כולל</small>${bdi(`${DC.fmt(m.power)} W`)}</div></div><div class="table-scroll"><table><caption class="small muted" style="text-align:right;margin-bottom:5px">נתוני המעגל במתח שנבחר בסימולטור</caption><thead><tr><th>רכיב</th><th>התנגדות</th><th>מתח</th><th>זרם</th><th>הספק</th></tr></thead><tbody>${q.resistances.map((r,j) => `<tr><td data-label="רכיב">${bdi('R' + (j+1))}${q.lamps[j] ? ' · נורה' : ''}</td><td data-label="התנגדות">${bdi(`${DC.fmt(r)} Ω`)}</td><td data-label="מתח">${bdi(`${DC.fmt(m.drops[j])} V`)}</td><td data-label="זרם">${bdi(`${DC.fmt(m.currents[j])} A`)}</td><td data-label="הספק">${bdi(`${DC.fmt(m.powers[j])} W`)}</td></tr>`).join('')}</tbody></table></div>`;
 }
 function updateSimulator() {
-  if(!$('lab-diagram'))return;
-  const focused=document.activeElement;
-  const focusId=focused?.id,focusData=focused?.dataset;
-  const focusRoot=focused?.closest('#diagram-dialog')?'diagram-canvas':'lab-diagram';
-  const model=Lab.solve(lab);updateLabMeter(model);
-  $('lab-diagram').innerHTML=labCircuitSVG(model);
-  const measurementsOpen=$('lab-metrics').querySelector('.lab-table')?.open;
-  $('lab-metrics').innerHTML=labMetrics(model);
-  if(measurementsOpen)$('lab-metrics').querySelector('.lab-table').open=true;
-  if($('lab-coils'))$('lab-coils').innerHTML=model.coils.map(coil=>labCoilSVG(coil,model)).join('');
-  document.querySelectorAll('[data-lab-coil-status]').forEach(node=>{const coil=model.coils.find(coil=>coil.id===node.dataset.labCoilStatus);node.textContent=coil?.energized?'סליל פעיל':'סליל כבוי';node.classList.toggle('on',!!coil?.energized);});
-  document.querySelectorAll('button[data-lab-toggle]').forEach(button=>{const part=findLabControl(button.dataset.labToggle);if(!part)return;const on=part.kind==='switch'?part.closed:part.command;button.setAttribute('aria-pressed',on);button.textContent=part.kind==='switch'?(on?'פתיחת המתג':'סגירת המתג'):(on?'פתיחת מתג הפיקוד':'סגירת מתג הפיקוד');});
-  const power=$('lab-power');power.setAttribute('aria-pressed',lab.powered);power.innerHTML=labIcon('power')+(lab.powered?'כיבוי המעגל':'הפעלת המעגל');
-  if($('diagram-dialog').open&&diagramSource==='simulator')$('diagram-canvas').innerHTML=labCircuitSVG(model);
-  if(focused&&!focused.isConnected){
-    const replacement=focusId?$(focusId):focusData?.labNode?$(focusRoot).querySelector(`[data-lab-node="${focusData.labNode}"]`):focusData?.labToggle?$(focusRoot).querySelector(`[data-lab-toggle="${focusData.labToggle}"]`):focusData?.labPath?$(focusRoot).querySelector(`[data-lab-path="${focusData.labPath}"]`):null;
-    replacement?.focus({preventScroll:true});
-  }
-  resizeFrame();
-}
-function labText(x,y,value,size=15,color='#233f63',anchor='middle') {return `<text x="${x}" y="${y}" font-family="Arial,sans-serif" font-size="${size}" fill="${color}" text-anchor="${anchor}" direction="ltr">${escapeHTML(value)}</text>`;}
-function labWire(path) {return `<path d="${path}" stroke="#72849b" stroke-width="3" fill="none" stroke-linecap="round"/>`;}
-function labSwitch(x,y,closed,label,action='') {
-  return `<g ${action?`data-lab-toggle="${action}" role="button" tabindex="0" aria-label="${escapeHTML(label)} · ${closed?'פתיחה':'סגירה'}"`:''}><rect x="${x-36}" y="${y-29}" width="72" height="60" fill="#fafcff"/><circle cx="${x-27}" cy="${y}" r="4" fill="#72849b"/><circle cx="${x+27}" cy="${y}" r="4" fill="#72849b"/>${labWire(`M${x-27} ${y} L${x+24} ${closed?y:y-23}`)}${labText(x,y-40,label,14)}${labText(x,y+36,closed?'סגור':'פתוח',11,closed?'#147565':'#975744')}</g>`;
-}
-function labNode(id,x,y,model) {
-  const node=model.nodes.find(node=>node.id===id),meter=lab.meter;
-  const red=meter.tool==='voltage'&&meter.red===id,black=meter.tool==='voltage'&&meter.black===id;
-  return `<g data-lab-node="${id}" role="button" tabindex="0" aria-label="נקודת מדידה ${escapeHTML(node?.label??id)}"><circle cx="${x}" cy="${y}" r="20" fill="transparent"/><circle cx="${x}" cy="${y}" r="${red||black?8:4}" fill="${red?'#d54444':black?'#182638':'#245fce'}" stroke="white" stroke-width="2"/>${red||black?labText(x,y-15,red&&black?'+ / −':red?'+':'−',15,red?'#b33030':'#182638'):''}</g>`;
-}
-function labCurrentMarker(path,x,y,model) {
-  const item=model.paths.find(item=>item.id===path),selected=lab.meter.tool!=='voltage'&&lab.meter.path===path;
-  const target=`data-lab-path="${path}" role="button" tabindex="0" aria-label="מדידת זרם: ${escapeHTML(item?.label??path)}"`;
-  if(!selected)return `<g ${target}><rect x="${x-22}" y="${y-22}" width="44" height="44" fill="transparent"/></g>`;
-  return `<g ${target}>${lab.meter.tool==='ammeter'?`<circle cx="${x}" cy="${y}" r="20" fill="white" stroke="#245fce" stroke-width="3"/>${labText(x,y+5,'A',17,'#245fce')}`:`<path d="M${x+12} ${y-18} A23 23 0 1 1 ${x-12} ${y-18}" fill="none" stroke="#245fce" stroke-width="5"/><path d="M${x+12} ${y-18} L${x-12} ${y-18}" stroke="#245fce" stroke-width="2" stroke-dasharray="4 3"/>${labText(x,y+43,'צבת DC',12,'#245fce')}`}</g>`;
-}
-function labCircuitSVG(model) {
-  const branches=model.branches,count=Math.max(1,...branches.map(branch=>branch.parts.length));
-  const width=Math.max(760,235+count*145),height=Math.max(290,branches.length*145+130),right=width-45;
-  const parts=[labWire(`M45 ${height/2-27} V35 H135 V${height-65}`),labWire(`M45 ${height/2+27} V${height-35} H${right} V35`)];
-  const nodeMarks=[],meterMarks=[];
-  branches.forEach((branch,index)=>{
-    const y=125+index*145,step=(right-135)/branch.parts.length;
-    parts.push(labText(135,y-53,lab.topology==='parallel'?branch.label:'DC circuit',14,'#52677e','start'));
-    parts.push(labWire(`M135 ${y} H${right}`));
-    if(branch.current>0)parts.push(`<polygon points="${right-38},${y-5} ${right-27},${y} ${right-38},${y+5}" fill="#be4141"/>`);
-    if(branch.current>0&&lab.animate&&!personal.preferences.motion)parts.push(`<path d="M135 ${y} H${right}" class="flow" stroke="#c04c4c" stroke-width="3" fill="none" opacity=".7"/>`);
-    branch.parts.forEach((part,j)=>{
-      const x=135+step*(j+.5),before=135+step*j,after=135+step*(j+1);
-      if(part.kind==='lamp'){
-        const brightness=part.power>0?Math.min(1,part.power/(part.nominal*part.nominal/part.r)):0;
-        if(brightness>0)parts.push(`<circle data-lamp-glow="${part.id}" cx="${x}" cy="${y}" r="40" fill="#ffcf45" opacity="${.15+brightness*.4}"/>`);
-        parts.push(`<circle cx="${x}" cy="${y}" r="25" fill="${brightness>0?'#fff0aa':'#fafcff'}" stroke="${brightness>0?'#ac7817':'#72849b'}" stroke-width="2.5"/><path d="M${x-16} ${y-16} L${x+16} ${y+16} M${x-16} ${y+16} L${x+16} ${y-16}" stroke="#72849b" stroke-width="2"/>${labText(x,y-43,part.label+' · '+labNumber(part.r)+' Ω')}`);
-      }else if(part.kind==='resistor')parts.push(`<rect x="${x-29}" y="${y-17}" width="58" height="34" rx="2" fill="#fafcff" stroke="#72849b" stroke-width="2.5"/>${labText(x,y-43,part.label+' · '+labNumber(part.r)+' Ω')}`);
-      else parts.push(labSwitch(x,y,part.closed,part.label,part.kind==='switch'?part.id:''));
-      parts.push(labText(x,y+59,labNumber(part.drop)+' V',13,'#147565'));
-      if(part.kind==='lamp'||part.kind==='resistor')parts.push(labText(x,y+78,labNumber(part.power)+' W',12));
-      nodeMarks.push(labNode(part.from,before,y,model));
-      if(j===branch.parts.length-1)nodeMarks.push(labNode(part.to,after,y,model));
-    });
-    parts.push(labText(right-5,y-53,labNumber(branch.current)+' A',14,'#be4141','end'));
-    meterMarks.push(labCurrentMarker('branch:'+branch.id,160,y,model));
-  });
-  parts.push(`<circle cx="45" cy="${height/2}" r="27" fill="white" stroke="#245fce" stroke-width="2.5"/>${labText(45,height/2-10,'+',16)}${labText(45,height/2+7,'DC',14)}${labText(45,height/2+23,'−',16)}${labText(20,height/2+53,labNumber(model.voltage)+' V',14,'#245fce','start')}`);
-  if(model.coils.length&&!lab.independentControl)parts.push(`<path d="M135 35 H205" stroke="#72849b" stroke-width="2" stroke-dasharray="5 4"/>${labText(215,39,'→ A1 / A2',13,'#52677e','start')}`);
-  nodeMarks.push(labNode('p',135,35,model),labNode('n',right,height-35,model));
-  meterMarks.push(labCurrentMarker('source',90,35,model),labCurrentMarker('main',135,80,model));
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" role="group" aria-label="${lab.topology==='parallel'?'מעגל מקבילי':'מעגל טורי'} — נקודות וכלי מדידה" dir="ltr"><title>מעגל DC עם נקודות מדידה</title>${parts.join('')}${nodeMarks.join('')}${meterMarks.join('')}</svg>`;
-}
-function labCoilSVG(coil,model) {
-  const part=coil.part,marker=labCurrentMarker('coil:'+part.id,88,80,model);
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 740 175" role="group" aria-label="${coil.tag}: סליל A1 A2, מגע NO ${coil.energized?'סגור':'פתוח'}, מגע NC ${coil.energized?'פתוח':'סגור'}" dir="ltr"><title>${coil.tag} · סליל ומגעים</title>${labText(12,25,coil.tag+' · '+labNumber(model.controlVoltage)+' VDC',16,'#233f63','start')}${labWire('M25 80 H330 V145 H25 V80')}<circle cx="25" cy="112" r="18" fill="white" stroke="#245fce" stroke-width="2"/>${labText(25,109,'+',13)}${labText(25,123,'−',13)}${labSwitch(140,80,part.command,'S_'+coil.tag,part.id)}<rect x="225" y="57" width="68" height="46" fill="${coil.energized?'#e4f5ec':'white'}" stroke="${coil.energized?'#147565':'#72849b'}" stroke-width="2"/>${labText(215,52,'A1',13)}${labText(304,52,'A2',13)}${labText(259,85,coil.tag,18)}${labText(355,125,labNumber(coil.voltage)+' V · '+labNumber(coil.current)+' A',13,'#147565','end')}<path d="M295 80 H420" stroke="#8b9eb7" stroke-width="2" stroke-dasharray="5 4"/>${labSwitch(480,80,coil.energized,'NO 13–14')}${labSwitch(640,80,!coil.energized,'NC 21–22')}${labText(25,166,lab.independentControl?'Independent DC control supply':'Shared DC supply · coil current included',12,'#52677e','start')}${labNode('coil:'+part.id+':a1',215,80,model)}${labNode('coil:'+part.id+':a2',304,80,model)}${marker}</svg>`;
-}
-function labError(message='') { $('lab-error').hidden=!message;$('lab-error').textContent=message;resizeFrame(); }
-function addLabPart(kind) {
-  labError();
-  if(kind==='resistor'||kind==='lamp'){
-    if(lab.loads.length>=8)return labError('אפשר להוסיף עד שמונה נגדים או מנורות במעגל.');
-    const serial=lab.nextId++;lab.loads.push({id:'l'+serial,serial,kind,r:24,nominal:24,controls:[]});lab.targetLoad='l'+serial;
-  }else{
-    const load=lab.loads.find(load=>load.id===lab.targetLoad);
-    if(!load)return labError('הוסיפו קודם נגד או מנורה כדי לחבר אליהם רכיב פיקוד.');
-    if(load.controls.length>=3)return labError('אפשר להוסיף עד שלושה רכיבי פיקוד לכל נגד או מנורה.');
-    const serial=lab.nextId++;load.controls.push(kind==='switch'?{id:'s'+serial,serial,kind,closed:false}:{id:'k'+serial,serial,kind,command:false,mode:'NO',coilR:240,pickup:18});
-  }
-  renderSimulator();
-}
-function labAction(target) {
-  if(target.dataset.labToggle){const part=findLabControl(target.dataset.labToggle);if(part){if(part.kind==='switch')part.closed=!part.closed;else part.command=!part.command;updateSimulator();}return true;}
-  if(target.dataset.labNode){lab.meter.tool='voltage';lab.meter[lab.meter.nextProbe]=target.dataset.labNode;lab.meter.nextProbe=lab.meter.nextProbe==='red'?'black':'red';updateSimulator();return true;}
-  if(target.dataset.labPath){if(lab.meter.tool==='voltage')lab.meter.tool='clamp';lab.meter.path=target.dataset.labPath;updateSimulator();return true;}
-  return false;
-}
-function changeLabField(input) {
-  const load=lab.loads.find(load=>load.id===input.dataset.labLoad),control=findLabControl(input.dataset.labControl),field=input.dataset.labField;
-  if(field==='kind'||field==='mode'){(load??control)[field]=input.value;renderSimulator();return;}
-  const value=Number(input.value);
-  if(!input.value.trim()||!Number.isFinite(value)||value<Number(input.min)||value>Number(input.max)){
-    input.setAttribute('aria-invalid','true');labError(`יש להזין מספר בין ${input.min} ל־${input.max}. המדידות נשארו לפי הערך התקין האחרון.`);return;
-  }
-  input.removeAttribute('aria-invalid');labError();
-  if(input.id==='lab-voltage')lab.voltage=value;
-  else if(input.id==='lab-control-voltage')lab.controlVoltage=value;
-  else (load??control)[field]=value;
-  updateSimulator();
-  if(load?.kind==='lamp'){const note=input.closest('.part-fields')?.querySelector('span.small');if(note)note.innerHTML='הספק נומינלי '+labValue(load.nominal*load.nominal/load.r,'W');}
+  const q = currentQuestion();
+  if (!$('sim-diagram')) return;
+  $('sim-diagram').innerHTML = diagramPreview(q, { complete:true, voltage:q.simVoltage, animate:q.simAnimate });
+  $('sim-metrics').innerHTML = simMetrics(q);
+  $('sim-voltage-label').innerHTML = bdi(`${DC.fmt(q.simVoltage)} V`);
+  $('sim-voltage').value = q.simVoltage; $('sim-animation').checked = q.simAnimate;
 }
 
 function triangleContext() {
@@ -968,21 +729,17 @@ function renderFormulas() {
 }
 
 function openDialog(id, { preserveFormulaView = false } = {}) {
-  if (id === 'formula-dialog') {
-    calculatorReturnToFormulas=false;
-    document.querySelectorAll('dialog[open]').forEach(dialog=>dialog.close());
-    if (!preserveFormulaView) formulaView = 'reference';
-    selectPage('formulas'); return;
-  }
   if (!profileReady() && id !== 'profile-dialog') { openProfile(); return; }
-  calculatorReturnToFormulas = id === 'calculator-dialog' && activePage === 'formulas';
+  calculatorReturnToFormulas = id === 'calculator-dialog' && $('formula-dialog').open;
+  if (id === 'formula-dialog' && !preserveFormulaView) formulaView = 'reference';
   document.querySelectorAll('dialog[open]').forEach(dialog => { if (dialog.id !== id) dialog.close(); });
+  if (id === 'formula-dialog') renderFormulas();
   if (!$(id).open) $(id).showModal();
   fitDialogs(); resizeFrame();
 }
-function sendStreamlitMessage(type, data) { window.parent.postMessage({ isStreamlitMessage:true, type, ...data }, '*'); }
+function postMessage(type, data) { window.parent.postMessage({ isStreamlitMessage:true, type, ...data }, '*'); }
 function resizeFrame() {
-  requestAnimationFrame(() => sendStreamlitMessage('streamlit:setFrameHeight', { height:Math.ceil($('app').getBoundingClientRect().height + 10) }));
+  requestAnimationFrame(() => postMessage('streamlit:setFrameHeight', { height:Math.ceil($('app').getBoundingClientRect().height + 10) }));
 }
 function fitDialogs() {
   let top = 0, height = Math.min(window.innerHeight, window.screen?.availHeight || 850);
@@ -1000,15 +757,11 @@ function fitDialogs() {
     dialog.style.top = top + Math.max(12, (height - dialog.getBoundingClientRect().height) / 2) + 'px';
   });
 }
-function calculatorCanTransfer() {
-  if(activePage==='formulas'&&formulaView==='manual')return !!manualState().selected;
-  return (activePage==='practice'||activePage==='formulas')&&!!currentStep();
-}
 function calculateScreen() {
   try {
     calculatorValue = DC.calculate($('calc-screen').value);
     $('calc-result').textContent = String(Math.round(calculatorValue * 1e10) / 1e10);
-    $('calc-error').textContent = ''; $('calc-use').disabled = !calculatorCanTransfer(); calculatorFresh = true;
+    $('calc-error').textContent = ''; $('calc-use').disabled = !currentStep(); calculatorFresh = true;
   } catch (error) {
     calculatorValue = null; $('calc-result').textContent = ''; $('calc-error').textContent = error.message;
     $('calc-use').disabled = true;
@@ -1022,18 +775,8 @@ function clearCalculator() {
 const keypad = ['C','←','(',')','7','8','9','÷','4','5','6','×','1','2','3','−','0','.','=','+'];
 $('calc-grid').innerHTML = keypad.map(key => `<button type="button" data-calc="${key}" class="${['÷','×','−','+'].includes(key) ? 'operator' : key === '=' ? 'equals' : ''}" aria-label="${key === '←' ? 'מחיקת תו' : key === 'C' ? 'ניקוי' : key === '=' ? 'חישוב' : key}">${key}</button>`).join('');
 document.addEventListener('click', event => {
-  const labTarget=event.target.closest('[data-lab-toggle],[data-lab-node],[data-lab-path]');
-  if(labTarget&&labAction(labTarget))return;
   const button = event.target.closest('button');
   if (!button || button.disabled) return;
-  if (button.dataset.page) { selectPage(button.dataset.page); return; }
-  if (button.dataset.labAdd) return addLabPart(button.dataset.labAdd);
-  if (button.hasAttribute('data-lab-power')) {lab.powered=!lab.powered;updateSimulator();return;}
-  if (button.hasAttribute('data-lab-new')) {lab=Lab.create();lab.animate=!personal.preferences.motion;labSnapshot=null;renderSimulator();return;}
-  if (button.hasAttribute('data-lab-restore') && labSnapshot) {lab=JSON.parse(JSON.stringify(labSnapshot));lab.animate=!personal.preferences.motion;renderSimulator();return;}
-  if (button.dataset.labMeter) {lab.meter.tool=button.dataset.labMeter;updateSimulator();return;}
-  if (button.dataset.labRemoveLoad) {lab.loads=lab.loads.filter(load=>load.id!==button.dataset.labRemoveLoad);if(!lab.loads.some(load=>load.id===lab.targetLoad))lab.targetLoad=lab.loads[0]?.id??'';renderSimulator();return;}
-  if (button.dataset.labRemoveControl) {for(const load of lab.loads)load.controls=load.controls.filter(part=>part.id!==button.dataset.labRemoveControl);renderSimulator();return;}
   if (button.hasAttribute('data-open-profile')) return openProfile();
   if (button.hasAttribute('data-show-progress')) return showProgress();
   if (button.hasAttribute('data-open-accessibility')) return openDialog('accessibility-dialog');
@@ -1042,7 +785,8 @@ document.addEventListener('click', event => {
     personal.preferences=emptyPersonal().preferences;savePersonal();applyPreferences();return;
   }
   if (button.hasAttribute('data-go-simulator')) {
-    loadQuestionIntoLab();return;
+    $('simulator-section')?.scrollIntoView({behavior:personal.preferences.motion?'auto':'smooth',block:'start'});
+    $('sim-title')?.focus({preventScroll:true});return;
   }
   if (button.hasAttribute('data-open-formulas')) return openDialog('formula-dialog');
   if (button.dataset.openDiagram) return openDiagram(button.dataset.openDiagram);
@@ -1056,11 +800,10 @@ document.addEventListener('click', event => {
   }
   if (button.hasAttribute('data-manual-list-help')) return fillManualList();
   if (button.hasAttribute('data-open-calculator')) {
-    $('calc-use').disabled = calculatorValue === null || !calculatorCanTransfer();
+    $('calc-use').disabled = calculatorValue === null || !currentStep();
     openDialog('calculator-dialog'); return;
   }
   if (button.dataset.closeDialog) {
-    if(button.dataset.closeDialog==='formula-dialog'){selectPage('practice');return;}
     if(button.dataset.closeDialog==='profile-dialog'&&profileRequired)return;
     return $(button.dataset.closeDialog).close();
   }
@@ -1076,8 +819,9 @@ document.addEventListener('click', event => {
   if (button.id === 'text-size') {
     personal.preferences.textScale=personal.preferences.textScale===100?125:100;savePersonal();applyPreferences();return;
   }
+  if (button.hasAttribute('data-reset-simulator')) { q.simVoltage = q.voltage; updateSimulator(); return; }
   if (button.id === 'calc-clear') { clearCalculator(); return; }
-  if (button.id === 'calc-use' && calculatorValue !== null && calculatorCanTransfer()) {
+  if (button.id === 'calc-use' && calculatorValue !== null) {
     if (calculatorReturnToFormulas && formulaView === 'manual') manualDraft().answer = DC.fmt(calculatorValue);
     else syncDraft(DC.fmt(calculatorValue));
     $('calculator-dialog').close();
@@ -1104,7 +848,6 @@ document.addEventListener('submit', event => {
   checkAnswer(event.target.querySelector('[data-answer]')?.value ?? currentQuestion().draft);
 });
 document.addEventListener('input', event => {
-  if(event.target.type==='number'&&(event.target.hasAttribute('data-lab-field')||event.target.id==='lab-voltage'||event.target.id==='lab-control-voltage')){changeLabField(event.target);return;}
   if (event.target.hasAttribute('data-manual-list')) {
     manualState().list[event.target.dataset.manualList] = event.target.value;
     if (manualTokenKind(event.target.value) === 'invalid') event.target.setAttribute('aria-invalid','true');
@@ -1118,32 +861,18 @@ document.addEventListener('input', event => {
     $('manual-message').textContent = '';
   }
   if (event.target.hasAttribute('data-answer')) syncDraft(event.target.value, event.target);
+  if (event.target.id === 'sim-voltage') { currentQuestion().simVoltage = Number(event.target.value); updateSimulator(); }
   if (event.target.id === 'calc-screen') { calculatorValue = null; calculatorFresh = false; $('calc-use').disabled = true; $('calc-result').textContent = ''; }
 });
 document.addEventListener('change', event => {
-  const input=event.target;
-  if(input.hasAttribute('data-lab-field')||input.id==='lab-voltage'||input.id==='lab-control-voltage'){changeLabField(input);return;}
-  if(input.id==='lab-topology'){lab.topology=input.value;renderSimulator();return;}
-  if(input.id==='lab-target'){lab.targetLoad=input.value;return;}
-  if(input.id==='lab-animation'){lab.animate=input.checked;updateSimulator();return;}
-  if(input.id==='lab-independent'){lab.independentControl=input.checked;renderSimulator();return;}
-  if(input.id==='lab-probe-red'||input.id==='lab-probe-black'){lab.meter[input.id.endsWith('red')?'red':'black']=input.value;updateSimulator();return;}
-  if(input.id==='lab-meter-path'){lab.meter.path=input.value;updateSimulator();return;}
   if(event.target.hasAttribute('data-preference')){
     const key=event.target.dataset.preference;
     personal.preferences[key]=event.target.type==='checkbox'?event.target.checked:Number(event.target.value);
     savePersonal();applyPreferences();return;
   }
+  if (event.target.id === 'sim-animation') { currentQuestion().simAnimate = event.target.checked; updateSimulator(); }
 });
 document.addEventListener('keydown', event => {
-  const labTarget=event.target.closest('svg [role=button]');
-  if(labTarget&&['Enter',' '].includes(event.key)){event.preventDefault();labAction(labTarget);return;}
-  const pageTab=event.target.closest('[data-page][role=tab]');
-  if(pageTab&&['ArrowLeft','ArrowRight','Home','End'].includes(event.key)){
-    event.preventDefault();const pages=Object.keys(pagePanels),index=pages.indexOf(pageTab.dataset.page);
-    const next=event.key==='Home'?0:event.key==='End'?pages.length-1:(index+(event.key==='ArrowLeft'?1:pages.length-1))%pages.length;
-    selectPage(pages[next],{focus:true});return;
-  }
   if (event.target.id === 'calc-screen' && event.key === 'Enter') { event.preventDefault(); calculateScreen(); return; }
   const formulaTab = event.target.closest('.formula-tab[data-formula-tab]');
   if (formulaTab && ['ArrowLeft','ArrowRight','Home','End'].includes(event.key)) {
@@ -1179,7 +908,7 @@ document.querySelectorAll('dialog').forEach(dialog => {
 window.addEventListener('resize', () => { fitDialogs(); resizeFrame(); });
 window.visualViewport?.addEventListener('resize', fitDialogs);
 try { if (window.parent !== window) { window.parent.addEventListener('scroll', fitDialogs, true); window.parent.addEventListener('resize', fitDialogs); } } catch {}
-sendStreamlitMessage('streamlit:componentReady', { apiVersion:1 });
+postMessage('streamlit:componentReady', { apiVersion:1 });
 newCourse();
 initializePersonal();
 if ('ResizeObserver' in window) new ResizeObserver(resizeFrame).observe($('app'));
@@ -1191,7 +920,7 @@ if ('ResizeObserver' in window) new ResizeObserver(resizeFrame).observe($('app')
 
 st.set_page_config(page_title="יסודות החשמל | תרגול DC", page_icon="⚡", layout="wide")
 st.markdown("""<style>
-.stApp,[data-testid="stAppViewContainer"]{background:#f5f8fc}
+.stApp,[data-testid="stAppViewContainer"]{background:#f4f5f1}
 [data-testid="stMainBlockContainer"],.block-container{max-width:1220px;padding:.5rem .25rem 1rem}
 [data-testid="stHeader"]{display:none}
 @media(max-width:600px){[data-testid="stMainBlockContainer"],.block-container{padding:.25rem 0 .5rem}}
