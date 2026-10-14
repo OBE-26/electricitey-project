@@ -71,6 +71,14 @@ APP_HTML = r'''<!doctype html>
     .custom-simulator .diagram{direction:ltr}
     .custom-sim-note{margin:12px 0 0;color:var(--muted);font-size:calc(13px * var(--text-scale,1))}
     @media(max-width:570px){.tabs{grid-template-columns:repeat(2,minmax(0,1fr))}.custom-resistors{grid-template-columns:1fr}.sim-choice select{width:100%}.text-scale-150 .tabs{grid-template-columns:1fr}}
+    .manual-list .manual-fill{min-height:50px;padding:12px 8px;background:#1769c2;color:#fff;border:1px solid #1769c2;font-size:calc(17px * var(--text-scale,1));font-weight:700;line-height:1.4}
+    .manual-list .manual-fill:hover{background:#1257a3;color:#fff}
+    .manual-paper-note{margin:0 0 8px;padding:7px 6px;border-radius:7px;background:#dceeff;color:#000;font-size:calc(12px * var(--text-scale,1));line-height:1.5}
+    .feedback.success,.complete-badge,.completed-row,.step-pill.done{background:#087b38;color:#fff;border-color:#087b38}
+    .feedback.error{background:#bd2525;color:#fff}
+    input.answer-correct{background:#087b38;color:#fff;border-color:#087b38;opacity:1;-webkit-text-fill-color:#fff}
+    input.answer-incorrect{background:#bd2525;color:#fff;border-color:#bd2525!important;-webkit-text-fill-color:#fff}
+    .completed-row{padding:8px 10px;border-radius:8px}
     .manual-keypad{position:sticky;bottom:0;margin-top:16px;padding:12px;background:var(--paper);border:1px solid var(--line);border-radius:12px;box-shadow:0 -5px 20px #182e3c12;z-index:2}
     .manual-keypad-header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:10px}
     #manual-keypad-value{font-size:calc(19px * var(--text-scale,1));font-weight:700;max-width:100%;overflow-wrap:anywhere}
@@ -549,7 +557,7 @@ function stepTopics(q,step) {
   return q.kind==='ohm' ? [power?'power':'ohm'] : [q.kind,...(power?['power']:[])];
 }
 function trackedStep() {
-  const q=currentQuestion(),step=currentStep();if(!step||!profileReady())return null;
+  const q=currentQuestion(),step=currentStep();if(!step||q.accepted||!profileReady())return null;
   q.personalSteps??={};
   return q.personalSteps[q.cursor]??={topics:stepTopics(q,step),attempts:0,helped:false};
 }
@@ -617,7 +625,7 @@ try { const saved = JSON.parse(localStorage.getItem(recentKey)); if (Array.isArr
 function saveCourse() {
   if(!questions||courseSeed===null)return;
   const states=Object.fromEntries(DC.kinds.map(kind=>[kind,questions[kind].map(list=>list.map(q=>({
-    cursor:q.cursor,draft:q.draft,attempts:q.attempts,help:q.help,hint:q.hint,solution:q.solution,
+    cursor:q.cursor,draft:q.draft,accepted:q.accepted===true,attempts:q.attempts,help:q.help,hint:q.hint,solution:q.solution,
     simVoltage:q.simVoltage,simAnimate:q.simAnimate,manualWork:q.manualWork,personalSteps:q.personalSteps
   })))]));
   try{localStorage.setItem(courseKey,JSON.stringify({version:1,seed:courseSeed,generationPrevious:coursePrevious,states,tab,levels,positions,feedback,feedbackType}));}
@@ -667,6 +675,7 @@ function restoreCourse() {
             simVoltage:Number.isFinite(state.simVoltage)&&state.simVoltage>=0&&state.simVoltage<=q.voltage*2?state.simVoltage:q.voltage,
             simAnimate:!personal.preferences.motion&&state.simAnimate!==false,
             manualWork:restoreManualWork(state.manualWork,q),personalSteps:{}});
+          q.accepted=state.accepted===true&&q.cursor<q.steps.length&&DC.accepted(q.draft,q.steps[q.cursor].value);
           for(let index=0;index<q.steps.length;index++) {
             const tracked=state.personalSteps?.[index];
             if(tracked&&Number.isSafeInteger(tracked.attempts)&&tracked.attempts>=0)
@@ -689,7 +698,7 @@ function newCourse() {
   simulatorQuestion = null;
   positions = { ohm:[0,0], series:[0,0], parallel:[0,0,0] };
   for (const kind of DC.kinds) for (const level of questions[kind]) for (const q of level) {
-    q.cursor = 0; q.draft = ''; q.attempts = 0; q.help = {}; q.hint = false; q.solution = false; q.simVoltage = q.voltage; q.simAnimate = !personal.preferences.motion;
+    q.cursor = 0; q.draft = ''; q.accepted = false; q.attempts = 0; q.help = {}; q.hint = false; q.solution = false; q.simVoltage = q.voltage; q.simAnimate = !personal.preferences.motion;
     previous.push(q.signature);
   }
   previous = previous.slice(-280);
@@ -813,6 +822,7 @@ function render(focus = false) {
   if(viewTab==='simulator'){renderSimulatorPanel();renderProgress();fitDialogs();resizeFrame();saveCourse();return;}
   $('simulator-workspace').innerHTML='';
   const level = levels[tab], sequence = questions[tab][level], index = positions[tab][level], q = sequence[index], done = completed(q), step = currentStep();
+  if(q.accepted){feedbackType='success';feedback=acceptedMessage(q);}
   const doneCount = sequence.filter(completed).length;
   $('workspace').setAttribute('aria-labelledby', 'tab-' + tab);
   const levelButtons = questions[tab].map((list, j) => `<button class="level" data-level="${j}" aria-pressed="${j === level}">רמה ${letters[j]}<small>${j === 0 ? 'מספרים שלמים' : j === 1 ? 'מספרים עשרוניים' : 'שלושה ענפים'} · ${list.filter(completed).length}/5</small></button>`).join('');
@@ -822,39 +832,51 @@ function render(focus = false) {
   const rounding = level === 0 ? 'ברמה הזאת כל התוצאות שלמות. אין צורך להקליד יחידות.' : 'יש לעגל את התשובה לשתי ספרות אחרי הנקודה לכל היותר. אפשר לכתוב נקודה או פסיק.';
   const rows = q.steps.slice(0, q.cursor).map((s, j) => `<div class="completed-row"><span>✓ ${escapeHTML(s.label)}${q.help[j] ? ' · בעזרת פתרון' : ''}</span>${bdi(`${DC.fmt(s.value)} ${s.unit}`)}</div>`).join('');
   const active = done ? `<div class="complete-badge">✓ התרגיל הושלם</div><h2>השלמתם את כל החישובים.</h2><p class="muted">${q.steps.length > 1 ? 'אפשר לעבור על התוצאות ולבדוק איך הן קשורות זו לזו.' : 'הקשר בין הנתונים ברור יותר עם כל תרגיל.'}</p>`
-    : `<div class="step-list" aria-label="התקדמות שלבי הפתרון">${stepPills}</div><div class="task-kicker">צעד ${q.cursor + 1} מתוך ${q.steps.length} · ${escapeHTML(contextTitle(q, step))}</div><h2 id="answer-title">${escapeHTML(step.label)}</h2><form id="answer-form" novalidate><label class="small muted" for="answer">מה התוצאה, ביחידות ${bdi(step.unit)}?</label><div class="answer-row"><div class="answer-wrap"><input class="numeric" id="answer" data-answer type="text" inputmode="decimal" autocomplete="off" maxlength="24" value="${escapeHTML(q.draft)}" aria-describedby="rounding-text form-feedback"><span class="unit" aria-hidden="true">${bdi(step.unit)}</span></div><button class="btn" type="submit">בדיקת תשובה</button></div></form>`;
+    : `<div class="step-list" aria-label="התקדמות שלבי הפתרון">${stepPills}</div><div class="task-kicker">צעד ${q.cursor + 1} מתוך ${q.steps.length} · ${escapeHTML(contextTitle(q, step))}</div><h2 id="answer-title">${escapeHTML(step.label)}</h2><form id="answer-form" novalidate><label class="small muted" for="answer">מה התוצאה, ביחידות ${bdi(step.unit)}?</label><div class="answer-row"><div class="answer-wrap"><input class="numeric${q.accepted?' answer-correct':q.attempts>0?' answer-incorrect':''}" id="answer" data-answer type="text" inputmode="decimal" autocomplete="off" maxlength="24" value="${escapeHTML(q.draft)}"${q.accepted?' readonly':''} aria-describedby="rounding-text form-feedback"><span class="unit" aria-hidden="true">${bdi(step.unit)}</span></div>${q.accepted?'<button class="btn" type="button" data-next-step>הבא ←</button>':'<button class="btn" type="submit">בדיקת תשובה</button>'}</div></form>`;
   const explain = !done && q.solution ? `<div class="solution"><strong>כך פותרים</strong><div class="math">${escapeHTML(step.formula)}</div><div class="math">${escapeHTML(step.substitution)} = ${DC.fmt(step.value)} ${step.unit}</div><p>${escapeHTML(step.explanation)} הקלידו את התוצאה כדי להמשיך לצעד הבא.</p></div>` : '';
   const hints = !done && q.hint ? `<div class="hint"><strong>כיוון לפתרון</strong>${escapeHTML(step.hint)}<div class="math" style="margin-top:8px">${escapeHTML(step.formula)}</div></div>` : '';
-  const tools = `<div class="answer-tools"><button class="btn secondary tiny" data-open-formulas>דף נוסחאות △</button><button class="btn secondary tiny" data-open-calculator>מחשבון</button>${!done ? '<button class="btn soft tiny" data-hint>רמז</button><button class="text-btn small" data-solution>פתרון מוסבר</button>' : ''}</div>`;
+  const tools = `<div class="answer-tools"><button class="btn secondary tiny" data-open-formulas>דף נוסחאות △</button><button class="btn secondary tiny" data-open-calculator${q.accepted?' disabled':''}>מחשבון</button>${!done&&!q.accepted ? '<button class="btn soft tiny" data-hint>רמז</button><button class="text-btn small" data-solution>פתרון מוסבר</button>' : ''}</div>`;
   const next = done ? `<div class="completion-actions">${index < 4 ? '<button class="btn" data-next-question>לתרגיל הבא ←</button>' : level < questions[tab].length - 1 ? '<button class="btn" data-next-level>לרמה הבאה ←</button>' : '<button class="btn" data-new-course>סבב חדש</button>'}</div>${doneCount === 5 ? `<div class="level-note">השלמתם את חמשת התרגילים ברמה ${letters[level]}. ${level < questions[tab].length - 1 ? 'אפשר להתקדם לרמה הבאה.' : 'אפשר לעבור ללשונית אחרת או להתחיל סבב חדש.'}</div>` : ''}` : '';
   const descriptions = { ohm:'מתחילים בנתונים ידועים ומוצאים את הערך החסר.', series:'בטור הזרם זהה בכל הרכיבים. המתח מתחלק ביניהם.', parallel:level === 0 ? 'שני נגדים זהים במקביל. בכל ענף אותו מתח.' : level === 1 ? 'שני נגדים שונים במקביל. הזרמים תלויים בהתנגדויות.' : 'שלושה ענפים במקביל: נגדים זהים ושונים.' };
   $('workspace').innerHTML = `<div class="course-head"><div><h2>${names[tab]}</h2><p class="muted small" style="margin:0">${descriptions[tab]}</p></div><div class="levels" aria-label="רמות תרגול">${levelButtons}</div></div><div class="progress-row"><span>תרגיל ${index + 1} מתוך 5 · רמה ${letters[level]}</span><div class="question-dots">${dots}</div></div><div class="progress-track" role="progressbar" aria-label="תרגילים שהושלמו ברמה" aria-valuemin="0" aria-valuemax="5" aria-valuenow="${doneCount}"><div style="width:${doneCount * 20}%"></div></div><div class="exercise-grid"><section class="card"><div class="exercise-title"><div class="eyebrow">הנתונים שלכם</div><h3 style="margin-top:6px">${q.title}</h3><p class="muted small" style="margin:0">${tab === 'ohm' ? 'המקור הוא מקור מתח ישר (DC). מצאו את הנעלם המבוקש.' : 'כל ההתנגדויות ומתח המקור נתונים. פתרו לפי הסדר.'}</p></div><div class="givens">${given}</div><figure class="diagram">${diagramPreview(q)}<figcaption>${q.lamps.some(Boolean) ? 'סימון עיגול עם X הוא נורה. בתרגול הנורה היא רכיב בעל התנגדות קבועה.' : 'מלבן הוא נגד. המקור הוא DC; U מציין מתח ו־I מציין זרם.'}${tab !== 'ohm' ? ' לאחר השלמת המעגל אפשר לפתוח אותו בלשונית הסימולטור. לחצו על הסכמה להגדלה.' : ''}</figcaption></figure>${done ? '<button class="btn sim-jump" data-go-simulator>סימולטור</button>' : ''}</section><section class="card ${done ? 'success-summary' : ''}">${active}<p id="rounding-text" class="rounding">${rounding}</p>${tools}<div class="feedback ${feedbackType}" id="form-feedback" role="status" aria-live="polite">${escapeHTML(feedback)}</div>${hints}${explain}${q.cursor ? `<div class="completed-steps"><strong class="small">החישובים שהשלמתם</strong>${rows}</div>` : ''}${next}</section></div>`;
   if ($('formula-dialog').open) renderFormulas();
-  if (focus && !done) requestAnimationFrame(() => ($('formula-dialog').open ? formulaAnswerField() : $('answer'))?.focus());
+  if (focus && !done) requestAnimationFrame(() => ($('formula-dialog').open ? formulaAnswerField() : q.accepted ? $('workspace').querySelector('[data-next-step]') : $('answer'))?.focus());
   renderProgress(); fitDialogs(); resizeFrame();saveCourse();
+}
+function acceptedMessage(q = currentQuestion()) {
+  const step=q.steps[q.cursor];
+  return `נכון. ${DC.fmt(step.value)} ${step.unit}. לחצו על הבא כדי להמשיך.`;
+}
+function nextStep() {
+  const q=currentQuestion();
+  if(!q.accepted)return;
+  q.cursor++;q.accepted=false;q.draft='';q.attempts=0;q.hint=false;q.solution=false;
+  feedback='';feedbackType='success';render(true);
 }
 function checkAnswer(value, mode = 'answer') {
   const q = currentQuestion(), step = currentStep();
-  if (!step) return;
+  if (!step || q.accepted) return;
   q.draft = value;
   const correct = DC.accepted(value,step.value);
   recordAttempt(correct,mode);
   if (!correct) {
     q.attempts++; feedbackType = 'error';
-    feedback = value.trim() ? 'התשובה עדיין לא מדויקת. בדקו את הנוסחה ואת סדר פעולות החשבון. אפשר להיעזר ברמז ובמחשבון.' : 'יש להקליד תשובה מספרית. אפשר להתחיל ברמז או בדף הנוסחאות.';
+    feedback = value.trim() ? 'לא נכון. בדקו את הנוסחה ואת סדר פעולות החשבון. אפשר להיעזר ברמז ובמחשבון.' : 'יש להקליד תשובה מספרית. אפשר להתחיל ברמז או בדף הנוסחאות.';
     q.hint = true; markHelp();
     if (q.attempts >= 3) { q.solution = true; q.help[q.cursor] = true; }
     render(true);
     document.querySelectorAll('[data-answer]').forEach(field => field.setAttribute('aria-invalid', 'true'));
     return;
   }
-  q.cursor++; q.draft = ''; q.attempts = 0; q.hint = false; q.solution = false;
-  feedbackType = 'success'; feedback = completed(q) ? 'נכון. כל החישובים בתרגיל הושלמו.' : 'נכון. ממשיכים לצעד הבא.';
+  q.accepted=true;q.attempts=0;q.hint=false;q.solution=false;
+  feedbackType='success';feedback=acceptedMessage(q);
+  const state=manualState();state.message=feedback;state.type='success';state.errors=[];
   render(true);
 }
 function syncDraft(value, source) {
+  if(currentQuestion().accepted)return;
   currentQuestion().draft = value;
-  document.querySelectorAll('[data-answer]').forEach(field => { if (field !== source) field.value = value; field.removeAttribute('aria-invalid'); });
+  document.querySelectorAll('[data-answer]').forEach(field => { if (field !== source) field.value = value; field.removeAttribute('aria-invalid');field.classList.remove('answer-incorrect'); });
   saveCourse();
 }
 function simulatorHTML(q) {
@@ -921,6 +943,7 @@ function paintManualKeypad() {
   $('manual-keypad-value').textContent=key+' = '+(input.value||'…');
 }
 function showManualKeypad(input) {
+  if(input.disabled||currentQuestion().accepted)return hideManualKeypad();
   manualKeypadTarget=input;manualKeypadFieldId=input.id;
   $('manual-keypad').hidden=false;paintManualKeypad();
   requestAnimationFrame(()=>{fitDialogs();if(!$('manual-keypad').hidden)$('manual-keypad').scrollIntoView({block:'nearest'});});
@@ -933,6 +956,7 @@ function writeKeypadValue(input,value,position) {
     state.message='';state.errors=[];$('manual-message').textContent='';
   }
   input.value=value;
+  if(input.hasAttribute('data-manual-list'))syncManualEntryOrder();
   if(manualTokenKind(value)==='invalid')input.setAttribute('aria-invalid','true');
   else input.removeAttribute('aria-invalid');
   try{input.setSelectionRange(position,position);}catch{}
@@ -985,52 +1009,87 @@ function manualTokenKind(value) {
   return /^(?:\d+(?:[.,]\d*)?|[.,]\d+)$/.test(text) && Number.isFinite(Number(text.replace(',', '.'))) ? 'number' : 'invalid';
 }
 function formulaAnswerField() {
+  if(currentQuestion().accepted)return $('formula-body').querySelector('[data-next-step]');
   return formulaView === 'manual' ? $('manual-answer') : $('formula-body').querySelector('[data-answer]');
+}
+function manualEntrySlots(definition, state = manualState(), context = triangleContext()) {
+  const order=['U','R','I','P'];
+  const source=slot=>{
+    const key=slot.key.replace(/2$/,'');
+    if(String(state.list[key]??'').trim())return state.list[key];
+    if(key===(context.target==='Req'?'R':context.target))return '?';
+    return context.values[slot.key]!==undefined?String(context.values[slot.key]):'X';
+  };
+  return [...definition.slots].sort((a,b)=>
+    Number(manualTokenKind(source(a))!=='number')-Number(manualTokenKind(source(b))!=='number')||
+    order.indexOf(a.key.replace(/2$/,''))-order.indexOf(b.key.replace(/2$/,'')));
+}
+function syncManualEntryOrder() {
+  const definition=triangleDefinitions.find(item=>item.id===manualState().selected);
+  const triangle=document.querySelector('.manual-triangle');
+  if(!definition||!triangle)return;
+  for(const slot of manualEntrySlots(definition)){
+    const label=$('manual-slot-'+slot.key)?.closest('label');
+    if(label)triangle.append(label);
+  }
+}
+function focusManualEntry() {
+  const next=currentQuestion().accepted?$('formula-body').querySelector('[data-next-step]'):document.querySelector('[data-manual-slot]');
+  next?.focus({preventScroll:true});
 }
 function manualSolverHTML() {
   const context = triangleContext(), state = manualState();
   const definition = triangleDefinitions.find(item => item.id === state.selected);
-  const choices = triangleDefinitions.map(item => `<button type="button" class="manual-choice" data-manual-triangle="${item.id}" aria-pressed="${item.id === state.selected}"><strong>${item.title}</strong>${trianglePreview(item)}${mathNotation(item.formulas[0])}</button>`).join('');
-  const list = ['U','R','I','P'].map(key => `<label class="manual-list-row" for="manual-list-${key}"><bdi>${key} =</bdi><input id="manual-list-${key}" data-manual-list="${key}" type="text" inputmode="none" lang="en" maxlength="24" aria-controls="manual-keypad"${window.matchMedia('(pointer:coarse)').matches ? ' readonly' : ''} autocomplete="off" autocapitalize="off" spellcheck="false" value="${escapeHTML(state.list[key])}" aria-label="${key} ברשימת הנתונים" aria-describedby="manual-token-help"${manualTokenKind(state.list[key]) === 'invalid' ? ' aria-invalid="true"' : ''}></label>`).join('');
-  let work = '<div class="manual-placeholder">בחרו משולש מהרשימה כדי להציב בו נתונים.</div>';
+  const choices = triangleDefinitions.map(item => `<button type="button" class="manual-choice" data-manual-triangle="${item.id}" aria-pressed="${item.id === state.selected}"${context.q.accepted?' disabled':''}><strong>${item.title}</strong>${trianglePreview(item)}${mathNotation(item.formulas[0])}</button>`).join('');
+  const list = ['U','R','I','P'].map(key => `<label class="manual-list-row" for="manual-list-${key}"><bdi>${key} =</bdi><input id="manual-list-${key}" data-manual-list="${key}" type="text" inputmode="none" lang="en" maxlength="24" aria-controls="manual-keypad"${window.matchMedia('(pointer:coarse)').matches ? ' readonly' : ''}${context.q.accepted?' disabled':''} autocomplete="off" autocapitalize="off" spellcheck="false" value="${escapeHTML(state.list[key])}" aria-label="${key} ברשימת הנתונים" aria-describedby="manual-token-help"${manualTokenKind(state.list[key]) === 'invalid' ? ' aria-invalid="true"' : ''}></label>`).join('');
+  const message = context.q.accepted?acceptedMessage(context.q):state.message || (feedbackType === 'success' ? feedback : '');
+  const status = `<div id="manual-message" class="feedback ${context.q.accepted?'success':state.message ? state.type : feedbackType}" role="status" aria-live="polite">${escapeHTML(message)}</div>`;
+  let work = context.q.accepted?`<div class="manual-form">${status}<button class="btn" type="button" data-next-step>הבא ←</button></div>`:`<div><div class="manual-placeholder">בחרו משולש מהרשימה כדי להציב בו נתונים.</div>${status}</div>`;
   if (definition) {
     const draft = manualDraft(state), locations = ['top','left','right'];
     const geometry = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 225" preserveAspectRatio="none" aria-hidden="true"><path d="M130 10 L15 218 L245 218 Z" fill="#f3f6ee" stroke="#78958a" stroke-width="2.5"/><path d="M65 125 L195 125 M130 125 L130 218" stroke="#78958a" stroke-width="2"/></svg>';
-    const fields = definition.slots.map((slot,j) => `<label class="triangle-slot ${locations[j]}" for="manual-slot-${slot.key}"><strong>${slot.symbol}</strong><input id="manual-slot-${slot.key}" data-manual-slot="${slot.key}" type="text" inputmode="none" lang="en" maxlength="24" aria-controls="manual-keypad"${window.matchMedia('(pointer:coarse)').matches ? ' readonly' : ''} autocomplete="off" autocapitalize="off" spellcheck="false" value="${escapeHTML(draft.values[slot.key] ?? '')}" aria-label="הצבת ${slot.symbol} במשולש" aria-describedby="manual-instructions"${state.errors.includes(slot.key) ? ' aria-invalid="true"' : ''}></label>`).join('');
-    work = `<form id="manual-form" class="manual-form" novalidate><h3>${definition.title}</h3><div class="triangle manual-triangle">${geometry}${fields}</div><div class="manual-answer"><label for="manual-answer">התשובה שחישבתם${context.task ? ` (${bdi(context.task.unit)})` : ''}</label><input id="manual-answer" type="text" class="numeric" inputmode="decimal" maxlength="24" autocomplete="off" value="${escapeHTML(draft.answer)}"${state.errors.includes('answer') ? ' aria-invalid="true"' : ''}><button class="btn" type="submit"${context.task ? '' : ' disabled'}>בדיקת ההצבה והתשובה</button><button class="btn secondary tiny" type="button" data-open-calculator>מחשבון</button></div></form>`;
+    const fields = manualEntrySlots(definition,state,context).map(slot => `<label class="triangle-slot ${locations[definition.slots.indexOf(slot)]}" for="manual-slot-${slot.key}"><strong>${slot.symbol}</strong><input id="manual-slot-${slot.key}" data-manual-slot="${slot.key}" type="text" inputmode="none" lang="en" maxlength="24" aria-controls="manual-keypad"${window.matchMedia('(pointer:coarse)').matches ? ' readonly' : ''}${context.q.accepted?' disabled':''} autocomplete="off" autocapitalize="off" spellcheck="false" value="${escapeHTML(draft.values[slot.key] ?? '')}" aria-label="הצבת ${slot.symbol} במשולש" aria-describedby="manual-instructions"${state.errors.includes(slot.key) ? ' aria-invalid="true"' : ''}></label>`).join('');
+    work = `<form id="manual-form" class="manual-form" novalidate><h3>${definition.title}</h3><div class="triangle manual-triangle">${geometry}${fields}</div><div class="manual-answer"><label for="manual-answer">התשובה שחישבתם${context.task ? ` (${bdi(context.task.unit)})` : ''}</label><input id="manual-answer" type="text" class="numeric${context.q.accepted?' answer-correct':state.errors.includes('answer')?' answer-incorrect':''}" inputmode="decimal" maxlength="24" autocomplete="off" value="${escapeHTML(context.q.accepted?context.q.draft:draft.answer)}"${context.q.accepted?' readonly':''}${state.errors.includes('answer') ? ' aria-invalid="true"' : ''}>${status}${context.q.accepted?'<button class="btn" type="button" data-next-step>הבא ←</button>':`<button class="btn" type="submit"${context.task ? '' : ' disabled'}>בדיקת ההצבה והתשובה</button>`}<button class="btn secondary tiny" type="button" data-open-calculator${context.q.accepted?' disabled':''}>מחשבון</button></div></form>`;
   }
-  const message = state.message || (feedbackType === 'success' ? feedback : '');
   const notice = !context.task ? '<p class="complete-badge">התרגיל הושלם. אפשר לחזור לתרגול ולהמשיך לתרגיל הבא.</p>' : context.target === 'Req' ? '<p class="hint">בצעד הזה מחשבים התנגדות שקולה בעזרת נוסחת טור או מקביל. משולשי חוק אום וההספק מתאימים לצעדים הבאים. <button class="text-btn" data-formula-tab="reference">חזרה לנוסחאות</button></p>' : '';
-  return `<div class="manual-intro"><h3>פתירה בעזרת המשולש</h3><p class="small muted">${escapeHTML(context.label)}${context.task ? ` · מחשבים: ${escapeHTML(context.task.label)}` : ''}</p><p id="manual-instructions" class="small">בחרו משולש, סמנו בו ${bdi('?')} במקום הנעלם והציבו בעצמכם את שני הנתונים הידועים. חשבו והקלידו את התשובה מתחת למשולש. תשובה נכונה תירשם ישירות בתרגיל.</p></div>${notice}<strong class="small" id="manual-choice-title">בחרו את המשולש המתאים</strong><div class="manual-choices" role="group" aria-labelledby="manual-choice-title">${choices}</div><div class="manual-workspace"><aside class="manual-list" aria-labelledby="manual-list-title"><button class="btn soft tiny" type="button" data-manual-list-help>עזרה</button><h3 id="manual-list-title">רשימת נתונים<br><span class="muted">רשות</span></h3>${list}</aside>${work}</div><p id="manual-token-help" class="small muted manual-note">הרשימה היא כלי עזר ואפשר להשאיר אותה ריקה. ${bdi('?')} = הנעלם שמחפשים; ${bdi('x')} = ערך שלא ידוע ולא התבקש לחשב. אפשר להקליד מספרים, כולל עשרוניים. כפתור עזרה ממלא רק את הרשימה.</p><p id="manual-list-status" class="small muted manual-status" role="status" aria-live="polite">${escapeHTML(state.listStatus)}</p>${definition?.note ? `<p class="small muted">${escapeHTML(definition.note)}</p>` : ''}<div id="manual-message" class="feedback ${state.message ? state.type : feedbackType}" role="status" aria-live="polite">${escapeHTML(message)}</div>`;
+  return `<div class="manual-intro"><h3>פתירה בעזרת המשולש</h3><p class="small muted">${escapeHTML(context.label)}${context.task ? ` · מחשבים: ${escapeHTML(context.task.label)}` : ''}</p><p id="manual-instructions" class="small">בחרו משולש, הציבו בעצמכם את הנתונים הידועים וסמנו ${bdi('?')} במקום הנעלם. המעבר בשדות מתחיל בנתונים המספריים לפי סדר רשימת הנתונים. חשבו והקלידו את התשובה מתחת למשולש; בדיקה תעביר אותה לתרגיל ותציג נכון או לא נכון. לאחר תשובה נכונה לחצו על הבא.</p></div>${notice}<strong class="small" id="manual-choice-title">בחרו את המשולש המתאים</strong><div class="manual-choices" role="group" aria-labelledby="manual-choice-title">${choices}</div><div class="manual-workspace"><aside class="manual-list" aria-labelledby="manual-list-title"><p class="manual-paper-note">מומלץ לרשום את הנתונים בדף.</p><button class="btn manual-fill" type="button" data-manual-list-help${context.q.accepted?' disabled':''}>מילוי מתרגיל</button><h3 id="manual-list-title">רשימת נתונים<br><span class="muted">רשות</span></h3>${list}</aside>${work}</div><p id="manual-token-help" class="small muted manual-note">הרשימה היא כלי עזר ואפשר להשאיר אותה ריקה. ${bdi('?')} = הנעלם שמחפשים; ${bdi('X')} = ערך שלא ידוע ולא התבקש לחשב. אפשר להקליד מספרים, כולל עשרוניים. כפתור מילוי מתרגיל ממלא רק את הרשימה; את ההצבה והחישוב עושים בעצמכם.</p><p id="manual-list-status" class="small muted manual-status" role="status" aria-live="polite">${escapeHTML(state.listStatus)}</p>${definition?.note ? `<p class="small muted">${escapeHTML(definition.note)}</p>` : ''}`;
 }
 function fillManualList() {
+  if(currentQuestion().accepted)return;
   markHelp();
   const context = triangleContext(), state = manualState();
   const target = context.target === 'Req' ? 'R' : context.target;
   for (const key of ['U','R','I','P']) {
-    state.list[key] = key === target ? '?' : context.values[key] !== undefined ? DC.fmt(context.values[key]) : 'x';
+    state.list[key] = key === target ? '?' : context.values[key] !== undefined ? DC.fmt(context.values[key]) : 'X';
     const input = $('manual-list-' + key);
     if (input) { input.value = state.list[key]; input.removeAttribute('aria-invalid'); }
   }
   state.listStatus = 'הרשימה מולאה. את הנתונים במשולש מציבים בעצמכם.';
   $('manual-list-status').textContent = state.listStatus;
-  fitDialogs();saveCourse();
+  syncManualEntryOrder();fitDialogs();saveCourse();
 }
 function manualFeedback(message, errors = []) {
+  if(currentQuestion().accepted)return;
   recordAttempt(false,'manual');
-  const state = manualState(); state.message = message; state.type = 'error'; state.errors = errors;
-  const feedback = $('manual-message');
-  feedback.className = 'feedback error'; feedback.textContent = message;
+  currentQuestion().attempts++;
+  const state = manualState(); state.message = 'לא נכון. '+message; state.type = 'error'; state.errors = errors;
+  feedback=state.message;feedbackType='error';
+  const notice = $('manual-message');
+  notice.className = 'feedback error'; notice.textContent = state.message;
+  $('form-feedback').className='feedback error';$('form-feedback').textContent=state.message;
+  document.querySelectorAll('[data-answer]').forEach(input=>{input.classList.add('answer-incorrect');input.setAttribute('aria-invalid','true');});
   $('manual-form')?.querySelectorAll('input').forEach(input => {
     const invalid = errors.includes(input.dataset.manualSlot ?? 'answer');
     if (invalid) input.setAttribute('aria-invalid','true'); else input.removeAttribute('aria-invalid');
+    if(input.id==='manual-answer')input.classList.toggle('answer-incorrect',invalid);
   });
   fitDialogs();saveCourse();
 }
 function checkManualAnswer() {
   const context = triangleContext(), state = manualState();
   const definition = triangleDefinitions.find(item => item.id === state.selected);
-  if (!context.task || !definition) return;
+  if (!context.task || !definition || context.q.accepted) return;
+  syncDraft(manualDraft(state).answer);
   if (!definition.slots.some(slot => slot.key === context.target)) {
     return manualFeedback(context.target === 'Req' ? 'בשלב הזה משתמשים בנוסחת התנגדות שקולה. אפשר למצוא אותה בלשונית נוסחאות.' : 'המשולש שבחרתם אינו מתאים לנעלם בצעד הזה. בחרו משולש אחר.');
   }
@@ -1050,10 +1109,10 @@ function triangleCard(definition, context = null) {
   const locations = ['top', 'left', 'right'];
   const geometry = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 225" preserveAspectRatio="none" aria-hidden="true"><path d="M130 10 L15 218 L245 218 Z" fill="#f3f6ee" stroke="#78958a" stroke-width="2.5"/><path d="M65 125 L195 125 M130 125 L130 218" stroke="#78958a" stroke-width="2"/></svg>';
   const inputs = slots.map((slot, j) => `<div class="triangle-slot ${locations[j]}"><strong>${slot.symbol}</strong><small>${slot.unit}</small>${!context ? '' : enabled && slot.key === context.target
-    ? `<input class="numeric" data-answer type="text" inputmode="decimal" maxlength="24" autocomplete="off" value="${escapeHTML(context.q.draft)}" aria-label="${escapeHTML(context.task.label)} במשולש ${definition.title}">`
+    ? `<input class="numeric${context.q.accepted?' answer-correct':context.q.attempts>0?' answer-incorrect':''}" data-answer type="text" inputmode="decimal" maxlength="24" autocomplete="off" value="${escapeHTML(context.q.draft)}"${context.q.accepted?' readonly':''} aria-label="${escapeHTML(context.task.label)} במשולש ${definition.title}">`
     : `<bdi>${context.values[slot.key] !== undefined ? DC.fmt(context.values[slot.key]) : '—'}</bdi>`}</div>`).join('');
   const triangle = `<div class="triangle">${geometry}${inputs}</div>`;
-  const content = context ? `<form data-triangle-form novalidate>${triangle}${enabled ? `<button class="btn triangle-check tiny" type="submit">בדיקת ${escapeHTML(context.task.label)}</button>` : '<p class="triangle-help">המשולש זמין למענה כשהנעלם ושני הנתונים מתאימים לשלב הנוכחי.</p>'}</form>` : triangle;
+  const content = context ? `<form data-triangle-form novalidate>${triangle}${enabled ? context.q.accepted?'<button class="btn triangle-check tiny" type="button" data-next-step>הבא ←</button>':`<button class="btn triangle-check tiny" type="submit">בדיקת ${escapeHTML(context.task.label)}</button>` : '<p class="triangle-help">המשולש זמין למענה כשהנעלם ושני הנתונים מתאימים לשלב הנוכחי.</p>'}</form>` : triangle;
   return `<section class="formula-card"><h3>${definition.title}</h3>${content}<div class="formula-lines">${definition.formulas.map(mathNotation).join('<br>')}</div>${definition.note ? `<p class="triangle-help">${definition.note}</p>` : ''}</section>`;
 }
 function renderFormulas() {
@@ -1072,7 +1131,7 @@ function renderFormulas() {
   }
   const sheetHelp = context?.task && (context.q.hint || context.q.solution) ? `<div class="${context.q.solution ? 'solution' : 'hint'}"><strong>${context.q.solution ? 'כך פותרים' : 'כיוון לפתרון'}</strong><p>${escapeHTML(context.task.hint)}</p><div class="math">${mathNotation(context.task.formula)}</div>${context.q.solution ? `<div class="math">${escapeHTML(context.task.substitution)} = ${DC.fmt(context.task.value)} ${context.task.unit}</div><p>הקלידו את התוצאה בשדה המענה המודגש כדי להמשיך.</p>` : ''}</div>` : '';
   const definitions = triangleDefinitions;
-  const alternative = context?.task && context.target === 'Req' ? `<form class="sheet-answer" data-triangle-form novalidate><label for="sheet-answer">${escapeHTML(context.task.label)} — השתמשו בנוסחת טור או מקביל שמופיעה בהמשך</label><div class="answer-row"><input id="sheet-answer" class="numeric" data-answer inputmode="decimal" type="text" maxlength="24" value="${escapeHTML(context.q.draft)}" autocomplete="off" aria-label="התנגדות שקולה"><span>${bdi('Ω')}</span><button class="btn tiny" type="submit">בדיקת תשובה</button></div></form>` : '';
+  const alternative = context?.task && context.target === 'Req' ? `<form class="sheet-answer" data-triangle-form novalidate><label for="sheet-answer">${escapeHTML(context.task.label)} — השתמשו בנוסחת טור או מקביל שמופיעה בהמשך</label><div class="answer-row"><input id="sheet-answer" class="numeric${context.q.accepted?' answer-correct':context.q.attempts>0?' answer-incorrect':''}" data-answer inputmode="decimal" type="text" maxlength="24" value="${escapeHTML(context.q.draft)}"${context.q.accepted?' readonly':''} autocomplete="off" aria-label="התנגדות שקולה"><span>${bdi('Ω')}</span>${context.q.accepted?'<button class="btn tiny" type="button" data-next-step>הבא ←</button>':'<button class="btn tiny" type="submit">בדיקת תשובה</button>'}</div></form>` : '';
   const given = context ? Object.entries(context.q.givens).map(([key, value]) => `<div class="given">${bdi(`${key} = ${DC.fmt(value)} ${units[key[0]]}`)}</div>`).join('') : '';
   const exerciseContext = context ? `<div class="formula-context"><strong>${escapeHTML(context.label)}</strong><div>${context.task ? `כעת מחשבים: ${escapeHTML(context.task.label)}. הנתונים במשולשים כוללים רק נתוני השאלה וצעדים שכבר השלמתם.` : 'אפשר לעבור על הנוסחאות ולהמשיך לתרגיל הבא.'}</div><div class="givens sheet-givens" aria-label="נתוני התרגיל">${given}</div><div class="answer-tools" style="margin:8px 0 0"><button class="btn secondary tiny" data-open-calculator>פתיחת המחשבון</button><button class="btn soft tiny" data-close-dialog="formula-dialog">חזרה לתרגול</button></div></div>` : '';
   $('formula-body').innerHTML = `${formulaView === 'reference' ? '<div class="manual-entry"><button class="btn" data-formula-tab="manual">פתירה בעזרת המשולש</button><span class="small muted">בוחרים משולש, מציבים נתונים ופותרים בעצמכם.</span></div>' : ''}${exerciseContext}${context && feedback ? `<div class="feedback sheet-feedback ${feedbackType}" role="status" aria-live="polite">${escapeHTML(feedback)}</div>` : ''}${sheetHelp}${alternative}<div class="formula-grid">${definitions.map(def => triangleCard(def, context)).join('')}</div><div class="units-list"><span>${bdi('U')} — מתח, וולט ${bdi('V')}</span><span>${bdi('I')} — זרם, אמפר ${bdi('A')}</span><span>${bdi('R')} — התנגדות, אוהם ${bdi('Ω')}</span><span>${bdi('P')} — הספק, ואט ${bdi('W')}</span></div><div class="formula-networks"><section class="formula-card"><h3>מעגל טורי</h3><div class="math">${mathNotation('R_T = R1 + R2 + R3')}<br>${mathNotation('I = U ÷ R_T')}<br>${mathNotation('U1 = I × R1')}<br>${mathNotation('U = U1 + U2 + U3')}<br>${mathNotation('P1 = I² × R1')}</div><p class="small muted" style="margin-top:10px">${mathNotation('R_T')} מציין התנגדות שקולה. בשני רכיבים מחברים רק את R1 ואת R2. אותו זרם עובר בכל הרכיבים.</p></section><section class="formula-card"><h3>מעגל מקבילי</h3><div class="math parallel-formulas"><div class="network-formula">${mathNotation('R_T = (R1 × R2) ÷ (R1 + R2)')}</div><div class="network-formula">${mathNotation('R_T = 1 ÷ (1/R1 + 1/R2 + 1/R3)')}</div><div class="network-formula">${mathNotation('R_T = R ÷ n')}</div><div class="network-formula">${mathNotation('I1 = U ÷ R1')}</div><div class="network-formula">${mathNotation('I_total = I1 + I2 + I3')}</div><div class="network-formula">${mathNotation('P1 = U × I1')}</div></div><p class="small muted" style="margin-top:10px">${mathNotation('R_T')} מציין התנגדות שקולה. הנוסחה R/n מתאימה רק לנגדים זהים. n הוא מספר הענפים. בכל הענפים אותו מתח.</p></section></div>`;
@@ -1112,7 +1171,7 @@ function calculateScreen() {
   try {
     calculatorValue = DC.calculate($('calc-screen').value);
     $('calc-result').textContent = String(Math.round(calculatorValue * 1e10) / 1e10);
-    $('calc-error').textContent = ''; $('calc-use').disabled = viewTab==='simulator'||!currentStep(); calculatorFresh = true;
+    $('calc-error').textContent = ''; $('calc-use').disabled = viewTab==='simulator'||!currentStep()||currentQuestion().accepted; calculatorFresh = true;
   } catch (error) {
     calculatorValue = null; $('calc-result').textContent = ''; $('calc-error').textContent = error.message;
     $('calc-use').disabled = true;
@@ -1143,15 +1202,17 @@ document.addEventListener('click', event => {
   if (button.dataset.openDiagram) return openDiagram(button.dataset.openDiagram);
   if (button.dataset.diagramZoom) return zoomDiagram(button.dataset.diagramZoom);
   if (button.dataset.formulaTab) {
-    formulaView = button.dataset.formulaTab; renderFormulas(); $('formula-dialog').scrollTop = 0; return;
+    formulaView = button.dataset.formulaTab; renderFormulas(); $('formula-dialog').scrollTop = 0;
+    if(formulaView==='manual')focusManualEntry();return;
   }
   if (button.dataset.manualTriangle) {
+    if(currentQuestion().accepted)return;
     const state = manualState(); state.selected = button.dataset.manualTriangle; state.message = ''; state.errors = [];
-    renderFormulas(); return;
+    renderFormulas();focusManualEntry();return;
   }
   if (button.hasAttribute('data-manual-list-help')) return fillManualList();
   if (button.hasAttribute('data-open-calculator')) {
-    $('calc-use').disabled = calculatorValue === null || viewTab==='simulator' || !currentStep();
+    $('calc-use').disabled = calculatorValue === null || viewTab==='simulator' || !currentStep() || currentQuestion().accepted;
     openDialog('calculator-dialog'); return;
   }
   if (button.dataset.closeDialog) {
@@ -1165,6 +1226,7 @@ document.addEventListener('click', event => {
   if(button.dataset.removeResistor!==undefined){if(customDraft.resistances.length>1)customDraft.resistances.splice(Number(button.dataset.removeResistor),1);renderSimulatorPanel();$('custom-r-'+Math.min(Number(button.dataset.removeResistor),customDraft.resistances.length-1)).focus({preventScroll:true});return;}
   if (button.dataset.level !== undefined) { levels[tab] = Number(button.dataset.level); feedback = ''; render(); return; }
   const q = currentQuestion();
+  if(button.hasAttribute('data-next-step'))return nextStep();
   if (button.hasAttribute('data-hint')) { markHelp(); q.hint = true; render(); return; }
   if (button.hasAttribute('data-solution')) { markHelp(); q.solution = true; q.help[q.cursor] = true; render(); return; }
   if (button.hasAttribute('data-next-question')) { positions[tab][levels[tab]]++; feedback = ''; render(); return; }
@@ -1209,6 +1271,7 @@ document.addEventListener('input', event => {
     manualState().list[event.target.dataset.manualList] = event.target.value;
     if (manualTokenKind(event.target.value) === 'invalid') event.target.setAttribute('aria-invalid','true');
     else event.target.removeAttribute('aria-invalid');
+    syncManualEntryOrder();
     if(manualKeypadTarget===event.target)paintManualKeypad();
     saveCourse();
   }
@@ -1216,7 +1279,7 @@ document.addEventListener('input', event => {
     const state = manualState(), draft = manualDraft(state);
     if (event.target.id === 'manual-answer') draft.answer = event.target.value;
     else draft.values[event.target.dataset.manualSlot] = event.target.value;
-    state.message = ''; state.errors = []; event.target.removeAttribute('aria-invalid');
+    state.message = ''; state.errors = []; event.target.removeAttribute('aria-invalid');event.target.classList.remove('answer-incorrect');
     $('manual-message').textContent = '';
     if(manualKeypadTarget===event.target)paintManualKeypad();
     saveCourse();
