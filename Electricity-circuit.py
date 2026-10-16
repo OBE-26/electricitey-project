@@ -207,6 +207,14 @@ APP_HTML = r'''<!doctype html>
     .solution-methods .level{flex:1 1 150px;min-width:0;font-size:calc(12px * var(--text-scale,1));padding:8px;white-space:normal}
     .solution-step .math{max-width:100%;overflow-x:auto;direction:ltr;text-align:center;padding:4px 0 7px}
     .solution-step .mathml{font-size:calc(17px * var(--text-scale,1))}
+    .annotated-sum{display:flex;direction:ltr;align-items:flex-end;justify-content:center;gap:8px;width:max-content;min-width:100%;padding:4px 3px}
+    .annotated-term{display:flex;flex-direction:column;align-items:center;flex:none;gap:1px;padding-left:calc(var(--factor-width) * var(--text-scale,1))}
+    .annotated-prefix{display:flex;align-items:center;gap:6px}
+    .annotated-operator{display:inline-flex;align-items:center;height:2.1em}
+    .expansion-mark{position:relative;display:block;width:12px;height:18px;flex:none}
+    .expansion-factor{position:absolute;right:calc(100% - 3px);top:-1px;white-space:nowrap;line-height:1}
+    .solution-step .expansion-factor .mathml{font-size:calc(12px * var(--text-scale,1))}
+    .expansion-slash{display:block;width:12px;height:18px;color:var(--green)}
     .decimal-addition{direction:ltr;width:max-content;max-width:100%;margin:10px auto;font-size:calc(17px * var(--text-scale,1));font-variant-numeric:tabular-nums;text-align:right}
     .decimal-addition>div{display:flex;justify-content:space-between;gap:14px;padding:3px 6px}
     .decimal-addition .decimal-total{border-top:1px solid var(--ink);margin-top:4px;padding-top:7px}
@@ -1083,6 +1091,10 @@ function exerciseToolsHTML(q) {
   const triangle='<svg viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 2 23h17M7 14h9M12 14v9M17 23l2.8-.6L26 16.2 23.8 14 17.6 20.2zM22.5 15.3l2.2 2.2"/></svg>';
   return `<div class="answer-tools exercise-tools" role="group" aria-label="כלי עזרה לפתרון">${icon('data-open-formulas aria-haspopup="dialog" aria-controls="formula-dialog"','דף נוסחאות',formulas)}${icon(`data-open-calculator aria-haspopup="dialog" aria-controls="calculator-dialog"${q.accepted?' disabled':''}`,'מחשבון',calculator)}${canHelp?icon('data-hint','רמז',bulb)+`<button type="button" class="solution-tool" data-solution aria-expanded="${q.solution}" aria-controls="explained-solution">פתרון מוסבר</button>`:''}${active?icon(`data-open-manual ${currentStep()?.key==='Req'?'aria-controls="triangle-entry-note"':'aria-haspopup="dialog" aria-controls="formula-dialog"'}`,'פתירה בעזרת המשולש',triangle):''}</div>${active?'<p class="triangle-entry-note" id="triangle-entry-note" role="status" hidden></p>':''}`;
 }
+function annotatedReciprocalsHTML(values,factors) {
+  const terms=values.map((value,i)=>`${i?'<span class="annotated-operator" aria-hidden="true">+</span>':''}<span class="annotated-term" style="--factor-width:${factors[i].join(' × ').length*7}px" data-expansion-denominator="${value}" data-expansion-factor="${factors[i].join(' × ')}"><span class="expansion-mark"><span class="expansion-factor" aria-label="גורם הרחבה: ${factors[i].join(' × ')}">${mathNotation(factors[i].join(' × '))}</span><svg class="expansion-slash" viewBox="0 0 12 18" aria-hidden="true"><path d="M1 17 L11 1" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></span>${mathNotation('1/'+value)}</span>`).join('');
+  return `<div class="math"><div class="annotated-sum" role="math" aria-label="${escapeHTML('1/R_T = '+values.map(v=>'1/'+v).join(' + '))}; גורמי הרחבה מעל השברים"><span class="annotated-prefix">${mathNotation('1/R_T')}<span aria-hidden="true">=</span></span>${terms}</div></div>`;
+}
 let resistanceSolutionMethod='fractions';
 function parallelResistanceSolutionHTML(q,step) {
   if(q.kind!=='parallel'||q.resistances.length<2||q.resistances.length>3||step.key!=='Req')return '';
@@ -1101,6 +1113,27 @@ function parallelResistanceSolutionHTML(q,step) {
   const reciprocal='1/R_T',values=q.resistances.map(r=>DC.fmt(displayValue(q,'R',r)));
   const methods=`<div class="solution-methods" role="group" aria-label="דרך החישוב של ההתנגדות השקולה"><button type="button" class="level" data-resistance-method="fractions" aria-pressed="${resistanceSolutionMethod==='fractions'}">דרך א׳ — מכנה משותף</button><button type="button" class="level" data-resistance-method="decimal" aria-pressed="${resistanceSolutionMethod==='decimal'}">דרך ב׳ — שבר עשרוני</button></div>`;
   const finalEquals=resultN*100n%resultD===0n?'=':'≈';
+  const multiply=list=>list.reduce((a,r)=>({n:a.n*r.n,d:a.d*r.d}),{n:1n,d:1n});
+  const add=list=>list.reduce((a,r)=>({n:a.n*r.d+r.n*a.d,d:a.d*r.d}),{n:0n,d:1n});
+  // Products and sums of the given finite decimals remain exact finite decimals.
+  const exactDecimal=({n,d})=>{
+    let text=String(n/d),remainder=n%d;
+    if(remainder){text+='.';while(remainder){remainder*=10n;text+=String(remainder/d);remainder%=d;}}
+    return text;
+  };
+  if(values.every(value=>value===values[0])){
+    return stage('1. בנגדים זהים במקביל מחלקים את התנגדות הנגד במספר הנגדים:', 'R_T = R/n')
+      +stage(`2. יש ${values.length} נגדים זהים, ולכן מציבים:`, `R_T = ${values[0]}/${values.length}`)
+      +stage(finalEquals==='='?'3. התוצאה:':'3. מעגלים רק את התוצאה הסופית לשתי ספרות אחרי הנקודה:',`R_T ${finalEquals} ${DC.fmt(step.value)}`,step.unit);
+  }
+  if(values.length===2){
+    const product=exactDecimal(multiply(fractions)),sum=exactDecimal(add(fractions));
+    return stage('1. לשני נגדים שונים במקביל משתמשים במכפלה חלקי סכום:', 'R_T = (R1 × R2)/(R1 + R2)')
+      +stage('2. מציבים את ההתנגדויות באותה יחידה:',`R_T = (${values[0]} × ${values[1]})/(${values[0]} + ${values[1]})`)
+      +stage('3. מחשבים את המכפלה ואת הסכום:',`R_T = ${product}/${sum}`)
+      +stage(finalEquals==='='?'4. התוצאה:':'4. מעגלים רק את התוצאה הסופית לשתי ספרות אחרי הנקודה:',`R_T ${finalEquals} ${DC.fmt(step.value)}`,step.unit);
+  }
+
   if(resistanceSolutionMethod==='decimal'){
     const decimal=n=>n.toFixed(10).replace(/\.?0+$/,'');
     const reciprocals=values.map(r=>1/Number(r)),sum=reciprocals.reduce((a,b)=>a+b,0);
@@ -1114,16 +1147,17 @@ function parallelResistanceSolutionHTML(q,step) {
     out+=stage(finalEquals==='='?'5. התוצאה:':'5. מעגלים את התוצאה הסופית לשתי ספרות אחרי הנקודה:',`R_T ${finalEquals} ${DC.fmt(step.value)}`,step.unit);
     return out;
   }
-  let out=methods+stage('1. כותבים את נוסחת הענפים במקביל:',`${reciprocal} = ${values.map((_,i)=>'1/R'+(i+1)).join(' + ')}`);
-  out+=stage('2. מציבים את ההתנגדויות באותה יחידה:',`${reciprocal} = ${values.map(r=>'1/'+r).join(' + ')}`);
-  if(fractions.some(r=>r.d!==1n))out+=stage('כותבים את ההופכיים כשברים ללא עשרוניים:',`${reciprocal} = ${fractions.map(r=>r.d+'/'+r.n).join(' + ')}`);
-  out+=`<div class="solution-step"><p>3. המכנה המשותף הוא ${bdi(denominator)}. מרחיבים כל שבר באותו גורם במונה ובמכנה:</p>${fractions.map((r,i)=>{
-    const factor=denominator/r.n;
-    return `<div class="math">${mathNotation(`${r.d}/${r.n} = (${r.d} × ${factor})/(${r.n} × ${factor}) = ${numerators[i]}/${denominator}`)}</div>`;
-  }).join('')}</div>`;
-  out+=`<div class="solution-step"><p>4. מחברים את המונים; המכנה נשאר זהה:</p>${[`${reciprocal} = ${numerators.map(n=>n+'/'+denominator).join(' + ')}`,`${reciprocal} = (${numerators.join(' + ')})/${denominator}`,`${reciprocal} = ${total}/${denominator}`].map(equation=>`<div class="math">${mathNotation(equation)}</div>`).join('')}</div>`;
-  if(g!==1n)out+=stage(`מצמצמים את המונה והמכנה ב־${bdi(g)}:`,`${reciprocal} = ${total}/${denominator} = ${resultD}/${resultN}`);
-  out+=stage('5. הופכים את השבר כדי לקבל את ההתנגדות השקולה:',`R_T = ${resultN}/${resultD}`);
+  const otherIndices=values.map((_,i)=>values.map((_,j)=>j).filter(j=>j!==i));
+  otherIndices[2].reverse();
+  const factors=otherIndices.map(indices=>indices.map(i=>values[i]));
+  const products=otherIndices.map(indices=>multiply(indices.map(i=>fractions[i])));
+  const productTexts=products.map(exactDecimal),productDenominator=exactDecimal(multiply(fractions)),sumNumerator=exactDecimal(add(products));
+  const denominatorExpression=values.join(' × '),numeratorExpression=factors.map(list=>list.join(' × ')).join(' + ');
+  let out=methods+stage('1. כותבים את נוסחת שלושת הענפים במקביל:',`${reciprocal} = 1/R1 + 1/R2 + 1/R3`);
+  out+=`<div class="solution-step"><p>2. מציבים את ההתנגדויות באותה יחידה. מעל כל שבר מסמנים את שני המכנים האחרים — בהם מכפילים גם את המונה וגם את המכנה:</p>${annotatedReciprocalsHTML(values,factors)}</div>`;
+  out+=stage('3. המכנה המשותף הוא מכפלת שלושת המכנים. מחברים את המונים שהתקבלו:',`${reciprocal} = (${numeratorExpression})/(${denominatorExpression})`);
+  out+=`<div class="solution-step"><p>4. מחשבים את המכפלות ואת סכום המונים:</p><div class="math">${mathNotation(`${reciprocal} = (${productTexts.join(' + ')})/${productDenominator}`)}</div><div class="math">${mathNotation(`${reciprocal} = ${sumNumerator}/${productDenominator}`)}</div></div>`;
+  out+=stage('5. הופכים את השבר: המונה והמכנה מחליפים מקום, ומקבלים את ההתנגדות השקולה:',`R_T = ${productDenominator}/${sumNumerator}`);
   out+=stage(finalEquals==='='?'6. התוצאה:':'6. מעגלים רק את התוצאה הסופית לשתי ספרות אחרי הנקודה:',`R_T ${finalEquals} ${DC.fmt(step.value)}`,step.unit);
   return out;
 }
@@ -2363,3 +2397,4 @@ if isinstance(feedback_event, dict) and feedback_event.get("type") == "feedback"
                 completed.pop(next(iter(completed)))
             st.session_state["dc_feedback_reply"] = {"id": submission_id, **result}
             st.rerun()
+
