@@ -182,6 +182,35 @@ APP_HTML = r'''<!doctype html>
     .manual-editor,.manual-triangle-panel{min-width:0}
     .manual-show-circuit{width:100%;margin-bottom:12px}
     .calc-grid button[data-calc="²"]{grid-column:1/-1}
+    .calc-main{min-width:0}
+    .calc-triangle-reference{padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--soft);align-self:start}
+    .calc-triangle-reference h3{font-size:calc(15px * var(--text-scale,1));margin:0 0 4px;overflow-wrap:anywhere}
+    .calc-reference-icon{display:block;width:22px;height:22px;margin-bottom:5px;color:var(--green)}
+    .calc-triangle-reference p{font-size:calc(12px * var(--text-scale,1));margin:0 0 8px}
+    .calc-reference-values{display:grid;gap:6px;margin:0}
+    .calc-reference-row{display:flex;direction:ltr;align-items:center;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid var(--line)}
+    .calc-reference-row:last-child{border-bottom:0}
+    .calc-reference-row dt,.calc-reference-row dd{margin:0;min-width:0}
+    .calc-reference-row dd{display:flex;align-items:baseline;gap:5px;flex-wrap:wrap;justify-content:flex-end;font-size:calc(15px * var(--text-scale,1))}
+    .calc-reference-row bdi{overflow-wrap:anywhere;max-width:100%}
+    .calc-reference-row small{font-size:calc(12px * var(--text-scale,1));color:var(--muted)}
+    .calc-reference-row .mathml{font-size:calc(16px * var(--text-scale,1))}
+    @media(min-width:600px){
+      .calc-dialog.with-triangle-reference{max-width:680px}
+      .with-triangle-reference .calc-layout{display:grid;grid-template-columns:minmax(170px,.8fr) minmax(0,1.2fr);gap:16px;align-items:start}
+    }
+    @media(max-width:599px){
+      .calc-triangle-reference{position:sticky;top:0;z-index:1;margin-bottom:12px;padding:9px}
+      .calc-reference-values{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+      .calc-reference-row{flex-direction:column;justify-content:flex-start;gap:3px;padding:5px 3px;border:0;text-align:center}
+      .calc-reference-row dd{justify-content:center;font-size:calc(14px * var(--text-scale,1))}
+    }
+    @media(min-width:375px) and (max-width:599px){
+      .calc-dialog.with-triangle-reference{max-width:680px}
+      .with-triangle-reference .calc-layout{display:grid;grid-template-columns:minmax(100px,.7fr) minmax(197px,1.3fr);gap:12px;align-items:start}
+      .calc-triangle-reference{margin-bottom:0;padding:8px}
+      .calc-reference-values{grid-template-columns:1fr}
+    }
     @media(min-width:1000px) and (hover:hover) and (pointer:fine){
       #formula-dialog.manual-desktop-view{width:min(1280px,calc(100% - 24px))}
       .manual-desktop-layout{display:grid;grid-template-columns:minmax(280px,.8fr) minmax(552px,1.2fr);gap:24px;align-items:start}
@@ -241,6 +270,16 @@ APP_HTML = r'''<!doctype html>
     .decimal-addition .decimal-total{border-top:1px solid var(--ink);margin-top:4px;padding-top:7px}
     .icon-button:hover{background:var(--soft)}.icon-button svg{width:22px;height:22px;pointer-events:none}
     .icon-tooltip{position:fixed;z-index:40;max-width:calc(100vw - 24px);padding:7px 11px;border:1px solid var(--line);border-radius:8px;background:var(--ink);color:var(--paper);font-size:calc(14px * var(--text-scale,1));line-height:1.5;pointer-events:none;text-align:center}
+    .guide-dialog{max-width:740px}
+    .guide-dialog .close{border:2px solid var(--green);min-width:44px;min-height:44px;flex:none}
+    .guide-intro{color:var(--muted);margin:0 0 16px}
+    .guide-section{border:1px solid var(--line);border-radius:12px;background:var(--card);padding:0 14px;margin:10px 0}
+    .guide-section summary{cursor:pointer;font-weight:700;min-height:48px;align-content:center;padding:10px 0}
+    .guide-section p,.guide-section li{font-size:calc(15px * var(--text-scale,1));line-height:1.75;overflow-wrap:anywhere}
+    .guide-section ol,.guide-section ul{padding-inline-start:24px}
+    .guide-section li+li{margin-top:7px}
+    .guide-section p:last-child,.guide-section ol:last-child,.guide-section ul:last-child{margin-bottom:14px}
+    .guide-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}
     .feedback-dialog{max-width:600px}
     .rating-dialog{max-width:560px}
     .rating-dialog .public-rating{margin:12px 0 20px}
@@ -266,7 +305,7 @@ APP_HTML = r'''<!doctype html>
     .public-rating-stars{position:relative;display:inline-block;direction:ltr;line-height:1.1;font-size:22px;letter-spacing:2px;color:var(--muted)}
     .public-rating-fill{position:absolute;left:0;top:0;overflow:hidden;white-space:nowrap;width:0;color:#a65b00}
     .public-rating-summary{font-size:calc(14px * var(--text-scale,1));margin:10px 0;color:var(--green);font-weight:700}
-    @media(max-width:570px){.top-tools{width:100%;flex-basis:100%}.quickbar{gap:10px}}
+    @media(max-width:570px){.top-tools{width:100%;flex-basis:100%}.quickbar{gap:clamp(4px,1.5vw,8px);padding-inline:8px}}
     /* Controls use their content height even while the host resizes its iframe. */
     .tabs,.formula-tabs,.manual-choices,.profile-fields,.accessibility-options,.qa-selectors,.contact-choices,.calc-grid,.manual-keypad-grid{grid-auto-rows:max-content;align-content:start}
     .tabs{height:auto;align-items:start}
@@ -298,7 +337,7 @@ APP_HTML = r'''<!doctype html>
 <body>
 <a class="skip-link" href="#learning-main">דילוג לתרגול</a>
 <div class="app" id="app">
-  <div class="quickbar-space"><nav class="quickbar" id="quickbar" aria-label="כלים מהירים"><button type="button" class="icon-button" data-open-formulas data-tooltip="דף נוסחאות" aria-label="דף נוסחאות"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 12h7M9 16h7"/></svg></button><button type="button" class="icon-button" data-open-calculator data-tooltip="מחשבון" aria-label="מחשבון"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M8 6h8M8 11h1M12 11h1M16 11h0M8 15h1M12 15h1M16 15h0M8 19h1M12 19h1M16 19h0"/></svg></button><button type="button" class="icon-button" data-new-course data-tooltip="תרגילים חדשים" aria-label="תרגילים חדשים"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 7a8 8 0 1 0 0 10M20 3v5h-5"/></svg></button><button type="button" class="icon-button" data-show-progress data-tooltip="התקדמות אישית" aria-label="התקדמות אישית"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 3v17h17M8 16v-4M13 16V8M18 16V4"/></svg></button><button type="button" class="icon-button" data-open-ratings data-tooltip="דירוג האתר" aria-label="דירוג האתר" aria-haspopup="dialog" aria-controls="ratings-dialog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17.3l-5.6 2.9 1.1-6.2L3 9.6l6.2-.9z"/></svg></button></nav></div>
+  <div class="quickbar-space"><nav class="quickbar" id="quickbar" aria-label="כלים מהירים"><button type="button" class="icon-button" data-open-formulas data-tooltip="דף נוסחאות" aria-label="דף נוסחאות"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 12h7M9 16h7"/></svg></button><button type="button" class="icon-button" data-open-calculator data-tooltip="מחשבון" aria-label="מחשבון"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M8 6h8M8 11h1M12 11h1M16 11h0M8 15h1M12 15h1M16 15h0M8 19h1M12 19h1M16 19h0"/></svg></button><button type="button" class="icon-button" data-new-course data-tooltip="תרגילים חדשים" aria-label="תרגילים חדשים"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 7a8 8 0 1 0 0 10M20 3v5h-5"/></svg></button><button type="button" class="icon-button" data-show-progress data-tooltip="התקדמות אישית" aria-label="התקדמות אישית"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 3v17h17M8 16v-4M13 16V8M18 16V4"/></svg></button><button type="button" class="icon-button" data-open-ratings data-tooltip="דירוג האתר" aria-label="דירוג האתר" aria-haspopup="dialog" aria-controls="ratings-dialog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17.3l-5.6 2.9 1.1-6.2L3 9.6l6.2-.9z"/></svg></button><button type="button" class="icon-button" data-open-guide data-tooltip="מדריך שימוש" aria-label="מדריך שימוש" aria-haspopup="dialog" aria-controls="guide-dialog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5c-3-2-6-2-10-1v15c4-1 7-1 10 1 3-2 6-2 10-1V4c-4-1-7-1-10 1ZM12 5v15"/><path d="M6 8h2M6 12h2M16 8h2M16 12h2"/></svg></button></nav></div>
   <header class="topbar">
     <div class="identity"><div class="brand-icon" aria-hidden="true">ϟ</div><div><div class="brand-title">יסודות החשמל</div><div class="eyebrow">תרגול למתחילים · DC</div></div></div>
     <div class="top-tools">
@@ -332,7 +371,48 @@ APP_HTML = r'''<!doctype html>
 <dialog id="progress-dialog" class="progress-dialog" aria-labelledby="progress-dialog-title"><div class="dialog-head"><h2 id="progress-dialog-title">התקדמות אישית</h2><button class="close" data-close-dialog="progress-dialog" aria-label="סגירת ההתקדמות האישית">×</button></div><section id="personal-progress" class="card personal-progress" aria-labelledby="personal-progress-title"></section></dialog>
 <dialog id="formula-dialog" aria-labelledby="formula-title"><div class="dialog-head"><h2 id="formula-title">דף נוסחאות</h2><button class="close" data-close-dialog="formula-dialog" aria-label="סגירת דף הנוסחאות">×</button></div><nav class="formula-tabs" role="tablist" aria-label="תצוגת דף הנוסחאות"><button id="formula-tab-reference" class="formula-tab" data-formula-tab="reference" role="tab" aria-selected="true" aria-controls="formula-body" tabindex="0">נוסחאות</button><button id="formula-tab-help" class="formula-tab" data-formula-tab="help" role="tab" aria-selected="false" aria-controls="formula-body" tabindex="-1">עזרה</button><button id="formula-tab-manual" class="formula-tab" data-formula-tab="manual" role="tab" aria-selected="false" aria-controls="formula-body" tabindex="-1">פתירה בעזרת המשולש</button></nav><p class="formula-intro">החלק העליון במשולש הוא מכפלת שני החלקים התחתונים. כדי למצוא חלק תחתון, מחלקים את העליון בחלק התחתון הידוע. בלשונית עזרה מופיעים נתוני התרגיל ואפשר לענות במשולש המתאים.</p><div id="formula-body" role="tabpanel" aria-labelledby="formula-tab-reference" tabindex="0"></div><section id="manual-keypad" class="manual-keypad" aria-label="מקלדת מספרים X וסימן שאלה" hidden><div class="manual-keypad-header"><span class="small muted">מקלדת נתונים</span><bdi id="manual-keypad-value"></bdi></div><div class="manual-keypad-grid"><button type="button" data-manual-key="7" aria-label="7">7</button><button type="button" data-manual-key="8" aria-label="8">8</button><button type="button" data-manual-key="9" aria-label="9">9</button><button type="button" data-manual-key="X" aria-label="ערך שלא התבקש לחשב">X</button><button type="button" data-manual-key="4" aria-label="4">4</button><button type="button" data-manual-key="5" aria-label="5">5</button><button type="button" data-manual-key="6" aria-label="6">6</button><button type="button" data-manual-key="?" aria-label="נעלם">?</button><button type="button" data-manual-key="1" aria-label="1">1</button><button type="button" data-manual-key="2" aria-label="2">2</button><button type="button" data-manual-key="3" aria-label="3">3</button><button type="button" data-manual-key="backspace" aria-label="מחיקת תו">⌫</button><button type="button" data-manual-key="0" aria-label="0">0</button><button type="button" data-manual-key="." aria-label="נקודה עשרונית">.</button><button type="button" data-manual-key="clear" aria-label="ניקוי השדה">ניקוי</button><button type="button" data-manual-key="enter" aria-label="אישור ומעבר לשדה הבא">✓</button><button type="button" data-manual-key="done" aria-label="סגירת המקלדת">↓</button></div></section></dialog>
 <dialog id="diagram-dialog" aria-labelledby="diagram-title"><div class="dialog-head"><h2 id="diagram-title">הגדלת הסכמה</h2><button class="close" data-close-dialog="diagram-dialog" aria-label="סגירת הסכמה המוגדלת">×</button></div><div id="diagram-context"></div><div class="diagram-toolbar" role="group" aria-label="הגדלת הסכמה"><button class="btn secondary tiny" data-diagram-zoom="in" aria-label="הגדלה">+</button><button class="btn secondary tiny" data-diagram-zoom="out" aria-label="הקטנה">−</button><button class="btn soft tiny" data-diagram-zoom="reset">התאמה למסך</button><bdi id="diagram-zoom-label" role="status" aria-live="polite">100%</bdi></div><p class="small muted">אפשר להגדיל באמצעות הכפתורים ולגלול בתוך הסכמה.</p><div class="diagram-viewport" id="diagram-viewport" tabindex="0" role="region" aria-label="סכמה מוגדלת — אפשר לגלול לצדדים ולמעלה ולמטה"><div class="diagram-canvas" id="diagram-canvas"></div></div></dialog>
-<dialog id="calculator-dialog" class="calc-dialog" aria-labelledby="calc-title"><div class="dialog-head"><h2 id="calc-title">מחשבון</h2><button class="close" data-close-dialog="calculator-dialog" aria-label="סגירת המחשבון">×</button></div><label class="small muted" for="calc-screen">חיבור, חיסור, כפל, חילוק והעלאה בריבוע</label><input id="calc-screen" class="calc-screen" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" maxlength="160" placeholder="12 ÷ 3"><div id="calc-result" class="calc-result" role="status" aria-live="polite"></div><div class="calc-grid" id="calc-grid"></div><p id="calc-error" class="feedback error" role="alert"></p><div class="calc-actions"><button class="btn" id="calc-use" disabled>העברה לתשובה</button><button class="btn secondary" id="calc-clear">ניקוי</button></div><button class="text-btn" data-open-formulas>דף נוסחאות △</button><p class="small muted" style="margin-top:12px;margin-bottom:0">המחשבון שומר על סדר פעולות חשבון. אפשר להשתמש בסוגריים. אין פונקציית שורש.</p></dialog>
+<dialog id="calculator-dialog" class="calc-dialog" aria-labelledby="calc-title"><div class="dialog-head"><h2 id="calc-title">מחשבון</h2><button class="close" data-close-dialog="calculator-dialog" aria-label="סגירת המחשבון">×</button></div><div class="calc-layout"><aside id="calc-triangle-reference" class="calc-triangle-reference" aria-labelledby="calc-triangle-title" hidden></aside><div class="calc-main"><label class="small muted" for="calc-screen">חיבור, חיסור, כפל, חילוק והעלאה בריבוע</label><input id="calc-screen" class="calc-screen" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" maxlength="160" placeholder="12 ÷ 3"><div id="calc-result" class="calc-result" role="status" aria-live="polite"></div><div class="calc-grid" id="calc-grid"></div><p id="calc-error" class="feedback error" role="alert"></p><div class="calc-actions"><button class="btn" id="calc-use" disabled>העברה לתשובה</button><button class="btn secondary" id="calc-clear">ניקוי</button></div><button class="text-btn" data-open-formulas>דף נוסחאות △</button><p class="small muted" style="margin-top:12px;margin-bottom:0">המחשבון שומר על סדר פעולות חשבון. אפשר להשתמש בסוגריים. אין פונקציית שורש.</p></div></div></dialog>
+<dialog id="guide-dialog" class="guide-dialog" aria-labelledby="guide-title" aria-describedby="guide-intro">
+  <div class="dialog-head"><h2 id="guide-title">מדריך שימוש באתר</h2><button type="button" class="close" data-close-dialog="guide-dialog" aria-label="סגירת מדריך השימוש">×</button></div>
+  <p class="guide-intro" id="guide-intro">לומדים ומתרגלים חשמל בקצב שלכם: חוק אום והספק, מעגל טורי ומעגל מקבילי. פתחו נושא במדריך כדי לקרוא את ההוראות.</p>
+  <details class="guide-section" open><summary>איך מתחילים לתרגל?</summary><ol>
+    <li>בכניסה הראשונה ממלאים פרופיל ומאשרים את תנאי השימוש.</li>
+    <li>בוחרים תחום תרגול ורמה: א׳ — מספרים שלמים; ב׳ — עשרוניים; ג׳ — המרות יחידות. בכל רמה יש 10 תרגילים.</li>
+    <li>קוראים את הנתונים ואת השאלה של הצעד הנוכחי, ומקלידים בתשובה מספר בלבד, ביחידה שמופיעה ליד השדה.</li>
+    <li>לוחצים על בדיקת התשובה. אם יש טעות, אפשר לתקן ולנסות שוב. לאחר תשובה נכונה ממשיכים בכפתור ״הבא״.</li>
+  </ol></details>
+  <details class="guide-section"><summary>דף הנוסחאות — מה יש בו ואיך משתמשים?</summary><ul>
+    <li>אייקון הדף פותח את דף הנוסחאות. בלשונית ״נוסחאות״ מוצגים משולשי חוק אום וההספק, נוסחאות למעגל טורי ומקבילי והסברי היחידות.</li>
+    <li>בוחרים נוסחה שיש בה את הנעלם ושני נתונים שכבר ידועים. במשולש: כיסוי המשתנה העליון נותן כפל של שני המשתנים התחתונים; כיסוי משתנה תחתון נותן חילוק של העליון בתחתון שנשאר.</li>
+    <li>הסימונים: <bdi>U</bdi> — מתח בוולט; <bdi>I</bdi> — זרם באמפר; <bdi>R</bdi> — התנגדות באוהם; <bdi>P</bdi> — הספק בוואט; <bdi>R<sub>T</sub></bdi> — התנגדות שקולה.</li>
+    <li>בלשונית העזרה לתרגיל אפשר לראות את הנתונים שכבר ידועים ולחשב את הנעלם המתאים. נתונים שטרם חושבו אינם נחשפים.</li>
+  </ul></details>
+  <details class="guide-section"><summary>פתירה בעזרת המשולש</summary><ol>
+    <li>לוחצים על אייקון המשולש ליד התשובה, בוחרים משולש מתאים ומציבים בעצמכם את הנתונים במשבצות. בתצוגת הטלפון אפשר להשתמש במקלדת שבאתר.</li>
+    <li>בחישובי ריבוע, למשל <bdi>I²</bdi>, מציבים את הזרם כפול עצמו. מקפידים על היחידות שמופיעות ליד כל משבצת.</li>
+    <li>אפשר לפתוח את המחשבון. הרשימה ״הערכים שהזנת במשולש״ מציגה את ההצבה שלכם כפי שהוקלדה, גם אם נפלה בה טעות.</li>
+    <li>לאחר החישוב מעבירים את התוצאה למשולש ולוחצים ״בדוק״. נבדקים גם הנתונים שהצבתם וגם התוצאה. ״הצג סכמה״ מציג את המעגל, הנתונים והנעלם בקצרה.</li>
+    <li>בחישוב התנגדות שקולה משתמשים בנוסחת המעגל המתאימה; אין משולש לחישוב הזה.</li>
+  </ol></details>
+  <details class="guide-section"><summary>מחשבון, רמז ופתרון מוסבר</summary><ul>
+    <li>אייקון המחשבון פותח מחשבון עם כפל, חילוק, חיבור, חיסור, סוגריים וריבוע. מקלידים ביטוי, לוחצים <bdi>=</bdi> ואז ״העברה לתשובה״. מתוך המשולש התוצאה מועברת למשבצת הנעלם.</li>
+    <li>אייקון המנורה פותח רמז. לחיצה נוספת סוגרת אותו.</li>
+    <li>״פתרון מוסבר״ פותח את שלבי החישוב. אפשר לסגור בלחיצה נוספת או ב־× ולפתוח שוב. כשמוצעות דרך א׳ ודרך ב׳, אפשר לעבור ביניהן.</li>
+    <li>מעבר עם העכבר או לחיצה ארוכה על אייקון מציגים את שמו. לחיצה רגילה מפעילה את הכלי.</li>
+  </ul></details>
+  <details class="guide-section"><summary>התקדמות, תרגילים חדשים וסימולטור</summary><ul>
+    <li>אייקון הגרף ו״התקדמות אישית״ פותחים את נתוני התרגול שלכם. הפרופיל וההתקדמות נשמרים בדפדפן ובמכשיר הנוכחיים; ניקוי נתוני הדפדפן עלול למחוק אותם.</li>
+    <li>אייקון החץ המעגלי ו״איפוס תרגילים״ מאפשרים לקבל סבב חדש, לאחר אישור. הפרופיל וההתקדמות האישית נשמרים.</li>
+    <li>בסימולטור אפשר לבחון מעגל מתרגיל או מעגל משלכם ולשנות את מתח המקור. שינוי בסימולטור אינו משנה את תשובות התרגיל.</li>
+  </ul></details>
+  <details class="guide-section"><summary>נגישות, מצב לילה ופנייה לעומר</summary><ul>
+    <li>״שינוי גודל טקסט״ ו״נגישות״ מאפשרים להתאים את התצוגה. בנגישות אפשר לבחור מצב לילה פעיל, כבוי או בהתאם למכשיר; ברירת המחדל היא בהתאם למכשיר.</li>
+    <li>״פנייה לעומר״ פותחת שתי אפשרויות: ״משוב ודירוג אפליקציה״ — דירוג כוכבים חובה ומלל לבחירה, שמתפרסמים ב־GitHub; ״הערות״ — הודעה פרטית לעומר.</li>
+    <li>אייקון הכוכב פותח את תוצאות הדירוג. אפשר לפתוח אותן גם דרך ״דירוג״ בתחתית האתר.</li>
+    <li>במחשב אפשר לנוע באמצעות <bdi>Tab</bdi> ו־<bdi>Shift+Tab</bdi>, ולסגור חלון באמצעות <bdi>Escape</bdi> או כפתור ×.</li>
+  </ul></details>
+  <div class="guide-actions"><button type="button" class="btn" data-close-dialog="guide-dialog">חזרה לתרגול</button><button type="button" class="btn secondary" data-open-formulas>פתיחת דף הנוסחאות</button></div>
+</dialog>
 <dialog id="new-course-dialog" class="confirm-dialog" aria-labelledby="new-course-title"><div class="dialog-head"><h2 id="new-course-title">להתחיל סבב חדש?</h2><button class="close" data-close-dialog="new-course-dialog" aria-label="סגירה">×</button></div><p>התרגילים בסבב יוחלפו. ההתקדמות האישית, הגרף, הטבלה והפרופיל שלכם יישמרו.</p><div class="completion-actions"><button class="btn" id="new-course-confirm">כן, תרגילים חדשים</button><button class="btn secondary" data-close-dialog="new-course-dialog">חזרה לתרגול</button></div></dialog>
 <dialog id="profile-dialog" class="profile-dialog" aria-labelledby="profile-title"><div class="dialog-head"><h2 id="profile-title">הפרופיל שלי במכשיר הזה</h2><button class="close" id="profile-close" data-close-dialog="profile-dialog" aria-label="סגירת הפרופיל">×</button></div><p class="small muted">בכניסה הראשונה מזינים שם ותאריך לידה ומאשרים את תנאי השימוש. הפרטים וההתקדמות יישמרו בדפדפן הזה; ניקוי נתוני הדפדפן עלול למחוק אותם.</p><form id="profile-form" novalidate><div class="profile-fields"><label for="profile-name">שם<input id="profile-name" aria-describedby="profile-error" type="text" autocomplete="name" maxlength="80" required></label><label for="profile-birth">תאריך לידה<input id="profile-birth" aria-describedby="profile-error" type="date" autocomplete="bday" required></label></div><details class="terms-document" id="profile-terms"><summary>תנאי שימוש ופרטיות — לקריאה לפני האישור</summary><div data-terms-document></div></details><label class="consent-row" for="profile-consent"><input id="profile-consent" aria-describedby="profile-error" type="checkbox" required>אני מסכים/ה לתנאי השימוש ולשמירת הפרופיל ונתוני התרגול באופן מקומי במכשיר הזה.</label><div id="profile-error" class="feedback error" role="alert"></div><button class="btn" type="submit">שמירה ותחילת תרגול</button></form><details class="profile-accessibility"><summary>התאמות נגישות לפני תחילת התרגול</summary><div id="profile-accessibility-controls"></div></details></dialog>
 <dialog id="terms-dialog" aria-labelledby="terms-title"><div class="dialog-head"><h2 id="terms-title">תנאי שימוש ופרטיות</h2><button class="close" data-close-dialog="terms-dialog" aria-label="סגירת תנאי השימוש">×</button></div><div data-terms-document></div></dialog>
@@ -1438,6 +1518,20 @@ function manualResultSlotKey() {
   const definition=triangleDefinitions.find(item=>item.id===manualState().selected);
   return definition?.slots.some(slot=>slot.key===target)?target:null;
 }
+function renderCalculatorTriangleReference() {
+  const panel=$('calc-triangle-reference'),dialog=$('calculator-dialog');
+  const q=currentQuestion(),state=q.manualWork?.[q.cursor];
+  const definition=calculatorReturnToFormulas&&formulaView==='manual'?triangleDefinitions.find(item=>item.id===state?.selected):null;
+  panel.hidden=!definition;dialog.classList.toggle('with-triangle-reference',!!definition);
+  if(!definition){panel.innerHTML='';return;}
+  const values=state.drafts?.[definition.id]?.values??{};
+  const rows=definition.slots.map(slot=>{
+    // Mirror the actual field, including mistaken placements; checking stays in the manual solver.
+    const value=String($('manual-slot-'+slot.key)?.value??values[slot.key]??'');
+    return `<div class="calc-reference-row" data-calc-triangle-slot="${slot.key}"><dt>${mathNotation(slot.symbol)}</dt><dd><bdi data-calc-triangle-value>${escapeHTML(value||'—')}</bdi><small>${bdi(slotUnit(slot,q))}</small></dd></div>`;
+  }).join('');
+  panel.innerHTML=`<h3 id="calc-triangle-title"><svg class="calc-reference-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 2 21h20zM7 12h10M12 12v9"/></svg>הערכים שהזנת במשולש</h3><p class="muted">${escapeHTML(definition.title)}</p><dl class="calc-reference-values">${rows}</dl>`;
+}
 function canUseCalculatorResult() {
   if(viewTab==='simulator'||!currentStep()||currentQuestion().accepted)return false;
   return !(calculatorReturnToFormulas&&formulaView==='manual')||manualResultSlotKey()!==null;
@@ -1684,6 +1778,7 @@ function openDialog(id, { preserveFormulaView = false } = {}) {
   hideIconTooltip();
   if (!profileReady() && id !== 'profile-dialog') { openProfile(); return; }
   calculatorReturnToFormulas = id === 'calculator-dialog' && $('formula-dialog').open;
+  if(id==='calculator-dialog')renderCalculatorTriangleReference();
   if (id === 'formula-dialog' && !preserveFormulaView) formulaView = 'reference';
   document.querySelectorAll('dialog[open]').forEach(dialog => { if (dialog.id !== id) dialog.close(); });
   if (id === 'formula-dialog') renderFormulas();
@@ -1741,6 +1836,7 @@ document.addEventListener('click', event => {
   if (!button || button.disabled) return;
   if(button.hasAttribute('data-open-feedback'))return openContact();
   if(button.hasAttribute('data-open-ratings'))return openDialog('ratings-dialog');
+  if(button.hasAttribute('data-open-guide'))return openDialog('guide-dialog');
   if(button.dataset.contactMode)return openFeedback(button.dataset.contactMode);
   if(button.hasAttribute('data-contact-back'))return openContact();
   if(button.hasAttribute('data-open-logo')){
