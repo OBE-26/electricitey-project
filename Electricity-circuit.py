@@ -320,17 +320,39 @@ APP_HTML = r'''<!doctype html>
     .high-contrast .tab[aria-selected=true],.high-contrast .formula-tab[aria-selected=true]{background:var(--ink);color:var(--paper)}
     .dark-mode .calc-grid button.equals{color:#10271f}
     .dark-mode body:not(.high-contrast) .hero-symbol{background:linear-gradient(140deg,#41351e,#282621);color:var(--accent)}
-    .dark-mode body:not(.high-contrast) :is(.given,.formula-context,.hint,.solution,.close,.calc-grid button.operator){background:var(--soft);color:var(--ink)}
+    .dark-mode body :is(.given,.formula-context,.hint,.solution,.close,.calc-grid button.operator){background:var(--soft);color:var(--ink)}
     .dark-mode :is(.step-pill.done,.complete-badge){background:var(--soft);color:var(--green)}
     .dark-mode :is(.step-pill.active,.tab[aria-selected=true]){color:#171d24}
     .dark-mode input:not([type=checkbox]):not([type=radio]):not([type=range]),.dark-mode select,.dark-mode textarea{background:var(--card);color:var(--ink)}
+    .dark-mode :is(input,textarea)::placeholder{color:var(--muted);opacity:1}
+    .dark-mode .mathml,.dark-mode .mathml *{color:inherit;-webkit-text-fill-color:currentColor}
+    .dark-mode .personal-bar>div{background:var(--green)}
+    .dark-mode .personal-bar{background:var(--soft);border-color:var(--line)}
+    .dark-mode body.high-contrast .brand-icon{background:var(--green);color:var(--paper)}
+    .dark-mode body.high-contrast .hero-symbol{background:var(--paper);color:var(--green);border-color:var(--line)}
+    .dark-mode body.high-contrast .tab:not([aria-selected=true]){background:var(--card);color:var(--ink)}
     .dark-mode :is(.sim-controls,th){background:var(--soft);color:var(--ink)}
     .dark-mode .simulator :is(.sim-controls,th){background:#111;color:#fff}
     .dark-mode .feedback.error{background:#48272c;color:#ffd2ca}
     .dark-mode .feedback.success{background:#173e30;color:#a4edc7}
-    .dark-mode :is(.triangle,.manual-choice,.manual-triangle) svg path[fill="#f3f6ee"]{fill:var(--soft)}
-    .dark-mode :is(.triangle,.manual-choice,.manual-triangle) svg path{stroke:var(--line)}
+    /* Include body so night colors win over the daytime SVG fill rule. */
+    html.dark-mode body :is(.triangle,.manual-choice,.manual-triangle) svg path[fill="#f3f6ee"]{fill:var(--soft)}
+    html.dark-mode body :is(.triangle,.manual-choice,.manual-triangle) svg path{stroke:var(--line)}
     .dark-mode .manual-choice svg g{fill:var(--ink)}
+    .dark-mode #formula-dialog{--ink:#fff;--green:#147d64;--formula-value-bg:#e5fff2}
+    .dark-mode body.high-contrast #formula-dialog{--green:#005b46}
+    .dark-mode #formula-dialog .mathml,.dark-mode #formula-dialog .mathml *{color:inherit;-webkit-text-fill-color:currentColor}
+    .dark-mode #formula-dialog .triangle-slot :is(strong,small){color:var(--ink)}
+    .dark-mode #formula-dialog .manual-choice svg :is(g,text){fill:var(--ink)}
+    .dark-mode #formula-dialog .triangle-slot bdi{color:var(--green);background:var(--formula-value-bg);border-radius:5px;padding:1px 5px}
+    .dark-mode #formula-dialog .btn:not(.secondary):not(.soft){color:#fff}
+    .dark-mode #formula-dialog .formula-tab[aria-selected=true]{background:var(--green);border-color:var(--green);color:#fff}
+    .dark-mode #formula-dialog :is(.manual-paper-note,.text-btn,.diagram-open-label){color:var(--ink)}
+    .dark-mode #formula-dialog .manual-paper-note{background:var(--soft)}
+    .dark-mode #formula-dialog :is(.manual-keypad-grid button[data-manual-key="X"],.manual-keypad-grid button[data-manual-key="?"],.solution-head .close,.expansion-mark){color:var(--green);background:var(--formula-value-bg)}
+    .dark-mode #formula-dialog .expansion-factor{color:var(--ink)}
+    .dark-mode #formula-dialog .solution-methods .level[aria-pressed=true]{background:var(--green);color:#fff}
+    .dark-mode #formula-dialog .complete-badge{color:#fff;background:var(--green)}
     .dark-mode .rating-stars label.rated span,.dark-mode .public-rating-fill{color:#ffd06a}
   </style>
 </head>
@@ -2541,4 +2563,3 @@ if isinstance(feedback_event, dict) and feedback_event.get("type") == "feedback"
                 completed.pop(next(iter(completed)))
             st.session_state["dc_feedback_reply"] = {"id": submission_id, **result}
             st.rerun()
-
