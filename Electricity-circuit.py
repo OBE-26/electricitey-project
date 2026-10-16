@@ -42,10 +42,31 @@ APP_HTML = r'''<!doctype html>
       root.style.setProperty('--text-scale', String(scale / 100));
       for (const size of [125,150]) root.classList.toggle('text-scale-' + size, scale === size);
     }
-    const systemColorScheme = window.matchMedia('(prefers-color-scheme: dark)');
+    const systemThemeQuery = '(prefers-color-scheme: dark)';
+    function findSystemThemeContext() {
+      let source=window;
+      // An iframe can report its host's forced color scheme instead of the device preference.
+      // Read from the highest accessible browsing context without changing the host's theme.
+      for(let depth=0;depth<16;depth++){
+        try{
+          if(source.parent===source)break;
+          const candidate=source.parent;
+          candidate.matchMedia(systemThemeQuery);
+          source=candidate;
+        }catch{break;}
+      }
+      return source;
+    }
+    const systemThemeContext = findSystemThemeContext();
+    const systemColorScheme = systemThemeContext.matchMedia(systemThemeQuery);
+    function systemPrefersDark() {
+      // A fresh query also handles mobile browsers resuming a page after suspension.
+      try{return systemThemeContext.matchMedia(systemThemeQuery).matches;}
+      catch{return window.matchMedia(systemThemeQuery).matches;}
+    }
     function applyTheme(value) {
       const theme = ['system','dark','light'].includes(value) ? value : 'system';
-      document.documentElement.classList.toggle('dark-mode', theme === 'dark' || theme === 'system' && systemColorScheme.matches);
+      document.documentElement.classList.toggle('dark-mode', theme === 'dark' || theme === 'system' && systemPrefersDark());
     }
     try {
       const saved = JSON.parse(localStorage.getItem('dc.basics.personal.v1') || 'null');
@@ -1089,7 +1110,7 @@ function exerciseToolsHTML(q) {
   const calculator=document.querySelector('.quickbar [data-open-calculator] svg').outerHTML;
   const bulb='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8.5 15.5a6 6 0 1 1 7 0L15 18H9z" fill="#f5cb58" fill-opacity=".45"/><path d="M9 21h6M12 1v1M3.5 4.5l1 1M20.5 4.5l-1 1M1 11h2M21 11h2"/></svg>';
   const triangle='<svg viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 2 23h17M7 14h9M12 14v9M17 23l2.8-.6L26 16.2 23.8 14 17.6 20.2zM22.5 15.3l2.2 2.2"/></svg>';
-  return `<div class="answer-tools exercise-tools" role="group" aria-label="כלי עזרה לפתרון">${icon('data-open-formulas aria-haspopup="dialog" aria-controls="formula-dialog"','דף נוסחאות',formulas)}${icon(`data-open-calculator aria-haspopup="dialog" aria-controls="calculator-dialog"${q.accepted?' disabled':''}`,'מחשבון',calculator)}${canHelp?icon('data-hint','רמז',bulb)+`<button type="button" class="solution-tool" data-solution aria-expanded="${q.solution}" aria-controls="explained-solution">פתרון מוסבר</button>`:''}${active?icon(`data-open-manual ${currentStep()?.key==='Req'?'aria-controls="triangle-entry-note"':'aria-haspopup="dialog" aria-controls="formula-dialog"'}`,'פתירה בעזרת המשולש',triangle):''}</div>${active?'<p class="triangle-entry-note" id="triangle-entry-note" role="status" hidden></p>':''}`;
+  return `<div class="answer-tools exercise-tools" role="group" aria-label="כלי עזרה לפתרון">${icon('data-open-formulas aria-haspopup="dialog" aria-controls="formula-dialog"','דף נוסחאות',formulas)}${icon(`data-open-calculator aria-haspopup="dialog" aria-controls="calculator-dialog"${q.accepted?' disabled':''}`,'מחשבון',calculator)}${canHelp?icon(`data-hint aria-expanded="${q.hint}" aria-controls="exercise-hint"`,'רמז',bulb)+`<button type="button" class="solution-tool" data-solution aria-expanded="${q.solution}" aria-controls="explained-solution">פתרון מוסבר</button>`:''}${active?icon(`data-open-manual ${currentStep()?.key==='Req'?'aria-controls="triangle-entry-note"':'aria-haspopup="dialog" aria-controls="formula-dialog"'}`,'פתירה בעזרת המשולש',triangle):''}</div>${active?'<p class="triangle-entry-note" id="triangle-entry-note" role="status" hidden></p>':''}`;
 }
 function annotatedReciprocalsHTML(values,factors) {
   const terms=values.map((value,i)=>`${i?'<span class="annotated-operator" aria-hidden="true">+</span>':''}<span class="annotated-term" style="--factor-width:${factors[i].join(' × ').length*7}px" data-expansion-denominator="${value}" data-expansion-factor="${factors[i].join(' × ')}"><span class="expansion-mark"><span class="expansion-factor" aria-label="גורם הרחבה: ${factors[i].join(' × ')}">${mathNotation(factors[i].join(' × '))}</span><svg class="expansion-slash" viewBox="0 0 12 18" aria-hidden="true"><path d="M1 17 L11 1" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></span>${mathNotation('1/'+value)}</span>`).join('');
@@ -1310,7 +1331,7 @@ function render(focus = false) {
   const active = done ? `<div class="complete-badge">✓ התרגיל הושלם</div><h2>השלמתם את כל החישובים.</h2><p class="muted">${q.steps.length > 1 ? 'אפשר לעבור על התוצאות ולבדוק איך הן קשורות זו לזו.' : 'הקשר בין הנתונים ברור יותר עם כל תרגיל.'}</p>`
     : `<div class="step-list" aria-label="התקדמות שלבי הפתרון">${stepPills}</div><div class="task-kicker">צעד ${q.cursor + 1} מתוך ${q.steps.length} · ${escapeHTML(contextTitle(q, step))}</div><h2 id="answer-title">${escapeHTML(step.label)}</h2><form id="answer-form" novalidate><label class="small muted" for="answer">מה התוצאה, ביחידות ${bdi(step.unit)}?</label><div class="answer-row"><div class="answer-wrap"><input class="numeric${q.accepted?' answer-correct':q.attempts>0?' answer-incorrect':''}" id="answer" data-answer type="text" inputmode="decimal" autocomplete="off" maxlength="24" value="${escapeHTML(q.draft)}"${q.accepted?' readonly':''} aria-describedby="rounding-text form-feedback"><span class="unit" aria-hidden="true">${bdi(step.unit)}</span></div>${q.accepted?'<button class="btn" type="button" data-next-step>הבא ←</button>':'<button class="btn" type="submit">בדיקת תשובה</button>'}</div></form>`;
   const explain = !done && q.solution ? `<div class="solution" id="explained-solution">${solutionHeadingHTML()}${explainedSolutionHTML(q,step)}<p>הקלידו את התוצאה כדי להמשיך לצעד הבא.</p></div>` : '';
-  const hints = !done && q.hint ? `<div class="hint"><strong>כיוון לפתרון</strong>${escapeHTML(step.hint)}<div class="math" style="margin-top:8px">${mathNotation(step.formula)}</div></div>` : '';
+  const hints = !done && q.hint ? `<div class="hint" id="exercise-hint"><strong>כיוון לפתרון</strong>${escapeHTML(step.hint)}<div class="math" style="margin-top:8px">${mathNotation(step.formula)}</div></div>` : '';
   const tools = exerciseToolsHTML(q);
   const next = done ? `<div class="completion-actions">${index < sequence.length - 1 ? '<button class="btn" data-next-question>לתרגיל הבא ←</button>' : level < questions[tab].length - 1 ? '<button class="btn" data-next-level>לרמה הבאה ←</button>' : '<button class="btn" data-new-course>סבב חדש</button>'}</div>${doneCount === sequence.length ? `<div class="level-note">השלמתם את ${sequence.length} התרגילים ברמה ${letters[level]}. ${level < questions[tab].length - 1 ? 'אפשר להתקדם לרמה הבאה.' : 'אפשר לעבור ללשונית אחרת או להתחיל סבב חדש.'}</div>` : ''}` : '';
   const descriptions = { ohm:'מתחילים בנתונים ידועים ומוצאים את הערך החסר.', series:'בטור הזרם זהה בכל הרכיבים. המתח מתחלק ביניהם.', parallel:'שניים ושלושה ענפים: 30% מהתרגילים עם נגדים זהים ו־70% עם נגדים שונים. בכל ענף אותו מתח.' };
@@ -1790,12 +1811,18 @@ document.addEventListener('click', event => {
   if (button.dataset.level !== undefined) { qaAnswerVisible=false; levels[tab] = Number(button.dataset.level); feedback = ''; render(); return; }
   const q = currentQuestion();
   if(button.hasAttribute('data-next-step'))return nextStep();
-  if (button.hasAttribute('data-hint')) { markHelp(); q.hint = true; render(); return; }
+  if (button.hasAttribute('data-hint')) {
+    q.hint=!q.hint;if(q.hint)markHelp();render();
+    $('workspace').querySelector('[data-hint]')?.focus({preventScroll:true});return;
+  }
   if (button.hasAttribute('data-close-solution')) {
     q.solution=false;render();
     ($('formula-dialog').open?$('formula-body'):$('workspace')).querySelector('[data-solution]')?.focus({preventScroll:true});return;
   }
-  if (button.hasAttribute('data-solution')) { markHelp(); q.solution = true; q.help[q.cursor] = true; render(); return; }
+  if (button.hasAttribute('data-solution')) {
+    q.solution=!q.solution;if(q.solution){markHelp();q.help[q.cursor]=true;}render();
+    ($('formula-dialog').open?$('formula-body'):$('workspace')).querySelector('[data-solution]')?.focus({preventScroll:true});return;
+  }
   if (button.hasAttribute('data-next-question')) return showExercise({kind:tab,level:levels[tab],index:positions[tab][levels[tab]]+1});
   if (button.hasAttribute('data-next-level')) return showExercise({kind:tab,level:levels[tab]+1,index:positions[tab][levels[tab]+1]});
   if (button.id === 'new-course' || button.hasAttribute('data-new-course')) return openDialog('new-course-dialog');
@@ -2153,11 +2180,32 @@ function finishInitialLayout(){
 }
 if(document.fonts?.ready)document.fonts.ready.then(finishInitialLayout);else finishInitialLayout();
 window.addEventListener('pageshow',event=>{
+  followSystemTheme();
   if(event.persisted){document.documentElement.classList.remove('ui-ready');finishInitialLayout();}
 });
-const followSystemTheme = () => { if (personal.preferences.theme === 'system') applyPreferences(); };
+function followSystemTheme() {
+  if(personal.preferences.theme==='system'&&document.documentElement.classList.contains('dark-mode')!==systemPrefersDark())applyPreferences();
+}
 if (systemColorScheme.addEventListener) systemColorScheme.addEventListener('change',followSystemTheme);
 else systemColorScheme.addListener(followSystemTheme);
+window.addEventListener('focus',followSystemTheme);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)followSystemTheme();});
+const followHostVisibility = () => { if(!systemThemeContext.document.hidden)followSystemTheme(); };
+if(systemThemeContext!==window){
+  systemThemeContext.addEventListener('focus',followSystemTheme);
+  systemThemeContext.addEventListener('pageshow',followSystemTheme);
+  systemThemeContext.document.addEventListener('visibilitychange',followHostVisibility);
+}
+window.addEventListener('pagehide',event=>{
+  if(event.persisted)return;
+  if(systemColorScheme.removeEventListener)systemColorScheme.removeEventListener('change',followSystemTheme);
+  else systemColorScheme.removeListener(followSystemTheme);
+  if(systemThemeContext!==window){
+    systemThemeContext.removeEventListener('focus',followSystemTheme);
+    systemThemeContext.removeEventListener('pageshow',followSystemTheme);
+    systemThemeContext.document.removeEventListener('visibilitychange',followHostVisibility);
+  }
+});
 window.addEventListener('pagehide',saveCourse);
 if ('ResizeObserver' in window) new ResizeObserver(resizeFrame).observe($('app'));
 
