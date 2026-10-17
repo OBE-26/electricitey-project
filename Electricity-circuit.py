@@ -66,7 +66,17 @@ APP_HTML = r'''<!doctype html>
     }
     function applyTheme(value) {
       const theme = ['system','dark','light'].includes(value) ? value : 'system';
-      document.documentElement.classList.toggle('dark-mode', theme === 'dark' || theme === 'system' && systemPrefersDark());
+      const dark=theme==='dark'||theme==='system'&&systemPrefersDark();
+      document.documentElement.classList.toggle('dark-mode',dark);
+      try {
+        if(window.parent!==window&&window.parent.document.querySelector('.stApp,[data-testid="stAppViewContainer"]')) {
+          const host=window.parent.document;
+          let style=host.getElementById('dc-basics-host-surface');
+          if(!style){style=host.createElement('style');style.id='dc-basics-host-surface';host.head.append(style);}
+          style.textContent='.stApp,[data-testid="stAppViewContainer"],html,body{background:'+(dark?'#000000':'#fff8e8')+'!important}';
+        }
+      }catch{}
+
     }
     try {
       const saved = JSON.parse(localStorage.getItem('dc.basics.personal.v1') || 'null');
@@ -354,6 +364,72 @@ APP_HTML = r'''<!doctype html>
     .dark-mode #formula-dialog .solution-methods .level[aria-pressed=true]{background:var(--green);color:#fff}
     .dark-mode #formula-dialog .complete-badge{color:#fff;background:var(--green)}
     .dark-mode .rating-stars label.rated span,.dark-mode .public-rating-fill{color:#ffd06a}
+
+    /* Black night surfaces, with restrained warm accents matching the site. */
+    html.dark-mode{--paper:#000000;--card:#121212;--soft:#221e17;--ink:#e9e2d6;--muted:#c0b49e;--line:#665a43;--green:#d7b575;--accent:#d3ac65;--amber:#d0ad75;--diagram-surface:#121212;--diagram-ink:#e9e2d6;--diagram-wire:#b7aa92;--diagram-current:#d7b575;--diagram-power:#d0ad75}
+    .dark-mode dialog::backdrop{background:#000b}
+    .dark-mode body.qa-mode:not(.high-contrast){--paper:#000;--card:#101820;--soft:#172634;--line:#4c6b86;--ink:#e3ecf3;--muted:#b5c6d4;--green:#a9c9e5;--accent:#7599b8}
+    .dark-mode .btn:not(.secondary):not(.soft){background:#4b381d;color:#f2e6d0;border-color:#80643a}
+    .dark-mode .btn.secondary,.dark-mode .btn.soft{background:var(--soft);color:var(--ink);border-color:var(--line)}
+    .dark-mode body:not(.high-contrast) :is(.tab,.formula-tab){background:var(--card);color:var(--muted);border-color:var(--line)}
+    .dark-mode body:not(.high-contrast) :is(.tab,.formula-tab)[aria-selected=true]{background:#46341c;color:#f2dfb8;border-color:#a48145}
+    .dark-mode .step-pill.active{background:#4b381d;color:#f2dfb8;border-color:#a48145}
+    .dark-mode body:not(.high-contrast) .brand-icon{background:#4b381d;color:#f2dfb8}
+    .dark-mode body:not(.high-contrast) .hero-symbol{background:linear-gradient(140deg,#292318,#15130f);border-color:var(--line);color:var(--accent)}
+    .dark-mode input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]),.dark-mode select,.dark-mode textarea{background:var(--card);color:var(--ink);border-color:var(--line)}
+    .dark-mode .question-dot.current{background:#9b7d47}
+    .dark-mode :is(.completed-row,.complete-badge,.step-pill.done){background:#172b20;color:#c1dfcb;border-color:#486650}
+    .dark-mode input.answer-correct{background:#173322;color:#c5e8ce;border-color:#518562;-webkit-text-fill-color:#c5e8ce}
+    .dark-mode input.answer-incorrect{background:#3c2020;color:#f1c9c4;border-color:#9c615b!important;-webkit-text-fill-color:#f1c9c4}
+    .dark-mode #formula-dialog{--ink:#e9e2d6;--green:#d7b575;--formula-value-bg:#302719}
+    .dark-mode #formula-dialog .btn:not(.secondary):not(.soft){color:#f2e6d0;background:#4b381d;border-color:#80643a}
+    .dark-mode #formula-dialog .manual-fill{background:#233a50;color:#dce8f3;border-color:#45647f}
+    .dark-mode #formula-dialog .formula-tab[aria-selected=true],.dark-mode #formula-dialog .solution-methods .level[aria-pressed=true]{background:#46341c;color:#f2dfb8;border-color:#a48145}
+    .dark-mode #formula-dialog .complete-badge{background:#172b20;color:#c1dfcb}
+    .dark-mode #formula-dialog .manual-paper-note{background:var(--soft);color:var(--ink)}
+    .dark-mode #formula-dialog .triangle-slot bdi{background:var(--formula-value-bg);color:#e2c891}
+    .dark-mode #manual-keypad .manual-keypad-grid button[data-manual-key=enter]{background:#4b381d;color:#f2e6d0;border-color:#80643a}
+    .dark-mode body.high-contrast #formula-dialog{--ink:#fff;--green:#ffe0a1;--formula-value-bg:#171717}
+    .dark-mode body.high-contrast .btn,.dark-mode body.high-contrast .step-pill.active{background:#000;color:#fff;border-color:#fff}
+    .calc-dialog{max-width:420px}
+    .calc-head-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+    .calc-settings{border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:16px;background:var(--soft)}
+    .calc-settings label{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px;font-size:calc(14px * var(--text-scale,1))}
+    .calc-settings label:has(input[type=checkbox]){justify-content:flex-start}
+    .calc-settings select{max-width:100%;min-width:0;min-height:44px;border:1px solid var(--line);border-radius:8px;padding:6px;background:var(--card);color:var(--ink)}
+    .calc-settings input[type=color]{width:66px;height:44px;border:1px solid var(--line);border-radius:8px;padding:4px;background:var(--card)}
+    .calc-settings input[type=checkbox]{width:20px;height:20px;accent-color:var(--green)}
+    .calc-settings p{margin:4px 0 14px}
+    .calc-toolbar,.calc-fraction-nav{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:10px 0}
+    .calc-toolbar>.btn{flex:1;min-width:0;font-size:calc(13px * var(--text-scale,1));padding:8px}
+    .calc-fraction-icon{display:inline-flex;flex-direction:column;line-height:1.05;font-size:14px;direction:ltr}
+    .calc-fraction-icon>span:first-child{border-bottom:1.5px solid currentColor;padding-bottom:2px}
+    .calc-fraction-icon>span:last-child{padding-top:2px}
+    .calc-expression-preview{direction:ltr;text-align:left;overflow-x:auto;max-width:100%;padding:12px 8px;min-height:58px;border:1px solid var(--line);border-radius:9px;margin-top:8px;background:var(--soft)}
+    .calc-expression-preview .mathml,.calc-result .mathml{font-size:calc(24px * var(--text-scale,1))}
+    .calc-result{color:var(--ink);overflow-x:auto;padding-block:8px;min-height:52px}
+    #calc-result-note:empty{display:none}
+    #calc-result-note{margin:0 0 10px;font-size:calc(12px * var(--text-scale,1))}
+    .calc-fraction-editor{padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--soft)}
+    .calc-fraction-fields{display:grid;max-width:100%;width:200px;margin:auto;gap:6px;text-align:center}
+    .calc-fraction-fields label{display:grid;min-width:0;gap:2px}
+    .calc-fraction-fields .calc-numerator{border-bottom:2px solid var(--ink);padding-bottom:8px}
+    .calc-fraction-fields input{display:block;width:100%;min-width:0;min-height:44px;text-align:center;direction:ltr;border:1px solid var(--line);border-radius:8px;padding:7px;background:var(--card);color:var(--ink)}
+    .calc-fraction-nav{justify-content:center}
+    .calc-grid button{min-width:0;height:auto;min-height:48px;padding:6px 3px}
+    .calc-dialog .calc-grid{gap:7px}
+    .calc-dialog .calc-actions{flex-wrap:wrap}
+    body:not(.high-contrast) #calculator-dialog{--paper:var(--calc-paper);--card:var(--calc-card);--soft:var(--calc-soft);--line:var(--calc-line);--ink:var(--calc-ink);--muted:var(--calc-muted);--green:var(--calc-accent);background:var(--paper);color:var(--ink)}
+    body:not(.high-contrast) #calculator-dialog :is(.calc-screen,.calc-fraction-fields input){background:var(--calc-screen);color:var(--ink);border-color:var(--line)}
+    body:not(.high-contrast) #calculator-dialog .calc-grid button{background:var(--card);color:var(--ink);border-color:var(--line)}
+    body:not(.high-contrast) #calculator-dialog :is(.calc-grid button.operator,.btn.secondary,.close){background:var(--soft);color:var(--ink);border-color:var(--line)}
+    body:not(.high-contrast) #calculator-dialog :is(.calc-grid button.equals,.btn:not(.secondary):not(.soft)){background:var(--calc-accent);color:var(--calc-onAccent);border-color:var(--line)}
+    body:not(.high-contrast) #calculator-dialog .text-btn{color:var(--ink)}
+    body:not(.high-contrast) #calculator-dialog #calc-format[aria-pressed=true]{border:2px solid var(--calc-accent)}
+    .high-contrast #calculator-dialog :is(.calc-grid button,.calc-fraction-fields input,.calc-screen){background:var(--paper);color:var(--ink);border-color:var(--line)}
+    .high-contrast #calculator-dialog .calc-grid button.equals{background:var(--ink);color:var(--paper)}
+    @media(max-width:420px){.calc-dialog{padding:14px}.calc-head-actions{gap:5px}.calc-head-actions .btn{padding:7px}.calc-toolbar{gap:6px}.calc-toolbar>.btn{font-size:calc(12px * var(--text-scale,1))}.calc-settings label{align-items:flex-start}.calc-settings select{width:100%}}
+
   </style>
 </head>
 <body>
@@ -393,7 +469,34 @@ APP_HTML = r'''<!doctype html>
 <dialog id="progress-dialog" class="progress-dialog" aria-labelledby="progress-dialog-title"><div class="dialog-head"><h2 id="progress-dialog-title">התקדמות אישית</h2><button class="close" data-close-dialog="progress-dialog" aria-label="סגירת ההתקדמות האישית">×</button></div><section id="personal-progress" class="card personal-progress" aria-labelledby="personal-progress-title"></section></dialog>
 <dialog id="formula-dialog" aria-labelledby="formula-title"><div class="dialog-head"><h2 id="formula-title">דף נוסחאות</h2><button class="close" data-close-dialog="formula-dialog" aria-label="סגירת דף הנוסחאות">×</button></div><nav class="formula-tabs" role="tablist" aria-label="תצוגת דף הנוסחאות"><button id="formula-tab-reference" class="formula-tab" data-formula-tab="reference" role="tab" aria-selected="true" aria-controls="formula-body" tabindex="0">נוסחאות</button><button id="formula-tab-help" class="formula-tab" data-formula-tab="help" role="tab" aria-selected="false" aria-controls="formula-body" tabindex="-1">עזרה</button><button id="formula-tab-manual" class="formula-tab" data-formula-tab="manual" role="tab" aria-selected="false" aria-controls="formula-body" tabindex="-1">פתירה בעזרת המשולש</button></nav><p class="formula-intro">החלק העליון במשולש הוא מכפלת שני החלקים התחתונים. כדי למצוא חלק תחתון, מחלקים את העליון בחלק התחתון הידוע. בלשונית עזרה מופיעים נתוני התרגיל ואפשר לענות במשולש המתאים.</p><div id="formula-body" role="tabpanel" aria-labelledby="formula-tab-reference" tabindex="0"></div><section id="manual-keypad" class="manual-keypad" aria-label="מקלדת מספרים X וסימן שאלה" hidden><div class="manual-keypad-header"><span class="small muted">מקלדת נתונים</span><bdi id="manual-keypad-value"></bdi></div><div class="manual-keypad-grid"><button type="button" data-manual-key="7" aria-label="7">7</button><button type="button" data-manual-key="8" aria-label="8">8</button><button type="button" data-manual-key="9" aria-label="9">9</button><button type="button" data-manual-key="X" aria-label="ערך שלא התבקש לחשב">X</button><button type="button" data-manual-key="4" aria-label="4">4</button><button type="button" data-manual-key="5" aria-label="5">5</button><button type="button" data-manual-key="6" aria-label="6">6</button><button type="button" data-manual-key="?" aria-label="נעלם">?</button><button type="button" data-manual-key="1" aria-label="1">1</button><button type="button" data-manual-key="2" aria-label="2">2</button><button type="button" data-manual-key="3" aria-label="3">3</button><button type="button" data-manual-key="backspace" aria-label="מחיקת תו">⌫</button><button type="button" data-manual-key="0" aria-label="0">0</button><button type="button" data-manual-key="." aria-label="נקודה עשרונית">.</button><button type="button" data-manual-key="clear" aria-label="ניקוי השדה">ניקוי</button><button type="button" data-manual-key="enter" aria-label="אישור ומעבר לשדה הבא">✓</button><button type="button" data-manual-key="done" aria-label="סגירת המקלדת">↓</button></div></section></dialog>
 <dialog id="diagram-dialog" aria-labelledby="diagram-title"><div class="dialog-head"><h2 id="diagram-title">הגדלת הסכמה</h2><button class="close" data-close-dialog="diagram-dialog" aria-label="סגירת הסכמה המוגדלת">×</button></div><div id="diagram-context"></div><div class="diagram-toolbar" role="group" aria-label="הגדלת הסכמה"><button class="btn secondary tiny" data-diagram-zoom="in" aria-label="הגדלה">+</button><button class="btn secondary tiny" data-diagram-zoom="out" aria-label="הקטנה">−</button><button class="btn soft tiny" data-diagram-zoom="reset">התאמה למסך</button><bdi id="diagram-zoom-label" role="status" aria-live="polite">100%</bdi></div><p class="small muted">אפשר להגדיל באמצעות הכפתורים ולגלול בתוך הסכמה.</p><div class="diagram-viewport" id="diagram-viewport" tabindex="0" role="region" aria-label="סכמה מוגדלת — אפשר לגלול לצדדים ולמעלה ולמטה"><div class="diagram-canvas" id="diagram-canvas"></div></div></dialog>
-<dialog id="calculator-dialog" class="calc-dialog" aria-labelledby="calc-title"><div class="dialog-head"><h2 id="calc-title">מחשבון</h2><button class="close" data-close-dialog="calculator-dialog" aria-label="סגירת המחשבון">×</button></div><div class="calc-layout"><aside id="calc-triangle-reference" class="calc-triangle-reference" aria-labelledby="calc-triangle-title" hidden></aside><div class="calc-main"><label class="small muted" for="calc-screen">חיבור, חיסור, כפל, חילוק והעלאה בריבוע</label><input id="calc-screen" class="calc-screen" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" maxlength="160" placeholder="12 ÷ 3"><div id="calc-result" class="calc-result" role="status" aria-live="polite"></div><div class="calc-grid" id="calc-grid"></div><p id="calc-error" class="feedback error" role="alert"></p><div class="calc-actions"><button class="btn" id="calc-use" disabled>העברה לתשובה</button><button class="btn secondary" id="calc-clear">ניקוי</button></div><button class="text-btn" data-open-formulas>דף נוסחאות △</button><p class="small muted" style="margin-top:12px;margin-bottom:0">המחשבון שומר על סדר פעולות חשבון. אפשר להשתמש בסוגריים. אין פונקציית שורש.</p></div></div></dialog>
+<dialog id="calculator-dialog" class="calc-dialog" aria-labelledby="calc-title">
+  <div class="dialog-head"><h2 id="calc-title">מחשבון</h2><div class="calc-head-actions"><button class="btn secondary tiny" id="calc-settings-toggle" type="button" aria-expanded="false" aria-controls="calc-settings">⚙ הגדרות</button><button class="close" data-close-dialog="calculator-dialog" aria-label="סגירת המחשבון">×</button></div></div>
+  <section id="calc-settings" class="calc-settings" aria-label="הגדרות המחשבון" hidden>
+    <label for="calc-color">צבע המחשבון <input id="calc-color" type="color" value="#c78b2d" aria-describedby="calc-color-note"></label>
+    <p class="small muted" id="calc-color-note">בחרו צבע נוח לעיניים. במצב לילה הרקע נשאר שחור והכפתורים מקבלים גוון כהה מתאים.</p>
+    <label for="calc-expression-style">תצוגת הביטוי <select id="calc-expression-style"><option value="math">כתב מתמטי</option><option value="linear">כתיבה בשורה</option></select></label>
+    <label for="calc-result-style">תוצאת ברירת מחדל <select id="calc-result-style"><option value="decimal">שבר עשרוני</option><option value="fraction">שבר בכתב מתמטי</option></select></label>
+    <label for="calc-rounding"><input id="calc-rounding" type="checkbox" checked> עיגול תוצאה עשרונית — פעיל</label>
+    <label for="calc-digits">עד כמה ספרות אחרי הנקודה? <select id="calc-digits"><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option></select></label>
+    <p class="small muted">העיגול משנה את התצוגה בלבד. החישוב הבא משתמש בתוצאה המלאה. כשהעיגול כבוי מוצג הדיוק הזמין במחשבון.</p>
+    <button class="btn secondary tiny" id="calc-reset-settings" type="button">איפוס הגדרות המחשבון</button>
+  </section>
+  <div class="calc-layout"><aside id="calc-triangle-reference" class="calc-triangle-reference" aria-labelledby="calc-triangle-title" hidden></aside><div class="calc-main">
+    <label class="small muted" for="calc-screen">חיבור, חיסור, כפל, חילוק, סוגריים ושברים</label>
+    <input id="calc-screen" class="calc-screen" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" maxlength="160" placeholder="12 ÷ 3" aria-describedby="calc-input-help">
+    <div id="calc-expression-preview" class="calc-expression-preview" aria-label="הביטוי בכתב מתמטי"></div>
+    <div class="calc-toolbar"><button class="btn secondary tiny" id="calc-fraction" type="button" aria-expanded="false" aria-controls="calc-fraction-editor"><span class="calc-fraction-icon" aria-hidden="true"><span>□</span><span>□</span></span> הכנסת שבר</button><button class="btn secondary tiny" id="calc-format" type="button" aria-label="מעבר בין תוצאה עשרונית לשבר בכתב מתמטי" aria-pressed="false">עשרוני ↔ שבר</button></div>
+    <section id="calc-fraction-editor" class="calc-fraction-editor" aria-label="הכנסת שבר לביטוי" hidden>
+      <div class="calc-fraction-fields" dir="ltr"><label for="calc-numerator" class="calc-numerator"><span class="small">מונה</span><input id="calc-numerator" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" maxlength="70" placeholder="מונה"></label><label for="calc-denominator"><span class="small">מכנה</span><input id="calc-denominator" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" maxlength="70" placeholder="מכנה"></label></div>
+      <div class="calc-fraction-nav"><button class="btn secondary tiny" type="button" data-calc-part="calc-numerator">מונה ↑</button><button class="btn secondary tiny" type="button" data-calc-part="calc-denominator">מכנה ↓</button></div>
+      <div class="calc-fraction-nav"><button class="btn tiny" id="calc-insert-fraction" type="button">הוספה לביטוי</button><button class="btn secondary tiny" id="calc-cancel-fraction" type="button">ביטול</button></div>
+    </section>
+    <div id="calc-result" class="calc-result" role="status" aria-live="polite"></div><p id="calc-result-note" class="small muted"></p>
+    <div class="calc-grid" id="calc-grid"></div><p id="calc-error" class="feedback error" role="alert"></p>
+    <div class="calc-actions"><button class="btn" id="calc-use" disabled>העברה לתשובה</button><button class="btn secondary" id="calc-clear">ניקוי</button></div><button class="text-btn" data-open-formulas>דף נוסחאות △</button>
+    <p class="small muted" id="calc-input-help" style="margin-top:12px;margin-bottom:0">מספר ליד סוגריים פירושו כפל, למשל <bdi>6(2+3)</bdi>. כפתור הכנסת שבר והמעבר עשרוני ↔ שבר זמינים בכל סגנון תצוגה.</p>
+  </div></div>
+</dialog>
 <dialog id="guide-dialog" class="guide-dialog" aria-labelledby="guide-title" aria-describedby="guide-intro">
   <div class="dialog-head"><h2 id="guide-title">מדריך שימוש באתר</h2><button type="button" class="close" data-close-dialog="guide-dialog" aria-label="סגירת מדריך השימוש">×</button></div>
   <p class="guide-intro" id="guide-intro">לומדים ומתרגלים חשמל בקצב שלכם: חוק אום והספק, מעגל טורי ומעגל מקבילי. פתחו נושא במדריך כדי לקרוא את ההוראות.</p>
@@ -410,14 +513,15 @@ APP_HTML = r'''<!doctype html>
     <li>בלשונית העזרה לתרגיל אפשר לראות את הנתונים שכבר ידועים ולחשב את הנעלם המתאים. נתונים שטרם חושבו אינם נחשפים.</li>
   </ul></details>
   <details class="guide-section"><summary>פתירה בעזרת המשולש</summary><ol>
-    <li>לוחצים על אייקון המשולש ליד התשובה, בוחרים משולש מתאים ומציבים בעצמכם את הנתונים במשבצות. בתצוגת הטלפון אפשר להשתמש במקלדת שבאתר.</li>
+    <li>לוחצים על אייקון המשולש ליד התשובה, בוחרים משולש מתאים ומציבים בעצמכם את הנתונים במשבצות. במשולש נפתחת מקלדת המספרים של הטלפון רק בלחיצה על שדה. ברשימת הנתונים שבצד משתמשים במקלדת האתר, כולל X וסימן שאלה.</li>
     <li>בחישובי ריבוע, למשל <bdi>I²</bdi>, מציבים את הזרם כפול עצמו. מקפידים על היחידות שמופיעות ליד כל משבצת.</li>
     <li>אפשר לפתוח את המחשבון. הרשימה ״הערכים שהזנת במשולש״ מציגה את ההצבה שלכם כפי שהוקלדה, גם אם נפלה בה טעות.</li>
     <li>לאחר החישוב מעבירים את התוצאה למשולש ולוחצים ״בדוק״. נבדקים גם הנתונים שהצבתם וגם התוצאה. ״הצג סכמה״ מציג את המעגל, הנתונים והנעלם בקצרה.</li>
     <li>בחישוב התנגדות שקולה משתמשים בנוסחת המעגל המתאימה; אין משולש לחישוב הזה.</li>
   </ol></details>
   <details class="guide-section"><summary>מחשבון, רמז ופתרון מוסבר</summary><ul>
-    <li>אייקון המחשבון פותח מחשבון עם כפל, חילוק, חיבור, חיסור, סוגריים וריבוע. מקלידים ביטוי, לוחצים <bdi>=</bdi> ואז ״העברה לתשובה״. מתוך המשולש התוצאה מועברת למשבצת הנעלם.</li>
+    <li>אייקון המחשבון פותח מחשבון עם כפל, חילוק, חיבור, חיסור, סוגריים וריבוע. מקלידים ביטוי, לוחצים <bdi>=</bdi> ואז ״העברה לתשובה״. מתוך המשולש התוצאה מועברת למשבצת הנעלם. מספר הצמוד לסוגריים מזוהה ככפל. כפתור ״הכנסת שבר״ מאפשר למלא מונה ומכנה. הכפתור ״עשרוני ↔ שבר״ מחליף את תצוגת התוצאה לחישוב הנוכחי.</li>
+    <li>ב״הגדרות״ במחשבון אפשר לבחור צבע, תצוגת ביטוי ותוצאה, ולהפעיל או לכבות עיגול ל־3–6 ספרות אחרי הנקודה. ההגדרות נשמרות במכשיר. במצב לילה הרקע נשאר שחור והכפתורים מותאמים אליו.</li>
     <li>אייקון המנורה פותח רמז. לחיצה נוספת סוגרת אותו.</li>
     <li>״פתרון מוסבר״ פותח את שלבי החישוב. אפשר לסגור בלחיצה נוספת או ב־× ולפתוח שוב. כשמוצעות דרך א׳ ודרך ב׳, אפשר לעבור ביניהן.</li>
     <li>מעבר עם העכבר או לחיצה ארוכה על אייקון מציגים את שמו. לחיצה רגילה מפעילה את הכלי.</li>
@@ -610,48 +714,90 @@ const DC = (() => {
     const answer = Number(cleaned);
     return Number.isFinite(answer) && Math.abs(answer - round(value)) < 1e-7;
   }
-  // Arithmetic operations, squaring, parentheses and decimals; no code evaluation.
-  function calculate(text) {
-    const input = String(text).replace(/,/g, '.').replace(/×/g, '*').replace(/÷/g, '/').replace(/−/g, '-').replace(/\s/g, '');
+  // Parse arithmetic without eval. Keep exact rational values for fraction display
+  // and decimal rounding; the numeric value remains available to the exercise.
+  function evaluateCalculation(text) {
+    const input = String(text).replace(/,/g,'.').replace(/×/g,'*').replace(/÷/g,'/').replace(/−/g,'-').replace(/\s/g,'');
+    if (!input || input.length > 160) throw Error(input ? 'התרגיל ארוך מדי.' : 'יש להזין תרגיל עם מספרים ופעולות חשבון.');
     let cursor = 0;
-    function expression() {
-      let value = product();
-      while (input[cursor] === '+' || input[cursor] === '-') {
-        const op = input[cursor++], next = product(); value = op === '+' ? value + next : value - next;
+    const abs = n => n < 0n ? -n : n;
+    function rational(n,d) {
+      if (d === 0n) throw Error('אי אפשר לחלק באפס.');
+      if (d < 0n) { n=-n; d=-d; }
+      let a=abs(n),b=d;
+      while (b) { const rest=a%b; a=b; b=rest; }
+      n/=a; d/=a;
+      return n.toString().length+d.toString().length <= 4096 ? {n,d} : null;
+    }
+    function decimalFraction(token) {
+      const [mantissa,power='0']=token.toLowerCase().split('e');
+      const decimals=(mantissa.split('.')[1]||'').length, scale=decimals-Number(power);
+      if (Math.abs(scale)>400) return null;
+      const digits=BigInt(mantissa.replace('.',''));
+      return scale>=0 ? rational(digits,10n**BigInt(scale)) : rational(digits*10n**BigInt(-scale),1n);
+    }
+    function result(value,exact,tree) {
+      if(exact) {
+        const n=Number(exact.n),d=Number(exact.d);
+        if(Number.isFinite(n)&&Number.isFinite(d))value=n/d;
       }
+      if(!Number.isFinite(value))throw Error('התוצאה גדולה מדי. יש לבדוק את המספרים.');
+      return {value:Object.is(value,-0)?0:value,exact,tree};
+    }
+    function combine(left,right,op,implicit=false) {
+      if(op==='/'&&(right.exact ? right.exact.n===0n : right.value===0))throw Error('אי אפשר לחלק באפס.');
+      let exact=null;
+      if(left.exact&&right.exact) {
+        const {n:a,d:b}=left.exact,{n:c,d:d}=right.exact;
+        exact=op==='+'?rational(a*d+c*b,b*d):op==='-'?rational(a*d-c*b,b*d):op==='*'?rational(a*c,b*d):rational(a*d,b*c);
+      }
+      const value=op==='+'?left.value+right.value:op==='-'?left.value-right.value:op==='*'?left.value*right.value:left.value/right.value;
+      return result(value,exact,{kind:'binary',op,implicit,left:left.tree,right:right.tree});
+    }
+    function expression() {
+      let value=product();
+      while(input[cursor]==='+'||input[cursor]==='-') { const op=input[cursor++]; value=combine(value,product(),op); }
       return value;
     }
     function product() {
-      let value = factor();
-      while (input[cursor] === '*' || input[cursor] === '/') {
-        const op = input[cursor++], next = factor();
-        if (op === '/' && next === 0) throw Error('אי אפשר לחלק באפס.');
-        value = op === '*' ? value * next : value / next;
+      let value=factor();
+      while(cursor<input.length) {
+        const explicit=input[cursor]==='*'||input[cursor]==='/';
+        const implicit=input[cursor]==='('||(/[)²]/.test(input[cursor-1]||'')&&/[0-9.]/.test(input[cursor]||''));
+        if(!explicit&&!implicit)break;
+        const op=explicit?input[cursor++]:'*';
+        value=combine(value,factor(),op,!explicit);
       }
       return value;
     }
     function factor() {
-      if (input[cursor] === '+' || input[cursor] === '-') {
-        const negative = input[cursor++] === '-'; return (negative ? -1 : 1) * factor();
+      if(input[cursor]==='+'||input[cursor]==='-') {
+        const op=input[cursor++],child=factor();
+        return result(op==='-'?-child.value:child.value,child.exact?{n:op==='-'?-child.exact.n:child.exact.n,d:child.exact.d}:null,{kind:'unary',op,child:child.tree});
       }
       let value;
-      if (input[cursor] === '(') {
-        cursor++; value = expression();
-        if (input[cursor++] !== ')') throw Error('יש לסגור את הסוגריים.');
+      if(input[cursor]==='(') {
+        cursor++; value=expression();
+        if(input[cursor++]!==')')throw Error('יש לסגור את הסוגריים.');
+        value={...value,tree:{kind:'group',child:value.tree}};
       } else {
-        const match = /^(?:\d+(?:\.\d*)?|\.\d+)/.exec(input.slice(cursor));
-        if (!match) throw Error('יש להזין תרגיל עם מספרים ופעולות חשבון.');
-        cursor += match[0].length;value=Number(match[0]);
+        const match=/^(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?/.exec(input.slice(cursor));
+        if(!match)throw Error('יש להזין תרגיל עם מספרים ופעולות חשבון.');
+        cursor+=match[0].length;
+        value=result(Number(match[0]),decimalFraction(match[0]),{kind:'number',text:match[0]});
       }
-      while(input[cursor]==='²'){cursor++;value*=value;}
+      while(input[cursor]==='²') {
+        cursor++;
+        value=result(value.value*value.value,value.exact?rational(value.exact.n*value.exact.n,value.exact.d*value.exact.d):null,{kind:'square',child:value.tree});
+      }
       return value;
     }
-    if (input.length > 160) throw Error('התרגיל ארוך מדי.');
-    const value = expression();
-    if (cursor !== input.length || !Number.isFinite(value)) throw Error('יש לבדוק את התרגיל שהוקלד.');
+    const value=expression();
+    if(cursor!==input.length)throw Error('יש לבדוק את התרגיל שהוקלד.');
     return value;
   }
-  return { kinds, levelNames, round, fmt, physics, course, accepted, calculate };
+  function calculate(text) { return evaluateCalculation(text).value; }
+  return { kinds, levelNames, round, fmt, physics, course, accepted, calculate, evaluateCalculation };
 })();
 
 function circuitSVG(q, options = {}) {
@@ -1439,7 +1585,7 @@ function render(focus = false) {
   const descriptions = { ohm:'מתחילים בנתונים ידועים ומוצאים את הערך החסר.', series:'בטור הזרם זהה בכל הרכיבים. המתח מתחלק ביניהם.', parallel:'שניים ושלושה ענפים: 30% מהתרגילים עם נגדים זהים ו־70% עם נגדים שונים. בכל ענף אותו מתח.' };
   $('workspace').innerHTML = `<div class="course-head"><div><h2>${names[tab]}</h2><p class="muted small" style="margin:0">${descriptions[tab]}</p></div><div class="levels" aria-label="רמות תרגול">${levelButtons}</div></div><div class="progress-row"><span>תרגיל ${index + 1} מתוך ${sequence.length} · רמה ${letters[level]}</span><div class="question-dots">${dots}</div></div>${exerciseNavigationHTML()}<div class="progress-track" role="progressbar" aria-label="תרגילים שהושלמו ברמה" aria-valuemin="0" aria-valuemax="${sequence.length}" aria-valuenow="${doneCount}"><div style="width:${doneCount / sequence.length * 100}%"></div></div><div class="exercise-grid"><section class="card"><div class="exercise-title"><div class="eyebrow">הנתונים שלכם</div><h3 style="margin-top:6px">${q.title}</h3><p class="muted small" style="margin:0">${tab === 'ohm' ? 'המקור הוא מקור מתח ישר (DC). מצאו את הנעלם המבוקש.' : 'כל ההתנגדויות ומתח המקור נתונים. פתרו לפי הסדר.'}</p></div><div class="givens">${given}</div>${unitNote(q)}<figure class="diagram">${diagramPreview(q)}<figcaption>${q.lamps.some(Boolean) ? 'סימון עיגול עם X הוא נורה. בתרגול הנורה היא רכיב בעל התנגדות קבועה.' : 'מלבן הוא נגד. המקור הוא DC; U מציין מתח ו־I מציין זרם.'}${tab !== 'ohm' ? ' לאחר השלמת המעגל אפשר לפתוח אותו בלשונית הסימולטור. לחצו על הסכמה להגדלה.' : ''}</figcaption></figure>${simulationReady(q) ? '<button class="btn sim-jump" data-go-simulator>סימולטור</button>' : ''}</section><section class="card ${done ? 'success-summary' : ''}">${active}<p id="rounding-text" class="rounding">${rounding}</p>${tools}<div class="feedback ${feedbackType}" id="form-feedback" role="status" aria-live="polite">${escapeHTML(feedback)}</div>${hints}${explain}${q.cursor ? `<div class="completed-steps"><strong class="small">החישובים שהשלמתם</strong>${rows}</div>` : ''}${next}</section></div>`;
   if ($('formula-dialog').open) renderFormulas();
-  if (focus && !done) requestAnimationFrame(() => ($('formula-dialog').open ? formulaAnswerField() : q.accepted ? $('workspace').querySelector('[data-next-step]') : $('answer'))?.focus());
+  if (focus && !done) requestAnimationFrame(() => {if($('formula-dialog').open&&formulaView==='manual')focusManualEntry();else ($('formula-dialog').open ? formulaAnswerField() : q.accepted ? $('workspace').querySelector('[data-next-step]') : $('answer'))?.focus();});
   renderProgress(); fitDialogs(); resizeFrame();saveCourse();
 }
 function acceptedMessage(q = currentQuestion()) {
@@ -1579,7 +1725,7 @@ function paintManualKeypad() {
   $('manual-keypad-value').textContent=key+' = '+(input.value||'…');
 }
 function showManualKeypad(input) {
-  if(input.disabled||currentQuestion().accepted)return hideManualKeypad();
+  if(input.hasAttribute('data-manual-slot')||input.disabled||currentQuestion().accepted)return hideManualKeypad();
   manualKeypadTarget=input;manualKeypadFieldId=input.id;
   $('manual-keypad').hidden=false;paintManualKeypad();
   requestAnimationFrame(()=>{
@@ -1638,7 +1784,7 @@ function pressManualKey(key) {
   writeKeypadValue(input,value,position);
 }
 document.addEventListener('focusin',event=>{
-  if(event.target.matches('[data-manual-list],[data-manual-slot]'))showManualKeypad(event.target);
+  if(event.target.matches('[data-manual-list]'))showManualKeypad(event.target);
   else if(event.target.matches('input,select,textarea'))hideManualKeypad();
 });
 document.addEventListener('beforeinput',event=>{
@@ -1688,7 +1834,14 @@ function syncManualEntryOrder() {
   }
 }
 function focusManualEntry() {
-  const next=currentQuestion().accepted?$('formula-body').querySelector('[data-next-step]'):document.querySelector('[data-manual-slot]');
+  // Announce the selected triangle without focusing an input or opening a keyboard.
+  const heading=$('manual-choice-title');
+  if(heading){heading.tabIndex=-1;heading.focus({preventScroll:true});}
+}
+function nextManualTriangleField(input) {
+  saveCourse();
+  const fields=[...document.querySelectorAll('[data-manual-slot]')];
+  const next=fields[fields.indexOf(input)+1]??document.querySelector('[data-check-manual]');
   next?.focus({preventScroll:true});
 }
 function manualSolverHTML() {
@@ -1703,7 +1856,7 @@ function manualSolverHTML() {
   if (definition) {
     const draft = manualDraft(state), locations = ['top','left','right'];
     const geometry = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 225" preserveAspectRatio="none" aria-hidden="true"><path d="M130 10 L15 218 L245 218 Z" fill="#f3f6ee" stroke="#78958a" stroke-width="2.5"/><path d="M65 125 L195 125 M130 125 L130 218" stroke="#78958a" stroke-width="2"/></svg>';
-    const fields = manualEntrySlots(definition,state,context).map(slot => `<label class="triangle-slot ${locations[definition.slots.indexOf(slot)]}" for="manual-slot-${slot.key}"><strong>${slot.symbol}</strong><small>${slotUnit(slot,context.q)}</small><input id="manual-slot-${slot.key}" data-manual-slot="${slot.key}" class="numeric${context.q.accepted&&slot.key===context.target?' answer-correct':state.errors.includes(slot.key)?' answer-incorrect':''}" type="text" inputmode="none" lang="en" maxlength="24" aria-controls="manual-keypad"${window.matchMedia('(pointer:coarse)').matches||context.q.accepted&&slot.key===context.target ? ' readonly' : ''}${context.q.accepted&&slot.key!==context.target?' disabled':''} autocomplete="off" autocapitalize="off" spellcheck="false" value="${escapeHTML(context.q.accepted&&slot.key===context.target?context.q.draft:draft.values[slot.key] ?? '')}" aria-label="${slot.key===context.target?'התוצאה שחישבתם עבור':'הצבת'} ${slot.symbol} במשולש" aria-describedby="manual-instructions"${state.errors.includes(slot.key) ? ' aria-invalid="true"' : ''}></label>`).join('');
+    const fields = manualEntrySlots(definition,state,context).map(slot => `<label class="triangle-slot ${locations[definition.slots.indexOf(slot)]}" for="manual-slot-${slot.key}"><strong>${slot.symbol}</strong><small>${slotUnit(slot,context.q)}</small><input id="manual-slot-${slot.key}" data-manual-slot="${slot.key}" class="numeric${context.q.accepted&&slot.key===context.target?' answer-correct':state.errors.includes(slot.key)?' answer-incorrect':''}" type="text" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" enterkeyhint="next" lang="en" maxlength="24"${context.q.accepted&&slot.key===context.target ? ' readonly' : ''}${context.q.accepted&&slot.key!==context.target?' disabled':''} autocomplete="off" autocapitalize="off" spellcheck="false" value="${escapeHTML(context.q.accepted&&slot.key===context.target?context.q.draft:draft.values[slot.key] ?? '')}" aria-label="${slot.key===context.target?'התוצאה שחישבתם עבור':'הצבת'} ${slot.symbol} במשולש" aria-describedby="manual-instructions"${state.errors.includes(slot.key) ? ' aria-invalid="true"' : ''}></label>`).join('');
     work = `<form id="manual-form" class="manual-form" novalidate><h3>${definition.title}</h3><div class="triangle manual-triangle">${geometry}${fields}</div><div class="manual-answer">${status}${context.q.accepted?'<button class="btn" type="button" data-next-step>הבא ←</button>':`<button class="btn" type="submit" data-check-manual${context.task ? '' : ' disabled'}>בדוק</button>`}<button class="btn secondary tiny" type="button" data-open-calculator${context.q.accepted?' disabled':''}>מחשבון</button></div></form>`;
   }
   const notice = !context.task ? '<p class="complete-badge">התרגיל הושלם. אפשר לחזור לתרגול ולהמשיך לתרגיל הבא.</p>' : context.target === 'Req' ? `<p class="triangle-entry-note">נדרש למצוא ${mathNotation('R_T')}</p>` : '';
@@ -1800,7 +1953,7 @@ function openDialog(id, { preserveFormulaView = false } = {}) {
   hideIconTooltip();
   if (!profileReady() && id !== 'profile-dialog') { openProfile(); return; }
   calculatorReturnToFormulas = id === 'calculator-dialog' && $('formula-dialog').open;
-  if(id==='calculator-dialog')renderCalculatorTriangleReference();
+  if(id==='calculator-dialog'){prepareCalculator();renderCalculatorTriangleReference();}
   if (id === 'formula-dialog' && !preserveFormulaView) formulaView = 'reference';
   document.querySelectorAll('dialog[open]').forEach(dialog => { if (dialog.id !== id) dialog.close(); });
   if (id === 'formula-dialog') renderFormulas();
@@ -1836,23 +1989,199 @@ function fitDialogs() {
     dialog.style.top = top + Math.max(12, (height - dialog.getBoundingClientRect().height) / 2) + 'px';
   });
 }
-function calculateScreen() {
+const calculatorSettingsKey='dc.basics.calculator.v1';
+const calculatorDefaults={color:'#c78b2d',expressionStyle:'math',resultStyle:'decimal',rounding:true,digits:3};
+function loadCalculatorSettings() {
+  const prefs={...calculatorDefaults};
   try {
-    calculatorValue = DC.calculate($('calc-screen').value);
-    $('calc-result').textContent = String(Math.round(calculatorValue * 1e10) / 1e10);
-    $('calc-error').textContent = ''; $('calc-use').disabled = !canUseCalculatorResult(); calculatorFresh = true;
-  } catch (error) {
-    calculatorValue = null; $('calc-result').textContent = ''; $('calc-error').textContent = error.message;
-    $('calc-use').disabled = true;
+    const saved=JSON.parse(localStorage.getItem(calculatorSettingsKey)||'null');
+    if(/^#[0-9a-f]{6}$/i.test(saved?.color))prefs.color=saved.color;
+    if(['math','linear'].includes(saved?.expressionStyle))prefs.expressionStyle=saved.expressionStyle;
+    if(['decimal','fraction'].includes(saved?.resultStyle))prefs.resultStyle=saved.resultStyle;
+    if(typeof saved?.rounding==='boolean')prefs.rounding=saved.rounding;
+    if([3,4,5,6].includes(saved?.digits))prefs.digits=saved.digits;
+  } catch {}
+  return prefs;
+}
+let calculatorSettings=loadCalculatorSettings(),calculatorDetails=null,calculatorLastExpression='',calculatorResultStyle=calculatorSettings.resultStyle;
+let calculatorEntryField='calc-screen',calculatorFractionSelection={start:0,end:0};
+function mixCalculatorColor(color,base,amount) {
+  return '#'+[1,3,5].map(i=>Math.round(parseInt(color.slice(i,i+2),16)*amount+parseInt(base.slice(i,i+2),16)*(1-amount)).toString(16).padStart(2,'0')).join('');
+}
+function calculatorColorInk(hex) {
+  const rgb=[1,3,5].map(i=>parseInt(hex.slice(i,i+2),16)/255).map(v=>v<=.04045?v/12.92:((v+.055)/1.055)**2.4);
+  return .2126*rgb[0]+.7152*rgb[1]+.0722*rgb[2]>.179?'#17130d':'#ffffff';
+}
+function applyCalculatorColors() {
+  const dark=document.documentElement.classList.contains('dark-mode'),color=calculatorSettings.color;
+  const vars=dark?{paper:'#000000',card:mixCalculatorColor(color,'#101010',.06),soft:mixCalculatorColor(color,'#151515',.18),line:mixCalculatorColor(color,'#666666',.25),accent:mixCalculatorColor(color,'#141414',.36),ink:'#e9e4da',muted:'#c2b8a5',screen:'#080808'}:
+    {paper:mixCalculatorColor(color,'#ffffff',.05),card:mixCalculatorColor(color,'#ffffff',.08),soft:mixCalculatorColor(color,'#ffffff',.19),line:mixCalculatorColor(color,'#777777',.4),accent:color,ink:'#29251f',muted:'#62594d',screen:'#ffffff'};
+  vars.onAccent=calculatorColorInk(vars.accent);
+  const dialog=$('calculator-dialog');
+  for(const [key,value] of Object.entries(vars))dialog.style.setProperty('--calc-'+key,value);
+}
+function paintCalculatorSettings() {
+  $('calc-color').value=calculatorSettings.color;
+  $('calc-expression-style').value=calculatorSettings.expressionStyle;
+  $('calc-result-style').value=calculatorSettings.resultStyle;
+  $('calc-rounding').checked=calculatorSettings.rounding;
+  $('calc-rounding').parentElement.lastChild.textContent=' עיגול תוצאה עשרונית — '+(calculatorSettings.rounding?'פעיל':'לא פעיל');
+  $('calc-digits').value=String(calculatorSettings.digits);
+  $('calc-digits').disabled=!calculatorSettings.rounding;
+  applyCalculatorColors();
+}
+function saveCalculatorSettings() {
+  try{localStorage.setItem(calculatorSettingsKey,JSON.stringify(calculatorSettings));}catch{}
+  paintCalculatorSettings();paintCalculatorExpression();paintCalculatorResult();fitDialogs();
+}
+function calculatorMathTree(tree,stripGroup=false) {
+  if(tree.kind==='number')return `<mn>${escapeHTML(tree.text)}</mn>`;
+  if(tree.kind==='group')return stripGroup||tree.child.kind==='binary'&&tree.child.op==='/'?calculatorMathTree(tree.child):`<mrow><mo>(</mo>${calculatorMathTree(tree.child)}<mo>)</mo></mrow>`;
+  if(tree.kind==='unary')return `<mrow><mo>${tree.op==='-'?'−':'+'}</mo>${calculatorMathTree(tree.child)}</mrow>`;
+  if(tree.kind==='square')return `<msup>${calculatorMathTree(tree.child)}<mn>2</mn></msup>`;
+  if(tree.op==='/')return `<mfrac>${calculatorMathTree(tree.left,true)}${calculatorMathTree(tree.right,true)}</mfrac>`;
+  return `<mrow>${calculatorMathTree(tree.left)}<mo>${tree.op==='*'?'×':tree.op==='-'?'−':'+'}</mo>${calculatorMathTree(tree.right)}</mrow>`;
+}
+function calculatorMath(markup,label) {
+  return `<math xmlns="http://www.w3.org/1998/Math/MathML" class="mathml" display="inline" dir="ltr" aria-label="${escapeHTML(label)}">${markup}</math>`;
+}
+function paintCalculatorExpression() {
+  const box=$('calc-expression-preview'),text=$('calc-screen').value;
+  box.hidden=calculatorSettings.expressionStyle!=='math'||!text.trim();
+  if(box.hidden){box.textContent='';return;}
+  try{box.innerHTML=calculatorMath(calculatorMathTree(DC.evaluateCalculation(text).tree),text);}
+  catch{box.textContent=text.replace(/\*/g,'×').replace(/\//g,'÷');}
+}
+function calculatorDecimal(details) {
+  const {value,exact}=details,digits=calculatorSettings.digits;
+  if(!calculatorSettings.rounding)return {text:String(value),approximate:!!exact&&Number(exact.n)/Number(exact.d)!==value};
+  if(exact) {
+    const negative=exact.n<0n,n=negative?-exact.n:exact.n,scale=10n**BigInt(digits);
+    let rounded=n*scale/exact.d;
+    if((n*scale%exact.d)*2n>=exact.d)rounded++;
+    if(rounded===0n&&n!==0n)return {text:value.toExponential(digits-1),approximate:true,tiny:true};
+    let text=rounded.toString().padStart(digits+1,'0');
+    text=text.slice(0,-digits)+'.'+text.slice(-digits);
+    text=text.replace(/0+$/,'').replace(/\.$/,'');
+    return {text:(negative&&rounded!==0n?'-':'')+text,approximate:n*scale%exact.d!==0n};
   }
+  if(value!==0&&Math.abs(value)<10**(-digits))return {text:value.toExponential(digits-1),approximate:true,tiny:true};
+  const text=String(Number(value.toFixed(digits)));
+  return {text,approximate:Number(text)!==value};
+}
+function paintCalculatorResult() {
+  const box=$('calc-result'),note=$('calc-result-note');
+  $('calc-format').setAttribute('aria-pressed',calculatorResultStyle==='fraction');
+  if(!calculatorDetails){box.textContent='';note.textContent='';return;}
+  const exact=calculatorDetails.exact;
+  if(calculatorResultStyle==='fraction'&&exact) {
+    const negative=exact.n<0n,n=String(negative?-exact.n:exact.n),d=String(exact.d);
+    const fraction=d==='1'?`<mn>${n}</mn>`:`<mfrac><mn>${n}</mn><mn>${d}</mn></mfrac>`;
+    box.innerHTML=calculatorMath(`<mrow>${negative?'<mo>−</mo>':''}${fraction}</mrow>`,(negative?'-':'')+n+(d==='1'?'':' חלקי '+d));
+    note.textContent='תוצאה מדויקת בכתב מתמטי';
+  } else {
+    const decimal=calculatorDecimal(calculatorDetails);
+    box.textContent=(decimal.approximate?'≈ ':'')+decimal.text;
+    note.textContent=decimal.tiny?'כתיב מדעי שומר על מספר קטן שאחרת היה מוצג כ־0.':calculatorSettings.rounding?'עד '+calculatorSettings.digits+' ספרות אחרי הנקודה · העיגול לתצוגה בלבד':'עיגול כבוי · הדיוק הזמין במחשבון';
+    if(calculatorResultStyle==='fraction'&&!exact)note.textContent='התוצאה מוצגת בקירוב בגלל גודל המספרים.';
+  }
+}
+function invalidateCalculator() {
+  calculatorValue=null;calculatorDetails=null;calculatorFresh=false;
+  $('calc-use').disabled=true;$('calc-error').textContent='';
+  paintCalculatorResult();paintCalculatorExpression();
+}
+function calculateScreen() {
+  if(!$('calc-fraction-editor').hidden&&!insertCalculatorFraction())return;
+  try {
+    calculatorDetails=DC.evaluateCalculation($('calc-screen').value);
+    calculatorValue=calculatorDetails.value;calculatorLastExpression=$('calc-screen').value;
+    $('calc-error').textContent='';$('calc-use').disabled=!canUseCalculatorResult();calculatorFresh=true;
+    paintCalculatorExpression();paintCalculatorResult();
+  }catch(error){invalidateCalculator();$('calc-error').textContent=error.message;}
   fitDialogs();
 }
-function clearCalculator() {
-  $('calc-screen').value = ''; $('calc-result').textContent = ''; $('calc-error').textContent = '';
-  calculatorValue = null; calculatorFresh = false; $('calc-use').disabled = true;
+function closeCalculatorFraction() {
+  $('calc-fraction-editor').hidden=true;$('calc-fraction').setAttribute('aria-expanded','false');calculatorEntryField='calc-screen';
 }
-const keypad = ['C','←','(',')','7','8','9','÷','4','5','6','×','1','2','3','−','0','.','=','+','²'];
-$('calc-grid').innerHTML = keypad.map(key => `<button type="button" data-calc="${key}" class="${['÷','×','−','+','²'].includes(key) ? 'operator' : key === '=' ? 'equals' : ''}" aria-label="${key === '←' ? 'מחיקת תו' : key === 'C' ? 'ניקוי' : key === '=' ? 'חישוב' : key==='²'?'העלאה בריבוע':key}">${key==='²'?'x²':key}</button>`).join('');
+function clearCalculator() {
+  $('calc-screen').value='';$('calc-numerator').value='';$('calc-denominator').value='';
+  closeCalculatorFraction();invalidateCalculator();fitDialogs();
+}
+function openCalculatorFraction() {
+  if(!$('calc-fraction-editor').hidden){$('calc-numerator').focus();return;}
+  if(calculatorFresh){$('calc-screen').value='';invalidateCalculator();}
+  const screen=$('calc-screen'),start=screen.selectionStart??screen.value.length,end=screen.selectionEnd??start;
+  calculatorFractionSelection={start,end};
+  invalidateCalculator();
+  $('calc-numerator').value=screen.value.slice(start,end);$('calc-denominator').value='';
+  $('calc-fraction-editor').hidden=false;$('calc-fraction').setAttribute('aria-expanded','true');
+  $('calc-error').textContent='';calculatorEntryField='calc-numerator';
+  $('calc-numerator').focus({preventScroll:true});fitDialogs();
+  $('calc-fraction-editor').scrollIntoView({block:'nearest'});
+}
+function insertCalculatorFraction() {
+  const numerator=$('calc-numerator').value.trim(),denominator=$('calc-denominator').value.trim();
+  try {
+    DC.evaluateCalculation(numerator);
+    const bottom=DC.evaluateCalculation(denominator);
+    if(bottom.exact?bottom.exact.n===0n:bottom.value===0)throw Error('המכנה אינו יכול להיות אפס.');
+    const screen=$('calc-screen'),{start,end}=calculatorFractionSelection;
+    const fraction=`((${numerator})/(${denominator}))`,next=screen.value.slice(0,start)+fraction+screen.value.slice(end);
+    if(next.length>160)throw Error('התרגיל ארוך מדי. יש לקצר את הביטוי.');
+    screen.value=next;screen.setSelectionRange(start+fraction.length,start+fraction.length);
+    closeCalculatorFraction();invalidateCalculator();fitDialogs();return true;
+  }catch(error){$('calc-error').textContent=!numerator||!denominator?'יש למלא גם מונה וגם מכנה.':error.message;fitDialogs();return false;}
+}
+function pressCalculatorKey(key) {
+  if(key==='=')return calculateScreen();
+  if(key==='C')return clearCalculator();
+  const input=$('calc-fraction-editor').hidden?$('calc-screen'):$(calculatorEntryField==='calc-denominator'?'calc-denominator':'calc-numerator');
+  const main=input.id==='calc-screen';
+  if(main&&calculatorFresh&&calculatorValue!==null&&key!=='←') {
+    input.value=['+','−','×','÷','²'].includes(key)?'('+calculatorLastExpression+')':'';
+    input.setSelectionRange(input.value.length,input.value.length);
+  }
+  const start=input.selectionStart??input.value.length,end=input.selectionEnd??start;
+  let before=input.value.slice(0,start),after=input.value.slice(end),position=start;
+  if(key==='←') {
+    if(start===end){before=before.slice(0,-1);position=Math.max(0,start-1);}
+    input.value=before+after;
+  }else {
+    if(key==='²'&&!/[0-9.,)²]$/.test(before)){$('calc-error').textContent='יש להקליד מספר או לסיים את הביטוי לפני העלאה בריבוע.';fitDialogs();return;}
+    if(before.length+key.length+after.length>input.maxLength){$('calc-error').textContent='הביטוי ארוך מדי.';return;}
+    input.value=before+key+after;position=start+key.length;
+  }
+  input.setSelectionRange(position,position);invalidateCalculator();
+  if(key==='²'&&main)calculateScreen();
+}
+function prepareCalculator() {
+  calculatorResultStyle=calculatorSettings.resultStyle;
+  $('calc-settings').hidden=true;$('calc-settings-toggle').setAttribute('aria-expanded','false');
+  closeCalculatorFraction();paintCalculatorSettings();paintCalculatorExpression();paintCalculatorResult();
+}
+document.addEventListener('focusin',event=>{
+  if(['calc-screen','calc-numerator','calc-denominator'].includes(event.target.id))calculatorEntryField=event.target.id;
+});
+document.addEventListener('pointerdown',event=>{
+  // Keep the expression cursor when an on-screen calculator key is pressed.
+  if(event.target.closest('#calc-grid button,#calc-fraction,#calc-format'))event.preventDefault();
+});
+document.addEventListener('input',event=>{
+  if(event.target.id==='calc-color') {calculatorSettings.color=event.target.value;saveCalculatorSettings();}
+  if(['calc-numerator','calc-denominator'].includes(event.target.id))$('calc-error').textContent='';
+});
+document.addEventListener('change',event=>{
+  const ids={'calc-expression-style':'expressionStyle','calc-result-style':'resultStyle','calc-rounding':'rounding','calc-digits':'digits'};
+  const key=ids[event.target.id];if(!key)return;
+  calculatorSettings[key]=key==='rounding'?event.target.checked:key==='digits'?Number(event.target.value):event.target.value;
+  if(key==='resultStyle')calculatorResultStyle=calculatorSettings.resultStyle;
+  saveCalculatorSettings();
+});
+new MutationObserver(applyCalculatorColors).observe(document.documentElement,{attributes:true,attributeFilter:['class']});
+paintCalculatorSettings();
+const keypad=['C','←','(',')','7','8','9','÷','4','5','6','×','1','2','3','−','0','.','=','+','²'];
+$('calc-grid').innerHTML=keypad.map(key=>`<button type="button" data-calc="${key}" class="${['÷','×','−','+','²'].includes(key)?'operator':key==='='?'equals':''}" aria-label="${key==='←'?'מחיקת תו':key==='C'?'ניקוי':key==='='?'חישוב':key==='²'?'העלאה בריבוע':key}">${key==='²'?'x²':key}</button>`).join('');
 document.addEventListener('click', event => {
   const button = event.target.closest('button');
   if (!button || button.disabled) return;
@@ -1949,6 +2278,15 @@ document.addEventListener('click', event => {
     personal.preferences.textScale=personal.preferences.textScale===100?125:100;savePersonal();applyPreferences();return;
   }
   if (button.hasAttribute('data-reset-simulator')) { const model=activeSimulatorQuestion();model.simVoltage=model.voltage;updateSimulator();return; }
+  if(button.id==='calc-settings-toggle') {
+    const panel=$('calc-settings');panel.hidden=!panel.hidden;button.setAttribute('aria-expanded',!panel.hidden);fitDialogs();return;
+  }
+  if(button.id==='calc-reset-settings') {calculatorSettings={...calculatorDefaults};calculatorResultStyle=calculatorSettings.resultStyle;saveCalculatorSettings();return;}
+  if(button.id==='calc-format') {calculatorResultStyle=calculatorResultStyle==='fraction'?'decimal':'fraction';paintCalculatorResult();fitDialogs();return;}
+  if(button.id==='calc-fraction')return openCalculatorFraction();
+  if(button.id==='calc-insert-fraction')return insertCalculatorFraction();
+  if(button.id==='calc-cancel-fraction'){closeCalculatorFraction();$('calc-error').textContent='';fitDialogs();return;}
+  if(button.dataset.calcPart){calculatorEntryField=button.dataset.calcPart;$(calculatorEntryField).focus({preventScroll:true});return;}
   if (button.id === 'calc-clear') { clearCalculator(); return; }
   if (button.id === 'calc-use' && calculatorValue !== null) {
     if(!canUseCalculatorResult())return;
@@ -1958,23 +2296,7 @@ document.addEventListener('click', event => {
     if (!calculatorReturnToFormulas) $('answer')?.focus();
     return;
   }
-  if (button.dataset.calc !== undefined) {
-    const key = button.dataset.calc, screen = $('calc-screen');
-    if (key === '=') return calculateScreen();
-    if (key === 'C') return clearCalculator();
-    if(key==='²'){
-      if(calculatorFresh&&calculatorValue!==null)screen.value=`(${calculatorValue})²`;
-      else if(/[0-9.,)²]$/.test(screen.value.trim()))screen.value+='²';
-      else{$('calc-error').textContent='יש להקליד מספר או לסיים את הביטוי לפני העלאה בריבוע.';fitDialogs();return;}
-      return calculateScreen();
-    }
-    if (key === '←') screen.value = screen.value.slice(0, -1);
-    else {
-      if (calculatorFresh) screen.value = ['+','−','×','÷'].includes(key) ? String(calculatorValue ?? '') : '';
-      if (screen.value.length < 160) screen.value += key;
-    }
-    calculatorFresh = false; calculatorValue = null; $('calc-result').textContent = ''; $('calc-error').textContent = ''; $('calc-use').disabled = true;
-  }
+  if (button.dataset.calc !== undefined) return pressCalculatorKey(button.dataset.calc);
 });
 document.addEventListener('submit', event => {
   if(event.target.id==='feedback-form'){event.preventDefault();submitFeedback();return;}
@@ -1997,6 +2319,10 @@ document.addEventListener('input', event => {
     saveCourse();
   }
   if (event.target.hasAttribute('data-manual-slot')) {
+    // inputmode requests a keypad; validate input as well, including IME input.
+    const input=event.target,clean=input.value.replace(/[^0-9.,]/g,'');
+    let separator=false;
+    input.value=[...clean].filter(char=>{if(!/[.,]/.test(char))return true;if(separator)return false;separator=true;return true;}).join('');
     const state = manualState(), draft = manualDraft(state);
     draft.values[event.target.dataset.manualSlot] = event.target.value;
     state.message = ''; state.errors = []; event.target.removeAttribute('aria-invalid');event.target.classList.remove('answer-incorrect');
@@ -2006,7 +2332,7 @@ document.addEventListener('input', event => {
   }
   if (event.target.hasAttribute('data-answer')) syncDraft(event.target.value, event.target);
   if (event.target.id === 'sim-voltage') { activeSimulatorQuestion().simVoltage = Number(event.target.value); updateSimulator(); }
-  if (event.target.id === 'calc-screen') { calculatorValue = null; calculatorFresh = false; $('calc-use').disabled = true; $('calc-result').textContent = ''; }
+  if(event.target.id==='calc-screen')invalidateCalculator();
 });
 document.addEventListener('change', event => {
   if(qaActive&&event.target.id.startsWith('qa-')) {
@@ -2030,10 +2356,15 @@ document.addEventListener('change', event => {
 document.addEventListener('keydown', event => {
   if(event.key==='Tab'&&!event.shiftKey&&event.target.hasAttribute('data-manual-slot')&&event.target===[...document.querySelectorAll('[data-manual-slot]')].at(-1))hideManualKeypad();
   if(event.key==='Escape'&&manualKeypadTarget){event.preventDefault();hideManualKeypad();$('formula-tab-manual').focus({preventScroll:true});return;}
-  if(event.key==='Enter'&&event.target.matches('[data-manual-list],[data-manual-slot]')){event.preventDefault();pressManualKey('enter');return;}
+  if(event.key==='Enter'&&event.target.hasAttribute('data-manual-slot')){event.preventDefault();nextManualTriangleField(event.target);return;}
+  if(event.key==='Enter'&&event.target.hasAttribute('data-manual-list')){event.preventDefault();pressManualKey('enter');return;}
   if(event.target.matches('[data-manual-list],[data-manual-slot]')&&!event.ctrlKey&&!event.metaKey&&event.key.length===1){
     const allowed=event.target.hasAttribute('data-manual-list')?/[0-9.,xX?]/:/[0-9.,]/;
     if(!allowed.test(event.key)){event.preventDefault();return;}
+  }
+  if(['calc-numerator','calc-denominator'].includes(event.target.id)&&event.key==='Enter') {
+    event.preventDefault();
+    if(event.target.id==='calc-numerator')$('calc-denominator').focus();else insertCalculatorFraction();return;
   }
   if (event.target.id === 'calc-screen' && event.key === 'Enter') { event.preventDefault(); calculateScreen(); return; }
   const formulaTab = event.target.closest('.formula-tab[data-formula-tab]');
@@ -2057,7 +2388,7 @@ document.querySelectorAll('dialog').forEach(dialog => {
     if (dialog.id === 'calculator-dialog' && calculatorReturnToFormulas) {
       calculatorReturnToFormulas = false;
       openDialog('formula-dialog', { preserveFormulaView:true });
-      formulaAnswerField()?.focus();
+      if(formulaView==='manual')focusManualEntry();else formulaAnswerField()?.focus();
     }
     if(dialog.id==='diagram-dialog'&&diagramReturnToFormulas){
       const fieldId=diagramReturnFieldId,scroll=diagramReturnScroll;
@@ -2201,365 +2532,4 @@ function openFeedback(mode){
   $('feedback-context').checked=draft.context;$('feedback-context-label').textContent=feedbackContext();
   document.querySelectorAll('[name="feedback-rating"]').forEach(input=>input.required=review);
   updateFeedbackRating(review?draft.rating:null);
-  $('feedback-subject').removeAttribute('aria-invalid');$('feedback-message').removeAttribute('aria-invalid');
-  $('feedback-rating-group').removeAttribute('aria-invalid');
-  $('feedback-status').textContent='';$('feedback-status').className='feedback';$('feedback-result-link').hidden=true;
-  paintFeedbackAvailability();paintPublicRatings(lastRatingSummary,lastPublicFeedbackURL);openDialog('feedback-dialog');
-}
-function updateFeedbackRating(value){
-  feedbackRating=value;
-  document.querySelectorAll('[name="feedback-rating"]').forEach(input=>{
-    input.checked=Number(input.value)===value;
-    input.closest('label').classList.toggle('rated',value!==null&&Number(input.value)<=value);
-  });
-  $('feedback-rating-label').textContent=value===null?'עדיין לא נבחר דירוג':`${value} מתוך 5 כוכבים`;
-  if(value!==null)$('feedback-rating-group').removeAttribute('aria-invalid');
-}
-document.querySelectorAll('[name="feedback-rating"]').forEach(input=>input.addEventListener('change',()=>updateFeedbackRating(Number(input.value))));
-$('feedback-rating-clear').addEventListener('click',()=>updateFeedbackRating(null));
-$('feedback-dialog').addEventListener('close',rememberContactDraft);
-function submitFeedback(){
-  if(!contactAvailability[feedbackMode]||feedbackPending)return;
-  const subject=$('feedback-subject'),message=$('feedback-message'),status=$('feedback-status'),review=feedbackMode==='review';
-  message.removeAttribute('aria-invalid');
-  if(review&&feedbackRating===null){
-    status.className='feedback error';status.textContent='יש לבחור דירוג של 1–5 כוכבים.';
-    $('feedback-rating-group').setAttribute('aria-invalid','true');
-    document.querySelector('[name="feedback-rating"]').focus();fitDialogs();return;
-  }
-  if(!review&&message.value.trim().length<5){
-    status.className='feedback error';status.textContent='יש לכתוב הערה באורך של לפחות 5 תווים.';
-    message.setAttribute('aria-invalid','true');message.focus();fitDialogs();return;
-  }
-  const id=crypto.randomUUID?.()??`feedback-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-  feedbackPending={id,mode:feedbackMode};rememberContactDraft();
-  status.className='feedback';status.textContent='שולחים את הפנייה לעומר…';
-  $('feedback-result-link').hidden=true;paintFeedbackAvailability();
-  sendStreamlitMessage('streamlit:setComponentValue',{value:{
-    type:'feedback',id,mode:feedbackMode,subject:review?'':subject.value.trim(),message:message.value.trim(),rating:review?feedbackRating:null,
-    context:!review&&$('feedback-context').checked?$('feedback-context-label').textContent:''
-  },dataType:'json'});
-  feedbackTimeout=setTimeout(()=>{
-    if(!feedbackPending)return;
-    status.className='feedback error';status.textContent='השליחה מתעכבת. אפשר להמתין לאישור או לנסות שוב בהמשך.';
-    feedbackPending=null;paintFeedbackAvailability();fitDialogs();
-  },25000);
-  fitDialogs();
-}
-window.addEventListener('message',event=>{
-  if(event.source!==window.parent||event.data?.type!=='streamlit:render')return;
-  const args=event.data.args??{};
-  contactAvailability={review:args.contact_availability?.review===true,note:args.contact_availability?.note===true};
-  lastRatingSummary=args.rating_summary;lastPublicFeedbackURL=args.public_feedback_url??'';
-  paintPublicRatings(lastRatingSummary,lastPublicFeedbackURL);
-  const reply=args.feedback_response;
-  if(reply&&reply.id===feedbackPending?.id){
-    const mode=feedbackPending.mode;clearTimeout(feedbackTimeout);feedbackPending=null;
-    const status=$('feedback-status');status.className=`feedback ${reply.ok?'success':'error'}`;status.textContent=reply.message;
-    if(reply.ok){
-      contactDrafts[mode]={subject:'',message:'',rating:null,context:mode==='note'};
-      if(feedbackMode===mode){$('feedback-subject').value='';$('feedback-message').value='';updateFeedbackRating(null);}
-      if(mode==='review'&&typeof reply.url==='string'&&/^https:\/\/github\.com\/[^/]+\/[^/]+\/issues\/\d+$/.test(reply.url)){
-        const link=$('feedback-result-link');link.href=reply.url;link.hidden=false;
-      }
-    }
-  }
-  paintFeedbackAvailability();syncQuickbar();fitDialogs();resizeFrame();
-});
-
-
-sendStreamlitMessage('streamlit:componentReady', { apiVersion:1 });
-if(!restoreCourse())newCourse();
-initializePersonal();
-function finishInitialLayout(){
-  applyPreferences();
-  const app = $('app'), started = performance.now();
-  let viewport = '', unchangedSince = started;
-  function settleLayout(){
-    const nextViewport = `${innerWidth}x${innerHeight}`;
-    if (nextViewport !== viewport) {
-      viewport = nextViewport; unchangedSince = performance.now();
-      // Rebuild every section's layout after the host applies its frame size.
-      // This is done while hidden, without changing text preferences or DOM nodes.
-      const display = app.style.getPropertyValue('display'), priority = app.style.getPropertyPriority('display');
-      app.style.setProperty('display','none','important');
-      void app.offsetHeight;
-      if (display) app.style.setProperty('display',display,priority); else app.style.removeProperty('display');
-      void app.offsetHeight;
-    }
-    syncQuickbar();fitDialogs();resizeFrame();
-    const heightApplied = window.parent === window || Math.abs(innerHeight-lastFrameHeight) <= 2;
-    const quiet = performance.now()-unchangedSince >= 80;
-    if (quiet && (heightApplied || performance.now()-started >= 1500)) {
-      document.documentElement.classList.add('ui-ready');
-    } else requestAnimationFrame(settleLayout);
-  }
-  requestAnimationFrame(settleLayout);
-}
-if(document.fonts?.ready)document.fonts.ready.then(finishInitialLayout);else finishInitialLayout();
-window.addEventListener('pageshow',event=>{
-  followSystemTheme();
-  if(event.persisted){document.documentElement.classList.remove('ui-ready');finishInitialLayout();}
-});
-function followSystemTheme() {
-  if(personal.preferences.theme==='system'&&document.documentElement.classList.contains('dark-mode')!==systemPrefersDark())applyPreferences();
-}
-if (systemColorScheme.addEventListener) systemColorScheme.addEventListener('change',followSystemTheme);
-else systemColorScheme.addListener(followSystemTheme);
-window.addEventListener('focus',followSystemTheme);
-document.addEventListener('visibilitychange',()=>{if(!document.hidden)followSystemTheme();});
-const followHostVisibility = () => { if(!systemThemeContext.document.hidden)followSystemTheme(); };
-if(systemThemeContext!==window){
-  systemThemeContext.addEventListener('focus',followSystemTheme);
-  systemThemeContext.addEventListener('pageshow',followSystemTheme);
-  systemThemeContext.document.addEventListener('visibilitychange',followHostVisibility);
-}
-window.addEventListener('pagehide',event=>{
-  if(event.persisted)return;
-  if(systemColorScheme.removeEventListener)systemColorScheme.removeEventListener('change',followSystemTheme);
-  else systemColorScheme.removeListener(followSystemTheme);
-  if(systemThemeContext!==window){
-    systemThemeContext.removeEventListener('focus',followSystemTheme);
-    systemThemeContext.removeEventListener('pageshow',followSystemTheme);
-    systemThemeContext.document.removeEventListener('visibilitychange',followHostVisibility);
-  }
-});
-window.addEventListener('pagehide',saveCourse);
-if ('ResizeObserver' in window) new ResizeObserver(resizeFrame).observe($('app'));
-
-</script>
-</body>
-</html>
-'''
-
-def feedback_configuration():
-    """One server-side token with access to the public and private destinations."""
-    defaults = {"public_repository": "OBE-26/electricitey-project", "private_repository": "OBE-26/electricity-feedback"}
-    try:
-        config = st.secrets.get("github_feedback", {})
-        token = str(config.get("token", "")).strip()
-        public = str(config.get("public_repository", defaults["public_repository"])).strip()
-        private = str(config.get("private_repository", config.get("repository", defaults["private_repository"]))).strip()
-    except (FileNotFoundError, KeyError):
-        return {"token": "", **defaults}
-    def valid_repository(value):
-        return bool(re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9-]{0,38}/[A-Za-z0-9_.-]{1,100}", value)) and value.split("/", 1)[1] not in {".", ".."}
-    return {"token": token, "public_repository": public if valid_repository(public) else "",
-            "private_repository": private if valid_repository(private) else ""}
-
-
-def github_feedback_request(token, repository, suffix="", payload=None, method=None):
-    data = None if payload is None else json.dumps(payload, ensure_ascii=False).encode("utf-8")
-    request = urllib.request.Request(
-        f"https://api.github.com/repos/{repository}{suffix}", data=data,
-        method=method or ("GET" if payload is None else "POST"),
-        headers={"Authorization": "Bearer " + token, "Accept": "application/vnd.github+json",
-                 "Content-Type": "application/json", "X-GitHub-Api-Version": "2026-03-10",
-                 "User-Agent": "OBE-26-Electricity-Contact"},
-    )
-    with urllib.request.urlopen(request, timeout=12) as response:
-        return json.load(response)
-
-
-def require_contact_repository(token, repository, private):
-    """Visibility is checked immediately before each write, without caching."""
-    if not token or not repository:
-        raise ValueError("Contact destination is not configured")
-    details = github_feedback_request(token, repository)
-    if not isinstance(details, dict) or details.get("private") is not private or details.get("has_issues") is not True:
-        raise ValueError("Contact destination has the wrong visibility or Issues are disabled")
-
-
-@st.cache_data(ttl=60, show_spinner=False)
-def contact_channel_available(token, repository, private):
-    try:
-        require_contact_repository(token, repository, private)
-        return True
-    except (urllib.error.URLError, TimeoutError, OSError, ValueError):
-        return False
-
-
-@st.cache_data(ttl=60, show_spinner=False)
-def public_rating_summary(token, repository):
-    """Read public reviews only; private notes never contribute to ratings."""
-    unavailable = {"available": False, "count": 0, "average": None, "summary_issue": None}
-    try:
-        require_contact_repository(token, repository, False)
-        total, count, page, seen, summary_issue = 0, 0, 1, set(), None
-        deadline = time.monotonic() + 20
-        while True:
-            if time.monotonic() > deadline:
-                raise TimeoutError("Rating aggregation timed out")
-            before_count = len(seen)
-            issues = github_feedback_request(token, repository, f"/issues?state=all&per_page=100&page={page}&sort=created&direction=asc")
-            if not isinstance(issues, list):
-                raise ValueError("Invalid issue list")
-            for issue in issues:
-                if not isinstance(issue, dict) or "pull_request" in issue:
-                    continue
-                number = issue.get("number")
-                if type(number) is not int or number in seen:
-                    continue
-                seen.add(number)
-                body = str(issue.get("body", ""))
-                if body.startswith("<!-- dc-basics-rating-summary:v1 -->"):
-                    summary_issue = summary_issue or number
-                    continue
-                if not str(issue.get("title", "")).startswith("[דירוג האפליקציה] "):
-                    continue
-                match = re.search(r"\n<!-- dc-basics-public-review:v1 rating=([1-5]) -->\s*\Z", body)
-                if match:
-                    total += int(match.group(1))
-                    count += 1
-            if len(issues) < 100:
-                break
-            if len(seen) == before_count:
-                raise ValueError("Issue pagination did not advance")
-            page += 1
-        return {"available": True, "count": count, "average": round(total / count, 1) if count else None,
-                "summary_issue": summary_issue}
-    except (urllib.error.URLError, TimeoutError, OSError, ValueError):
-        return unavailable
-
-
-@st.cache_resource
-def rating_summary_lock():
-    return threading.Lock()
-
-
-def update_github_rating_summary(token, repository):
-    """Create one summary issue, then update that same issue after each review."""
-    with rating_summary_lock():
-        require_contact_repository(token, repository, False)
-        public_rating_summary.clear()
-        summary = public_rating_summary(token, repository)
-        if not summary["available"]:
-            raise ValueError("Rating summary is unavailable")
-        count, average = summary["count"], summary["average"]
-        count_label = "דירוג אחד" if count == 1 else f"{count} דירוגים"
-        score = f"**{average:.1f} מתוך 5** · **{count_label}**" if count else "עדיין לא התקבלו דירוגים."
-        body = "\n\n".join([
-            "<!-- dc-basics-rating-summary:v1 -->", "# סיכום דירוג האפליקציה", score,
-            "הממוצע מחושב מכל הדירוגים הציבוריים שנשלחו דרך האפליקציה.",
-            f"[צפייה במשובים ובמלל](https://github.com/{repository}/issues)",
-            "הערות שנשלחו במסלול הפרטי נשמרות בנפרד ואינן מוצגות כאן.",
-        ])
-        number = summary["summary_issue"]
-        # Recheck visibility after reading the ratings and before publishing.
-        require_contact_repository(token, repository, False)
-        result = github_feedback_request(token, repository, f"/issues/{number}" if number else "/issues",
-            {"title": "סיכום דירוג האפליקציה", "body": body}, method="PATCH" if number else "POST")
-        created_number = result.get("number") if isinstance(result, dict) else None
-        if type(created_number) is not int or created_number < 1:
-            raise ValueError("Missing summary issue number")
-        public_rating_summary.clear()
-        return created_number
-
-
-def send_contact_message(token, repository, mode, subject, message, rating, context):
-    require_contact_repository(token, repository, mode == "note")
-    if mode == "review":
-        title = f"[דירוג האפליקציה] {rating}/5"
-        details = ["משוב ודירוג אפליקציה", f"דירוג: {'★' * rating}{'☆' * (5-rating)} ({rating}/5)"]
-        if message:
-            details += ["", message]
-        details += ["", f"<!-- dc-basics-public-review:v1 rating={rating} -->"]
-    else:
-        title = "[הערה פרטית] " + (subject or "הערה לאפליקציה")
-        details = ["הערה פרטית שנשלחה לעומר", "", message]
-        if context:
-            details += ["", "מיקום בתרגול:", context]
-        details += ["", "<!-- dc-basics-private-note:v1 -->"]
-    result = github_feedback_request(token, repository, "/issues", {"title": title, "body": "\n".join(details)})
-    number = result.get("number") if isinstance(result, dict) else None
-    if type(number) is not int or number < 1:
-        raise ValueError("Missing issue number")
-    return number
-
-
-def handle_feedback(event, config, session):
-    mode = event.get("mode")
-    if not isinstance(mode, str) or mode not in {"review", "note"}:
-        return {"ok": False, "message": "יש לבחור משוב ודירוג אפליקציה או הערות."}
-    token = config["token"]
-    repository = config["public_repository" if mode == "review" else "private_repository"]
-    if not token or not repository:
-        return {"ok": False, "message": "שליחת הפנייה עדיין לא זמינה. אפשר לנסות שוב בהמשך."}
-    subject, message = event.get("subject", ""), event.get("message", "")
-    rating, context = event.get("rating"), event.get("context", "")
-    if not isinstance(subject, str) or len(subject) > 120:
-        return {"ok": False, "message": "נושא ההערה יכול לכלול עד 120 תווים."}
-    if not isinstance(message, str) or len(message.strip()) > 4000 or (mode == "note" and len(message.strip()) < 5):
-        return {"ok": False, "message": "יש לכתוב הערה באורך 5–4,000 תווים." if mode == "note" else "המלל יכול לכלול עד 4,000 תווים."}
-    if mode == "review" and (type(rating) is not int or not 1 <= rating <= 5):
-        return {"ok": False, "message": "יש לבחור דירוג של 1–5 כוכבים לפני שליחת המשוב."}
-    if mode == "note" and rating is not None:
-        return {"ok": False, "message": "את דירוג האפליקציה שולחים דרך משוב ודירוג אפליקציה."}
-    if not isinstance(context, str) or len(context) > 400 or (mode == "review" and context):
-        return {"ok": False, "message": "לא ניתן לצרף את מיקום התרגיל לפנייה הזו."}
-    now = time.monotonic()
-    rate_key = "dc_contact_last_attempt_" + mode
-    if now - session.get(rate_key, float("-inf")) < 30:
-        return {"ok": False, "message": "יש להמתין חצי דקה בין פניות מאותו סוג."}
-    session[rate_key] = now
-    try:
-        number = send_contact_message(token, repository, mode, subject.strip(), message.strip(), rating, context.strip())
-    except urllib.error.HTTPError:
-        return {"ok": False, "message": "לא הצלחנו לשלוח את הפנייה כרגע. אפשר לנסות שוב בהמשך."}
-    except ValueError:
-        return {"ok": False, "message": "הפנייה לא נשלחה. יש לבדוק את הגדרת מסלול הפנייה."}
-    except (urllib.error.URLError, TimeoutError, OSError):
-        return {"ok": False, "message": "לא התקבל אישור לשליחה. הטקסט נשאר בטופס; אפשר לנסות שוב בהמשך."}
-    if mode == "note":
-        return {"ok": True, "message": "תודה! ההערה נשלחה לעומר באופן פרטי."}
-    result = {"ok": True, "message": "תודה! המשוב והדירוג פורסמו.", "url": f"https://github.com/{repository}/issues/{number}"}
-    # A summary failure must not turn an already-published review into a failed
-    # submission or cause a duplicate when the component reruns.
-    try:
-        update_github_rating_summary(token, repository)
-    except (urllib.error.URLError, TimeoutError, OSError, ValueError):
-        public_rating_summary.clear()
-        result["message"] = "תודה! המשוב והדירוג פורסמו. עדכון פניית הסיכום לא הושלם כרגע."
-    return result
-
-
-st.set_page_config(page_title="יסודות החשמל | תרגול DC", page_icon="⚡", layout="wide")
-st.markdown("""<style>
-.stApp,[data-testid="stAppViewContainer"]{background:#fff8e8}
-[data-testid="stMainBlockContainer"],.block-container{max-width:1220px;padding:.5rem .25rem 1rem}
-[data-testid="stHeader"]{display:none}
-@media(max-width:600px){[data-testid="stMainBlockContainer"],.block-container{padding:.25rem 0 .5rem}}
-</style>""", unsafe_allow_html=True)
-
-@st.cache_resource
-def frontend_directory(html):
-    directory = Path(tempfile.mkdtemp(prefix="dc_basics_"))
-    (directory / "index.html").write_text(html, encoding="utf-8")
-    return str(directory)
-
-practice = components.declare_component("dc_electricity_basics", path=frontend_directory(APP_HTML))
-contact_config = feedback_configuration()
-contact_token = contact_config["token"]
-public_repository = contact_config["public_repository"]
-private_repository = contact_config["private_repository"]
-review_ready = contact_channel_available(contact_token, public_repository, False)
-note_ready = contact_channel_available(contact_token, private_repository, True)
-rating_summary = public_rating_summary(contact_token, public_repository)
-feedback_event = practice(
-    key="dc_electricity_basics_v1", default=None,
-    contact_availability={"review": review_ready, "note": note_ready},
-    rating_summary=rating_summary,
-    public_feedback_url=(f"https://github.com/{public_repository}/issues/" + str(rating_summary["summary_issue"]) if rating_summary.get("summary_issue") else f"https://github.com/{public_repository}/issues") if review_ready else "",
-    feedback_response=st.session_state.get("dc_feedback_reply"),
-)
-if isinstance(feedback_event, dict) and feedback_event.get("type") == "feedback":
-    submission_id = feedback_event.get("id", "")
-    if isinstance(submission_id, str) and re.fullmatch(r"[A-Za-z0-9_-]{8,80}", submission_id):
-        completed = st.session_state.setdefault("dc_feedback_completed", {})
-        if submission_id not in completed:
-            result = handle_feedback(feedback_event, contact_config, st.session_state)
-            completed[submission_id] = result
-            while len(completed) > 40:
-                completed.pop(next(iter(completed)))
-            st.session_state["dc_feedback_reply"] = {"id": submission_id, **result}
-            st.rerun()
+  $('feedback-subject').removeAttribute('aria-invalid');$('feedback-message').r
