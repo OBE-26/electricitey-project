@@ -2532,4 +2532,365 @@ function openFeedback(mode){
   $('feedback-context').checked=draft.context;$('feedback-context-label').textContent=feedbackContext();
   document.querySelectorAll('[name="feedback-rating"]').forEach(input=>input.required=review);
   updateFeedbackRating(review?draft.rating:null);
-  $('feedback-subject').removeAttribute('aria-invalid');$('feedback-message').r
+  $('feedback-subject').removeAttribute('aria-invalid');$('feedback-message').removeAttribute('aria-invalid');
+  $('feedback-rating-group').removeAttribute('aria-invalid');
+  $('feedback-status').textContent='';$('feedback-status').className='feedback';$('feedback-result-link').hidden=true;
+  paintFeedbackAvailability();paintPublicRatings(lastRatingSummary,lastPublicFeedbackURL);openDialog('feedback-dialog');
+}
+function updateFeedbackRating(value){
+  feedbackRating=value;
+  document.querySelectorAll('[name="feedback-rating"]').forEach(input=>{
+    input.checked=Number(input.value)===value;
+    input.closest('label').classList.toggle('rated',value!==null&&Number(input.value)<=value);
+  });
+  $('feedback-rating-label').textContent=value===null?'עדיין לא נבחר דירוג':`${value} מתוך 5 כוכבים`;
+  if(value!==null)$('feedback-rating-group').removeAttribute('aria-invalid');
+}
+document.querySelectorAll('[name="feedback-rating"]').forEach(input=>input.addEventListener('change',()=>updateFeedbackRating(Number(input.value))));
+$('feedback-rating-clear').addEventListener('click',()=>updateFeedbackRating(null));
+$('feedback-dialog').addEventListener('close',rememberContactDraft);
+function submitFeedback(){
+  if(!contactAvailability[feedbackMode]||feedbackPending)return;
+  const subject=$('feedback-subject'),message=$('feedback-message'),status=$('feedback-status'),review=feedbackMode==='review';
+  message.removeAttribute('aria-invalid');
+  if(review&&feedbackRating===null){
+    status.className='feedback error';status.textContent='יש לבחור דירוג של 1–5 כוכבים.';
+    $('feedback-rating-group').setAttribute('aria-invalid','true');
+    document.querySelector('[name="feedback-rating"]').focus();fitDialogs();return;
+  }
+  if(!review&&message.value.trim().length<5){
+    status.className='feedback error';status.textContent='יש לכתוב הערה באורך של לפחות 5 תווים.';
+    message.setAttribute('aria-invalid','true');message.focus();fitDialogs();return;
+  }
+  const id=crypto.randomUUID?.()??`feedback-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  feedbackPending={id,mode:feedbackMode};rememberContactDraft();
+  status.className='feedback';status.textContent='שולחים את הפנייה לעומר…';
+  $('feedback-result-link').hidden=true;paintFeedbackAvailability();
+  sendStreamlitMessage('streamlit:setComponentValue',{value:{
+    type:'feedback',id,mode:feedbackMode,subject:review?'':subject.value.trim(),message:message.value.trim(),rating:review?feedbackRating:null,
+    context:!review&&$('feedback-context').checked?$('feedback-context-label').textContent:''
+  },dataType:'json'});
+  feedbackTimeout=setTimeout(()=>{
+    if(!feedbackPending)return;
+    status.className='feedback error';status.textContent='השליחה מתעכבת. אפשר להמתין לאישור או לנסות שוב בהמשך.';
+    feedbackPending=null;paintFeedbackAvailability();fitDialogs();
+  },25000);
+  fitDialogs();
+}
+window.addEventListener('message',event=>{
+  if(event.source!==window.parent||event.data?.type!=='streamlit:render')return;
+  const args=event.data.args??{};
+  contactAvailability={review:args.contact_availability?.review===true,note:args.contact_availability?.note===true};
+  lastRatingSummary=args.rating_summary;lastPublicFeedbackURL=args.public_feedback_url??'';
+  paintPublicRatings(lastRatingSummary,lastPublicFeedbackURL);
+  const reply=args.feedback_response;
+  if(reply&&reply.id===feedbackPending?.id){
+    const mode=feedbackPending.mode;clearTimeout(feedbackTimeout);feedbackPending=null;
+    const status=$('feedback-status');status.className=`feedback ${reply.ok?'success':'error'}`;status.textContent=reply.message;
+    if(reply.ok){
+      contactDrafts[mode]={subject:'',message:'',rating:null,context:mode==='note'};
+      if(feedbackMode===mode){$('feedback-subject').value='';$('feedback-message').value='';updateFeedbackRating(null);}
+      if(mode==='review'&&typeof reply.url==='string'&&/^https:\/\/github\.com\/[^/]+\/[^/]+\/issues\/\d+$/.test(reply.url)){
+        const link=$('feedback-result-link');link.href=reply.url;link.hidden=false;
+      }
+    }
+  }
+  paintFeedbackAvailability();syncQuickbar();fitDialogs();resizeFrame();
+});
+
+
+sendStreamlitMessage('streamlit:componentReady', { apiVersion:1 });
+if(!restoreCourse())newCourse();
+initializePersonal();
+function finishInitialLayout(){
+  applyPreferences();
+  const app = $('app'), started = performance.now();
+  let viewport = '', unchangedSince = started;
+  function settleLayout(){
+    const nextViewport = `${innerWidth}x${innerHeight}`;
+    if (nextViewport !== viewport) {
+      viewport = nextViewport; unchangedSince = performance.now();
+      // Rebuild every section's layout after the host applies its frame size.
+      // This is done while hidden, without changing text preferences or DOM nodes.
+      const display = app.style.getPropertyValue('display'), priority = app.style.getPropertyPriority('display');
+      app.style.setProperty('display','none','important');
+      void app.offsetHeight;
+      if (display) app.style.setProperty('display',display,priority); else app.style.removeProperty('display');
+      void app.offsetHeight;
+    }
+    syncQuickbar();fitDialogs();resizeFrame();
+    const heightApplied = window.parent === window || Math.abs(innerHeight-lastFrameHeight) <= 2;
+    const quiet = performance.now()-unchangedSince >= 80;
+    if (quiet && (heightApplied || performance.now()-started >= 1500)) {
+      document.documentElement.classList.add('ui-ready');
+    } else requestAnimationFrame(settleLayout);
+  }
+  requestAnimationFrame(settleLayout);
+}
+if(document.fonts?.ready)document.fonts.ready.then(finishInitialLayout);else finishInitialLayout();
+window.addEventListener('pageshow',event=>{
+  followSystemTheme();
+  if(event.persisted){document.documentElement.classList.remove('ui-ready');finishInitialLayout();}
+});
+function followSystemTheme() {
+  if(personal.preferences.theme==='system'&&document.documentElement.classList.contains('dark-mode')!==systemPrefersDark())applyPreferences();
+}
+if (systemColorScheme.addEventListener) systemColorScheme.addEventListener('change',followSystemTheme);
+else systemColorScheme.addListener(followSystemTheme);
+window.addEventListener('focus',followSystemTheme);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)followSystemTheme();});
+const followHostVisibility = () => { if(!systemThemeContext.document.hidden)followSystemTheme(); };
+if(systemThemeContext!==window){
+  systemThemeContext.addEventListener('focus',followSystemTheme);
+  systemThemeContext.addEventListener('pageshow',followSystemTheme);
+  systemThemeContext.document.addEventListener('visibilitychange',followHostVisibility);
+}
+window.addEventListener('pagehide',event=>{
+  if(event.persisted)return;
+  if(systemColorScheme.removeEventListener)systemColorScheme.removeEventListener('change',followSystemTheme);
+  else systemColorScheme.removeListener(followSystemTheme);
+  if(systemThemeContext!==window){
+    systemThemeContext.removeEventListener('focus',followSystemTheme);
+    systemThemeContext.removeEventListener('pageshow',followSystemTheme);
+    systemThemeContext.document.removeEventListener('visibilitychange',followHostVisibility);
+  }
+});
+window.addEventListener('pagehide',saveCourse);
+if ('ResizeObserver' in window) new ResizeObserver(resizeFrame).observe($('app'));
+
+</script>
+</body>
+</html>
+'''
+
+def feedback_configuration():
+    """One server-side token with access to the public and private destinations."""
+    defaults = {"public_repository": "OBE-26/electricitey-project", "private_repository": "OBE-26/electricity-feedback"}
+    try:
+        config = st.secrets.get("github_feedback", {})
+        token = str(config.get("token", "")).strip()
+        public = str(config.get("public_repository", defaults["public_repository"])).strip()
+        private = str(config.get("private_repository", config.get("repository", defaults["private_repository"]))).strip()
+    except (FileNotFoundError, KeyError):
+        return {"token": "", **defaults}
+    def valid_repository(value):
+        return bool(re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9-]{0,38}/[A-Za-z0-9_.-]{1,100}", value)) and value.split("/", 1)[1] not in {".", ".."}
+    return {"token": token, "public_repository": public if valid_repository(public) else "",
+            "private_repository": private if valid_repository(private) else ""}
+
+
+def github_feedback_request(token, repository, suffix="", payload=None, method=None):
+    data = None if payload is None else json.dumps(payload, ensure_ascii=False).encode("utf-8")
+    request = urllib.request.Request(
+        f"https://api.github.com/repos/{repository}{suffix}", data=data,
+        method=method or ("GET" if payload is None else "POST"),
+        headers={"Authorization": "Bearer " + token, "Accept": "application/vnd.github+json",
+                 "Content-Type": "application/json", "X-GitHub-Api-Version": "2026-03-10",
+                 "User-Agent": "OBE-26-Electricity-Contact"},
+    )
+    with urllib.request.urlopen(request, timeout=12) as response:
+        return json.load(response)
+
+
+def require_contact_repository(token, repository, private):
+    """Visibility is checked immediately before each write, without caching."""
+    if not token or not repository:
+        raise ValueError("Contact destination is not configured")
+    details = github_feedback_request(token, repository)
+    if not isinstance(details, dict) or details.get("private") is not private or details.get("has_issues") is not True:
+        raise ValueError("Contact destination has the wrong visibility or Issues are disabled")
+
+
+@st.cache_data(ttl=60, show_spinner=False)
+def contact_channel_available(token, repository, private):
+    try:
+        require_contact_repository(token, repository, private)
+        return True
+    except (urllib.error.URLError, TimeoutError, OSError, ValueError):
+        return False
+
+
+@st.cache_data(ttl=60, show_spinner=False)
+def public_rating_summary(token, repository):
+    """Read public reviews only; private notes never contribute to ratings."""
+    unavailable = {"available": False, "count": 0, "average": None, "summary_issue": None}
+    try:
+        require_contact_repository(token, repository, False)
+        total, count, page, seen, summary_issue = 0, 0, 1, set(), None
+        deadline = time.monotonic() + 20
+        while True:
+            if time.monotonic() > deadline:
+                raise TimeoutError("Rating aggregation timed out")
+            before_count = len(seen)
+            issues = github_feedback_request(token, repository, f"/issues?state=all&per_page=100&page={page}&sort=created&direction=asc")
+            if not isinstance(issues, list):
+                raise ValueError("Invalid issue list")
+            for issue in issues:
+                if not isinstance(issue, dict) or "pull_request" in issue:
+                    continue
+                number = issue.get("number")
+                if type(number) is not int or number in seen:
+                    continue
+                seen.add(number)
+                body = str(issue.get("body", ""))
+                if body.startswith("<!-- dc-basics-rating-summary:v1 -->"):
+                    summary_issue = summary_issue or number
+                    continue
+                if not str(issue.get("title", "")).startswith("[דירוג האפליקציה] "):
+                    continue
+                match = re.search(r"\n<!-- dc-basics-public-review:v1 rating=([1-5]) -->\s*\Z", body)
+                if match:
+                    total += int(match.group(1))
+                    count += 1
+            if len(issues) < 100:
+                break
+            if len(seen) == before_count:
+                raise ValueError("Issue pagination did not advance")
+            page += 1
+        return {"available": True, "count": count, "average": round(total / count, 1) if count else None,
+                "summary_issue": summary_issue}
+    except (urllib.error.URLError, TimeoutError, OSError, ValueError):
+        return unavailable
+
+
+@st.cache_resource
+def rating_summary_lock():
+    return threading.Lock()
+
+
+def update_github_rating_summary(token, repository):
+    """Create one summary issue, then update that same issue after each review."""
+    with rating_summary_lock():
+        require_contact_repository(token, repository, False)
+        public_rating_summary.clear()
+        summary = public_rating_summary(token, repository)
+        if not summary["available"]:
+            raise ValueError("Rating summary is unavailable")
+        count, average = summary["count"], summary["average"]
+        count_label = "דירוג אחד" if count == 1 else f"{count} דירוגים"
+        score = f"**{average:.1f} מתוך 5** · **{count_label}**" if count else "עדיין לא התקבלו דירוגים."
+        body = "\n\n".join([
+            "<!-- dc-basics-rating-summary:v1 -->", "# סיכום דירוג האפליקציה", score,
+            "הממוצע מחושב מכל הדירוגים הציבוריים שנשלחו דרך האפליקציה.",
+            f"[צפייה במשובים ובמלל](https://github.com/{repository}/issues)",
+            "הערות שנשלחו במסלול הפרטי נשמרות בנפרד ואינן מוצגות כאן.",
+        ])
+        number = summary["summary_issue"]
+        # Recheck visibility after reading the ratings and before publishing.
+        require_contact_repository(token, repository, False)
+        result = github_feedback_request(token, repository, f"/issues/{number}" if number else "/issues",
+            {"title": "סיכום דירוג האפליקציה", "body": body}, method="PATCH" if number else "POST")
+        created_number = result.get("number") if isinstance(result, dict) else None
+        if type(created_number) is not int or created_number < 1:
+            raise ValueError("Missing summary issue number")
+        public_rating_summary.clear()
+        return created_number
+
+
+def send_contact_message(token, repository, mode, subject, message, rating, context):
+    require_contact_repository(token, repository, mode == "note")
+    if mode == "review":
+        title = f"[דירוג האפליקציה] {rating}/5"
+        details = ["משוב ודירוג אפליקציה", f"דירוג: {'★' * rating}{'☆' * (5-rating)} ({rating}/5)"]
+        if message:
+            details += ["", message]
+        details += ["", f"<!-- dc-basics-public-review:v1 rating={rating} -->"]
+    else:
+        title = "[הערה פרטית] " + (subject or "הערה לאפליקציה")
+        details = ["הערה פרטית שנשלחה לעומר", "", message]
+        if context:
+            details += ["", "מיקום בתרגול:", context]
+        details += ["", "<!-- dc-basics-private-note:v1 -->"]
+    result = github_feedback_request(token, repository, "/issues", {"title": title, "body": "\n".join(details)})
+    number = result.get("number") if isinstance(result, dict) else None
+    if type(number) is not int or number < 1:
+        raise ValueError("Missing issue number")
+    return number
+
+
+def handle_feedback(event, config, session):
+    mode = event.get("mode")
+    if not isinstance(mode, str) or mode not in {"review", "note"}:
+        return {"ok": False, "message": "יש לבחור משוב ודירוג אפליקציה או הערות."}
+    token = config["token"]
+    repository = config["public_repository" if mode == "review" else "private_repository"]
+    if not token or not repository:
+        return {"ok": False, "message": "שליחת הפנייה עדיין לא זמינה. אפשר לנסות שוב בהמשך."}
+    subject, message = event.get("subject", ""), event.get("message", "")
+    rating, context = event.get("rating"), event.get("context", "")
+    if not isinstance(subject, str) or len(subject) > 120:
+        return {"ok": False, "message": "נושא ההערה יכול לכלול עד 120 תווים."}
+    if not isinstance(message, str) or len(message.strip()) > 4000 or (mode == "note" and len(message.strip()) < 5):
+        return {"ok": False, "message": "יש לכתוב הערה באורך 5–4,000 תווים." if mode == "note" else "המלל יכול לכלול עד 4,000 תווים."}
+    if mode == "review" and (type(rating) is not int or not 1 <= rating <= 5):
+        return {"ok": False, "message": "יש לבחור דירוג של 1–5 כוכבים לפני שליחת המשוב."}
+    if mode == "note" and rating is not None:
+        return {"ok": False, "message": "את דירוג האפליקציה שולחים דרך משוב ודירוג אפליקציה."}
+    if not isinstance(context, str) or len(context) > 400 or (mode == "review" and context):
+        return {"ok": False, "message": "לא ניתן לצרף את מיקום התרגיל לפנייה הזו."}
+    now = time.monotonic()
+    rate_key = "dc_contact_last_attempt_" + mode
+    if now - session.get(rate_key, float("-inf")) < 30:
+        return {"ok": False, "message": "יש להמתין חצי דקה בין פניות מאותו סוג."}
+    session[rate_key] = now
+    try:
+        number = send_contact_message(token, repository, mode, subject.strip(), message.strip(), rating, context.strip())
+    except urllib.error.HTTPError:
+        return {"ok": False, "message": "לא הצלחנו לשלוח את הפנייה כרגע. אפשר לנסות שוב בהמשך."}
+    except ValueError:
+        return {"ok": False, "message": "הפנייה לא נשלחה. יש לבדוק את הגדרת מסלול הפנייה."}
+    except (urllib.error.URLError, TimeoutError, OSError):
+        return {"ok": False, "message": "לא התקבל אישור לשליחה. הטקסט נשאר בטופס; אפשר לנסות שוב בהמשך."}
+    if mode == "note":
+        return {"ok": True, "message": "תודה! ההערה נשלחה לעומר באופן פרטי."}
+    result = {"ok": True, "message": "תודה! המשוב והדירוג פורסמו.", "url": f"https://github.com/{repository}/issues/{number}"}
+    # A summary failure must not turn an already-published review into a failed
+    # submission or cause a duplicate when the component reruns.
+    try:
+        update_github_rating_summary(token, repository)
+    except (urllib.error.URLError, TimeoutError, OSError, ValueError):
+        public_rating_summary.clear()
+        result["message"] = "תודה! המשוב והדירוג פורסמו. עדכון פניית הסיכום לא הושלם כרגע."
+    return result
+
+
+st.set_page_config(page_title="יסודות החשמל | תרגול DC", page_icon="⚡", layout="wide")
+st.markdown("""<style>
+.stApp,[data-testid="stAppViewContainer"]{background:#fff8e8}
+[data-testid="stMainBlockContainer"],.block-container{max-width:1220px;padding:.5rem .25rem 1rem}
+[data-testid="stHeader"]{display:none}
+@media(max-width:600px){[data-testid="stMainBlockContainer"],.block-container{padding:.25rem 0 .5rem}}
+</style>""", unsafe_allow_html=True)
+
+@st.cache_resource
+def frontend_directory(html):
+    directory = Path(tempfile.mkdtemp(prefix="dc_basics_"))
+    (directory / "index.html").write_text(html, encoding="utf-8")
+    return str(directory)
+
+practice = components.declare_component("dc_electricity_basics", path=frontend_directory(APP_HTML))
+contact_config = feedback_configuration()
+contact_token = contact_config["token"]
+public_repository = contact_config["public_repository"]
+private_repository = contact_config["private_repository"]
+review_ready = contact_channel_available(contact_token, public_repository, False)
+note_ready = contact_channel_available(contact_token, private_repository, True)
+rating_summary = public_rating_summary(contact_token, public_repository)
+feedback_event = practice(
+    key="dc_electricity_basics_v1", default=None,
+    contact_availability={"review": review_ready, "note": note_ready},
+    rating_summary=rating_summary,
+    public_feedback_url=(f"https://github.com/{public_repository}/issues/" + str(rating_summary["summary_issue"]) if rating_summary.get("summary_issue") else f"https://github.com/{public_repository}/issues") if review_ready else "",
+    feedback_response=st.session_state.get("dc_feedback_reply"),
+)
+if isinstance(feedback_event, dict) and feedback_event.get("type") == "feedback":
+    submission_id = feedback_event.get("id", "")
+    if isinstance(submission_id, str) and re.fullmatch(r"[A-Za-z0-9_-]{8,80}", submission_id):
+        completed = st.session_state.setdefault("dc_feedback_completed", {})
+        if submission_id not in completed:
+            result = handle_feedback(feedback_event, contact_config, st.session_state)
+            completed[submission_id] = result
+            while len(completed) > 40:
+                completed.pop(next(iter(completed)))
+            st.session_state["dc_feedback_reply"] = {"id": submission_id, **result}
+            st.rerun()
