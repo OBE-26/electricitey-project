@@ -469,6 +469,15 @@ APP_HTML = r'''<!doctype html>
     .high-contrast #calculator-dialog .calc-grid button.equals{background:var(--ink);color:var(--paper)}
     @media(max-width:420px){.calc-dialog{padding:14px}.calc-head-actions{gap:5px}.calc-head-actions .btn{padding:7px}.calc-toolbar{gap:6px}.calc-toolbar>.btn{font-size:calc(12px * var(--text-scale,1))}.calc-settings label{align-items:flex-start}.calc-settings select{width:100%}}
 
+
+    .birth-input-row{display:flex;align-items:stretch;gap:8px;direction:ltr}
+    .profile-fields .birth-input-row>input{flex:1;min-width:0;text-align:left;font-variant-numeric:tabular-nums;letter-spacing:.04em}
+    .profile-fields label.birth-calendar{position:relative;display:grid;place-items:center;flex:0 0 46px;min-height:46px;border:1px solid var(--line);border-radius:9px;background:var(--soft);color:var(--ink);overflow:hidden;cursor:pointer}
+    .birth-calendar svg{width:23px;height:23px;pointer-events:none}
+    .profile-fields .birth-calendar input{position:absolute;inset:0;display:block;width:100%;height:100%;min-height:0;opacity:0;padding:0;border:0;cursor:pointer}
+    .birth-calendar:focus-within{outline:3px solid #c38330;outline-offset:3px}
+    .birth-help{margin:6px 0 0;line-height:1.6;font-weight:400}
+    .dark-mode .profile-fields label.birth-calendar{background:var(--soft);color:var(--ink);border-color:var(--line)}
   </style>
 </head>
 <body>
@@ -579,7 +588,7 @@ APP_HTML = r'''<!doctype html>
   <div class="guide-actions"><button type="button" class="btn" data-close-dialog="guide-dialog">חזרה לתרגול</button><button type="button" class="btn secondary" data-open-formulas>פתיחת דף הנוסחאות</button></div>
 </dialog>
 <dialog id="new-course-dialog" class="confirm-dialog" aria-labelledby="new-course-title"><div class="dialog-head"><h2 id="new-course-title">להתחיל סבב חדש?</h2><button class="close" data-close-dialog="new-course-dialog" aria-label="סגירה">×</button></div><p>התרגילים בסבב יוחלפו. ההתקדמות האישית, הגרף, הטבלה והפרופיל שלכם יישמרו.</p><div class="completion-actions"><button class="btn" id="new-course-confirm">כן, תרגילים חדשים</button><button class="btn secondary" data-close-dialog="new-course-dialog">חזרה לתרגול</button></div></dialog>
-<dialog id="profile-dialog" class="profile-dialog" aria-labelledby="profile-title"><div class="dialog-head"><h2 id="profile-title">הפרופיל שלי במכשיר הזה</h2><button class="close" id="profile-close" data-close-dialog="profile-dialog" aria-label="סגירת הפרופיל">×</button></div><p class="small muted">בכניסה הראשונה מזינים שם ותאריך לידה ומאשרים את תנאי השימוש. הפרטים וההתקדמות יישמרו בדפדפן הזה; ניקוי נתוני הדפדפן עלול למחוק אותם.</p><form id="profile-form" novalidate><div class="profile-fields"><label for="profile-name">שם<input id="profile-name" aria-describedby="profile-error" type="text" autocomplete="name" maxlength="80" required></label><label for="profile-birth">תאריך לידה<input id="profile-birth" aria-describedby="profile-error" type="date" autocomplete="bday" required></label></div><details class="terms-document" id="profile-terms"><summary>תנאי שימוש ופרטיות — לקריאה לפני האישור</summary><div data-terms-document></div></details><label class="consent-row" for="profile-consent"><input id="profile-consent" aria-describedby="profile-error" type="checkbox" required>אני מסכים/ה לתנאי השימוש ולשמירת הפרופיל ונתוני התרגול באופן מקומי במכשיר הזה.</label><div id="profile-error" class="feedback error" role="alert"></div><button class="btn" type="submit">שמירה ותחילת תרגול</button></form><details class="profile-accessibility"><summary>התאמות נגישות לפני תחילת התרגול</summary><div id="profile-accessibility-controls"></div></details></dialog>
+<dialog id="profile-dialog" class="profile-dialog" aria-labelledby="profile-title"><div class="dialog-head"><h2 id="profile-title">הפרופיל שלי במכשיר הזה</h2><button class="close" id="profile-close" data-close-dialog="profile-dialog" aria-label="סגירת הפרופיל">×</button></div><p class="small muted">בכניסה הראשונה מזינים שם ותאריך לידה ומאשרים את תנאי השימוש. הפרטים וההתקדמות יישמרו בדפדפן הזה; ניקוי נתוני הדפדפן עלול למחוק אותם.</p><form id="profile-form" novalidate><div class="profile-fields"><label for="profile-name">שם<input id="profile-name" aria-describedby="profile-error" type="text" autocomplete="name" maxlength="80" required></label><div class="profile-birth-field"><label for="profile-birth">תאריך לידה</label><div class="birth-input-row"><input id="profile-birth" aria-describedby="profile-birth-help profile-error" type="text" inputmode="numeric" autocomplete="bday" placeholder="DD/MM/YY" maxlength="10" dir="ltr" spellcheck="false" required><label class="birth-calendar" title="בחירה מלוח שנה"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4M17 3v4M3 11h18M7 15h3M14 15h3"/></svg><input id="profile-birth-picker" type="date" aria-label="בחירה מלוח שנה" tabindex="0"></label></div><p class="small muted birth-help" id="profile-birth-help">יום/חודש/שנה · הלוכסנים נוספים אוטומטית. אפשר להקליד שנה בשתי ספרות, למשל 92 עבור 1992.</p></div></div><details class="terms-document" id="profile-terms"><summary>תנאי שימוש ופרטיות — לקריאה לפני האישור</summary><div data-terms-document></div></details><label class="consent-row" for="profile-consent"><input id="profile-consent" aria-describedby="profile-error" type="checkbox" required>אני מסכים/ה לתנאי השימוש ולשמירת הפרופיל ונתוני התרגול באופן מקומי במכשיר הזה.</label><div id="profile-error" class="feedback error" role="alert"></div><button class="btn" type="submit">שמירה ותחילת תרגול</button></form><details class="profile-accessibility"><summary>התאמות נגישות לפני תחילת התרגול</summary><div id="profile-accessibility-controls"></div></details></dialog>
 <dialog id="terms-dialog" aria-labelledby="terms-title"><div class="dialog-head"><h2 id="terms-title">תנאי שימוש ופרטיות</h2><button class="close" data-close-dialog="terms-dialog" aria-label="סגירת תנאי השימוש">×</button></div><div data-terms-document></div></dialog>
 <dialog id="accessibility-dialog" class="accessibility-dialog" aria-labelledby="accessibility-title"><div class="dialog-head"><h2 id="accessibility-title">נגישות</h2><button class="close" data-close-dialog="accessibility-dialog" aria-label="סגירת הנגישות">×</button></div><div id="accessibility-controls"></div><details class="terms-document"><summary>הצהרת נגישות</summary><p>באתר יש תמיכה בניווט במקלדת, סימון מיקוד, תוויות לשדות, הודעות שגיאה כתובות, הגדלת טקסט, ניגודיות מוגברת והפחתת תנועה. התרשימים והגרף מלווים בתיאור ובנתונים כתובים.</p><p>אפשר לנוע בין שדות וכפתורים באמצעות Tab ו־Shift+Tab, לבחור לשונית באמצעות החצים ולסגור חלון באמצעות Escape. הסימולטור כולל מקרא וכיתוב כך שהמידע אינו תלוי בצבע בלבד.</p><p>מתבצעים שיפורים שוטפים. לבדיקת עמידה מלאה בתקן נדרשת הערכת נגישות מקיפה. לדיווח על קושי אפשר לפנות למפעיל האתר בערוץ שדרכו התקבל הקישור, ולציין את המכשיר, הדפדפן והפעולה שבה נתקלים בקושי.</p></details></dialog>
 <script>
@@ -1075,6 +1084,79 @@ function validBirth(value) {
   const date = new Date(value + 'T12:00:00'), oldest = new Date(); oldest.setFullYear(oldest.getFullYear()-130);
   return Number.isFinite(date.getTime()) && localDateValue(date) === value && value <= localDateValue() && value >= localDateValue(oldest);
 }
+function birthTextFromISO(value) {
+  const match=/^(\d{4})-(\d{2})-(\d{2})$/.exec(String(value));
+  return match?`${match[3]}/${match[2]}/${match[1]}`:'';
+}
+function birthISOFromText(value) {
+  const text=String(value).trim();
+  if(/^\d{4}-\d{2}-\d{2}$/.test(text))return validBirth(text)?text:'';
+  const match=/^(\d{2})\/(\d{2})\/(\d{2}|\d{4})$/.exec(text);
+  if(!match)return '';
+  let year=Number(match[3]);
+  if(match[3].length===2){
+    const current=new Date().getFullYear();
+    year=Math.floor(current/100)*100+year;
+    if(year>current)year-=100;
+  }
+  const iso=`${String(year).padStart(4,'0')}-${match[2]}-${match[1]}`;
+  return validBirth(iso)?iso:'';
+}
+function birthFeedback(message='') {
+  const error=$('profile-error');
+  if(message){error.textContent=message;error.dataset.field='profile-birth';}
+  else if(error.dataset.field==='profile-birth'){error.textContent='';delete error.dataset.field;}
+}
+function normalizeBirthInput(report=false) {
+  const input=$('profile-birth'),iso=birthISOFromText(input.value);
+  $('profile-birth-picker').value=iso;
+  if(iso){input.value=birthTextFromISO(iso);input.removeAttribute('aria-invalid');birthFeedback();}
+  else if(report&&input.value.trim()){
+    input.setAttribute('aria-invalid','true');
+    birthFeedback('יש להזין תאריך לידה תקין שאינו בעתיד, לפי יום/חודש/שנה.');
+  }
+  return iso;
+}
+function maskBirthInput(event) {
+  const input=event.target,raw=input.value,position=input.selectionStart??raw.length;
+  const deleting=event.inputType?.startsWith('delete');
+  if(/^\d{4}-\d{2}-\d{2}$/.test(raw)){
+    input.value=birthTextFromISO(raw);
+  }else{
+    const short=/^(\d{1,2})\/(\d{1,2})\/(\d{2}|\d{4})$/.exec(raw);
+    const digits=(short?short[1].padStart(2,'0')+short[2].padStart(2,'0')+short[3]:raw.replace(/\D/g,'')).slice(0,8);
+    let formatted=digits.slice(0,2);
+    if(digits.length>2||digits.length===2&&!deleting)formatted+='/'+digits.slice(2,4);
+    if(digits.length>4||digits.length===4&&!deleting)formatted+='/'+digits.slice(4);
+    const count=raw.slice(0,position).replace(/\D/g,'').length;
+    input.value=formatted;
+    let caret=formatted.length;
+    if(position<raw.length){
+      caret=0;let seen=0;
+      while(caret<formatted.length&&seen<count){if(/\d/.test(formatted[caret]))seen++;caret++;}
+      if(!deleting&&formatted[caret]==='/')caret++;
+    }
+    input.setSelectionRange(caret,caret);
+  }
+  $('profile-birth-picker').value='';input.removeAttribute('aria-invalid');birthFeedback();
+}
+$('profile-birth').addEventListener('input',maskBirthInput);
+$('profile-birth').addEventListener('beforeinput',event=>{
+  const data=event.data??'';
+  const date=/^(?:\d{4}-\d{2}-\d{2}|\d{1,2}\/\d{1,2}\/(?:\d{2}|\d{4}))$/.test(data);
+  if(event.inputType==='insertText'&&event.data!==null&&!/^[0-9]+$/.test(data)&&!date)event.preventDefault();
+});
+$('profile-birth').addEventListener('keydown',event=>{
+  if(!event.ctrlKey&&!event.metaKey&&event.key.length===1&&!/^[0-9]$/.test(event.key))event.preventDefault();
+});
+$('profile-birth').addEventListener('blur',()=>normalizeBirthInput(true));
+$('profile-birth-picker').addEventListener('change',event=>{
+  $('profile-birth').value=birthTextFromISO(event.target.value);normalizeBirthInput(true);
+});
+$('profile-birth-picker').addEventListener('click',event=>{
+  try{event.target.showPicker?.();}catch{}
+});
+
 function profileReady() { return !!personal.profile && personal.profile.name.trim().length >= 2 && validBirth(personal.profile.birth) && personal.profile.termsVersion === termsVersion; }
 function termsHTML() {
   return `<p class="small muted">עדכון: 14.10.2026</p><h3>מטרת האתר והשימוש בתוכן</h3><p>האתר מיועד ללימוד ולתרגול עיוני של יסודות החשמל ומעגלי DC באמצעות מודלים פשוטים. התרגילים והסימולטור אינם הוראות לביצוע עבודות חשמל ואינם תחליף להכשרה, להסמכה, לייעוץ מקצועי או לבדיקה של איש מקצוע מוסמך. אין לבצע חיבור, תיקון, מדידה או שינוי במערכת חשמל ממשית על סמך האתר.</p><h3>דיוק, זמינות והגבלת אחריות</h3><p>ייתכנו טעויות, עיגול מספרים, השמטות ותקלות. המודלים אינם מציגים את כל התופעות או את הסיכונים שבמערכות אמיתיות. אין התחייבות לשלמות התוכן, להתאמה למטרה מסוימת, לזמינות רציפה או לשמירת נתונים ללא תקלות.</p><p>במידה המרבית המותרת על פי דין, מפעילי האתר לא יישאו באחריות לנזק עקיף או תוצאתי עקב הסתמכות על התוכן, שימוש שלא למטרות לימוד או אובדן נתונים מקומיים. אין בתנאים אלה כדי לפטור מאחריות שאי אפשר להתנות עליה על פי דין, לרבות אחריות לנזק גוף או למעשה זדון ככל שהדין אוסר את הגבלתה, או כדי לגרוע מזכויות שאינן ניתנות לוויתור.</p><h3>פרטיות ופרופיל מקומי</h3><p>השם, תאריך הלידה, מועד האישור וגרסת התנאים, התאמות הנגישות ונתוני ההתקדמות נשמרים בדפדפן במכשיר הזה. קוד היישום אינו שולח את פרטי הפרופיל או את נתוני ההתקדמות לשרת. שירות האירוח עשוי לעבד נתוני תקשורת טכניים בהתאם לתנאיו.</p><p>אין סנכרון בין מכשירים. מי שניגש לדפדפן הזה עלול לצפות בפרופיל ובהתקדמות. ניקוי נתוני האתר או שימוש בגלישה פרטית עשויים למחוק את השמירה. שליחת הערות לעומר היא פעולה לבחירתכם. במסלול משוב ודירוג אפליקציה, דירוג הכוכבים והמלל שבחרתם לצרף נשלחים לשרת האתר ומתפרסמים במאגר GitHub ציבורי. באתר ובפניית סיכום ב־GitHub מוצגים ממוצע הדירוגים ומספר הדירוגים. במסלול הערות, המלל ומיקום התרגיל אם בחרתם לצרף אותו נשמרים במאגר GitHub פרטי, הזמין למפעיל האתר ולבעלי הרשאת גישה למאגר. הערות פרטיות אינן מתפרסמות במשוב הציבורי ואינן נכללות בדירוג. פרטי הפרופיל ותאריך הלידה אינם מצורפים למשוב באופן אוטומטי. ניתן למחוק את הפרטים באמצעות מחיקת נתוני האתר בהגדרות הדפדפן. איפוס התרגילים באתר שומר על הפרופיל ועל ההתקדמות האישית.</p><h3>הסכמה ושימוש אחראי</h3><p>אפשר לעיין בתנאים לפני האישור וגם בהמשך דרך הקישור בתחתית האתר. יש להשתמש באתר באופן תקין, בלי לפגוע בפעולתו או בזכויות אחרים. שינוי מהותי בתנאים עשוי לחייב אישור מחדש. אם הוראה אינה תקפה, יתר ההוראות יחולו ככל שהדין מאפשר זאת.</p>`;
@@ -1102,20 +1184,20 @@ function paintProfileButton() { $('profile-label').textContent = 'פרופיל';
 function openProfile() {
   profileRequired = !profileReady(); $('app').inert = profileRequired;
   if (!$('profile-dialog').open) {
-    $('profile-name').value = personal.profile?.name ?? ''; $('profile-birth').value = personal.profile?.birth ?? '';
+    $('profile-name').value = personal.profile?.name ?? ''; $('profile-birth').value = birthTextFromISO(personal.profile?.birth ?? '');$('profile-birth-picker').value=personal.profile?.birth??'';
     $('profile-consent').checked = profileReady(); $('profile-error').textContent='';
   }
   $('profile-close').hidden = profileRequired;
   openDialog('profile-dialog');
 }
 function submitProfile() {
-  const name=$('profile-name').value.trim(), birth=$('profile-birth').value, consent=$('profile-consent').checked;
+  const name=$('profile-name').value.trim(), birth=normalizeBirthInput(), consent=$('profile-consent').checked;
   for (const id of ['profile-name','profile-birth','profile-consent']) $(id).removeAttribute('aria-invalid');
   let invalid, message;
   if(name.length<2){invalid='profile-name';message='יש להזין שם באורך של שתי אותיות לפחות.';}
   else if(!validBirth(birth)){invalid='profile-birth';message='יש להזין תאריך לידה תקין שאינו בעתיד.';}
   else if(!consent){invalid='profile-consent';message='כדי להמשיך יש לאשר את תנאי השימוש ואת השמירה המקומית.';}
-  if(invalid){$('profile-error').textContent=message;$(invalid).setAttribute('aria-invalid','true');$(invalid).focus();fitDialogs();return;}
+  if(invalid){$('profile-error').dataset.field=invalid;$('profile-error').textContent=message;$(invalid).setAttribute('aria-invalid','true');$(invalid).focus();fitDialogs();return;}
   personal.profile={name,birth,termsVersion,acceptedAt:new Date().toISOString()};savePersonal();
   profileRequired=false;$('app').inert=false;$('profile-dialog').close();paintProfileButton();renderProgress();resizeFrame();
 }
@@ -1183,7 +1265,8 @@ function renderProgress() {
 function showProgress() { renderProgress(); openDialog('progress-dialog'); }
 function initializePersonal() {
   document.querySelectorAll('[data-terms-document]').forEach(node=>node.innerHTML=termsHTML());
-  $('profile-birth').max=localDateValue();
+  $('profile-birth-picker').max=localDateValue();
+  const oldestBirth=new Date();oldestBirth.setFullYear(oldestBirth.getFullYear()-130);$('profile-birth-picker').min=localDateValue(oldestBirth);
   $('accessibility-controls').innerHTML=accessibilityControls('access');
   $('profile-accessibility-controls').innerHTML=accessibilityControls('entry');
   applyPreferences();paintProfileButton();renderProgress();showStorageNotice();
@@ -2538,401 +2621,4 @@ function feedbackContext(){
   const q=currentQuestion();
   return `${topicNames[tab]??'סימולטור'} · ${DC.levelNames[levels[tab]]??''} · תרגיל ${positions[tab][levels[tab]]+1} · סעיף ${q.cursor+1}`;
 }
-function rememberContactDraft(){
-  if(!feedbackMode)return;
-  contactDrafts[feedbackMode]={subject:$('feedback-subject').value,message:$('feedback-message').value,
-    rating:feedbackMode==='review'?feedbackRating:null,context:$('feedback-context').checked};
-}
-function paintFeedbackAvailability(){
-  const enabled=contactAvailability[feedbackMode]===true;
-  $('feedback-send').disabled=!enabled||!!feedbackPending;
-  $('feedback-send').textContent=feedbackPending?'שולחים…':feedbackMode==='review'?'שליחת משוב ודירוג':'שליחת הערה';
-  document.querySelectorAll('[data-contact-mode]').forEach(button=>button.disabled=!!feedbackPending);
-  if(!feedbackPending&&!enabled){
-    $('feedback-status').className='feedback';
-    $('feedback-status').textContent='שליחת הפנייה הזו עדיין לא זמינה. אפשר לנסות שוב בהמשך.';
-  }
-}
-function openContact(){
-  if($('feedback-dialog').open)rememberContactDraft();
-  paintFeedbackAvailability();openDialog('contact-dialog');
-}
-function openFeedback(mode){
-  if(!['review','note'].includes(mode)||feedbackPending)return;
-  rememberContactDraft();feedbackMode=mode;
-  const review=mode==='review',draft=contactDrafts[mode];
-  $('feedback-title').textContent=review?'משוב ודירוג אפליקציה':'הערות';
-  $('feedback-disclosure').textContent=review?'דירוג הכוכבים חובה. אפשר לצרף מלל. המשוב והדירוג יפורסמו ב־GitHub ויהיו גלויים לכולם.':'ההערה תישלח לעומר באופן פרטי. רק בעלי הרשאה למאגר ההערות יוכלו לקרוא אותה.';
-  document.querySelectorAll('[data-review-only]').forEach(node=>node.hidden=!review);
-  document.querySelectorAll('[data-note-only]').forEach(node=>node.hidden=review);
-  $('feedback-message-label').textContent=review?'מה דעתכם על האפליקציה? (רשות)':'ההערה שלכם';
-  $('feedback-message').required=!review;
-  $('feedback-subject').value=draft.subject;$('feedback-message').value=draft.message;
-  $('feedback-context').checked=draft.context;$('feedback-context-label').textContent=feedbackContext();
-  document.querySelectorAll('[name="feedback-rating"]').forEach(input=>input.required=review);
-  updateFeedbackRating(review?draft.rating:null);
-  $('feedback-subject').removeAttribute('aria-invalid');$('feedback-message').removeAttribute('aria-invalid');
-  $('feedback-rating-group').removeAttribute('aria-invalid');
-  $('feedback-status').textContent='';$('feedback-status').className='feedback';$('feedback-result-link').hidden=true;
-  paintFeedbackAvailability();paintPublicRatings(lastRatingSummary,lastPublicFeedbackURL);openDialog('feedback-dialog');
-}
-function updateFeedbackRating(value){
-  feedbackRating=value;
-  document.querySelectorAll('[name="feedback-rating"]').forEach(input=>{
-    input.checked=Number(input.value)===value;
-    input.closest('label').classList.toggle('rated',value!==null&&Number(input.value)<=value);
-  });
-  $('feedback-rating-label').textContent=value===null?'עדיין לא נבחר דירוג':`${value} מתוך 5 כוכבים`;
-  if(value!==null)$('feedback-rating-group').removeAttribute('aria-invalid');
-}
-document.querySelectorAll('[name="feedback-rating"]').forEach(input=>input.addEventListener('change',()=>updateFeedbackRating(Number(input.value))));
-$('feedback-rating-clear').addEventListener('click',()=>updateFeedbackRating(null));
-$('feedback-dialog').addEventListener('close',rememberContactDraft);
-function submitFeedback(){
-  if(!contactAvailability[feedbackMode]||feedbackPending)return;
-  const subject=$('feedback-subject'),message=$('feedback-message'),status=$('feedback-status'),review=feedbackMode==='review';
-  message.removeAttribute('aria-invalid');
-  if(review&&feedbackRating===null){
-    status.className='feedback error';status.textContent='יש לבחור דירוג של 1–5 כוכבים.';
-    $('feedback-rating-group').setAttribute('aria-invalid','true');
-    document.querySelector('[name="feedback-rating"]').focus();fitDialogs();return;
-  }
-  if(!review&&message.value.trim().length<5){
-    status.className='feedback error';status.textContent='יש לכתוב הערה באורך של לפחות 5 תווים.';
-    message.setAttribute('aria-invalid','true');message.focus();fitDialogs();return;
-  }
-  const id=crypto.randomUUID?.()??`feedback-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-  feedbackPending={id,mode:feedbackMode};rememberContactDraft();
-  status.className='feedback';status.textContent='שולחים את הפנייה לעומר…';
-  $('feedback-result-link').hidden=true;paintFeedbackAvailability();
-  sendStreamlitMessage('streamlit:setComponentValue',{value:{
-    type:'feedback',id,mode:feedbackMode,subject:review?'':subject.value.trim(),message:message.value.trim(),rating:review?feedbackRating:null,
-    context:!review&&$('feedback-context').checked?$('feedback-context-label').textContent:''
-  },dataType:'json'});
-  feedbackTimeout=setTimeout(()=>{
-    if(!feedbackPending)return;
-    status.className='feedback error';status.textContent='השליחה מתעכבת. אפשר להמתין לאישור או לנסות שוב בהמשך.';
-    feedbackPending=null;paintFeedbackAvailability();fitDialogs();
-  },25000);
-  fitDialogs();
-}
-window.addEventListener('message',event=>{
-  if(event.source!==window.parent||event.data?.type!=='streamlit:render')return;
-  const args=event.data.args??{};
-  contactAvailability={review:args.contact_availability?.review===true,note:args.contact_availability?.note===true};
-  lastRatingSummary=args.rating_summary;lastPublicFeedbackURL=args.public_feedback_url??'';
-  paintPublicRatings(lastRatingSummary,lastPublicFeedbackURL);
-  const reply=args.feedback_response;
-  if(reply&&reply.id===feedbackPending?.id){
-    const mode=feedbackPending.mode;clearTimeout(feedbackTimeout);feedbackPending=null;
-    const status=$('feedback-status');status.className=`feedback ${reply.ok?'success':'error'}`;status.textContent=reply.message;
-    if(reply.ok){
-      contactDrafts[mode]={subject:'',message:'',rating:null,context:mode==='note'};
-      if(feedbackMode===mode){$('feedback-subject').value='';$('feedback-message').value='';updateFeedbackRating(null);}
-      if(mode==='review'&&typeof reply.url==='string'&&/^https:\/\/github\.com\/[^/]+\/[^/]+\/issues\/\d+$/.test(reply.url)){
-        const link=$('feedback-result-link');link.href=reply.url;link.hidden=false;
-      }
-    }
-  }
-  paintFeedbackAvailability();syncQuickbar();fitDialogs();resizeFrame();
-});
-
-
-sendStreamlitMessage('streamlit:componentReady', { apiVersion:1 });
-if(!restoreCourse())newCourse();
-initializePersonal();
-function finishInitialLayout(){
-  applyPreferences();
-  const app = $('app'), started = performance.now();
-  let viewport = '', unchangedSince = started;
-  function settleLayout(){
-    const nextViewport = `${innerWidth}x${innerHeight}`;
-    if (nextViewport !== viewport) {
-      viewport = nextViewport; unchangedSince = performance.now();
-      // Rebuild every section's layout after the host applies its frame size.
-      // This is done while hidden, without changing text preferences or DOM nodes.
-      const display = app.style.getPropertyValue('display'), priority = app.style.getPropertyPriority('display');
-      app.style.setProperty('display','none','important');
-      void app.offsetHeight;
-      if (display) app.style.setProperty('display',display,priority); else app.style.removeProperty('display');
-      void app.offsetHeight;
-    }
-    syncQuickbar();fitDialogs();resizeFrame();
-    const heightApplied = window.parent === window || Math.abs(innerHeight-lastFrameHeight) <= 2;
-    const quiet = performance.now()-unchangedSince >= 80;
-    if (quiet && (heightApplied || performance.now()-started >= 1500)) {
-      document.documentElement.classList.add('ui-ready');
-    } else requestAnimationFrame(settleLayout);
-  }
-  requestAnimationFrame(settleLayout);
-}
-if(document.fonts?.ready)document.fonts.ready.then(finishInitialLayout);else finishInitialLayout();
-window.addEventListener('pageshow',event=>{
-  followSystemTheme();
-  if(event.persisted){document.documentElement.classList.remove('ui-ready');finishInitialLayout();}
-});
-function followSystemTheme() {
-  if(personal.preferences.theme==='system'&&document.documentElement.classList.contains('dark-mode')!==systemPrefersDark())applyPreferences();
-}
-if (systemColorScheme.addEventListener) systemColorScheme.addEventListener('change',followSystemTheme);
-else systemColorScheme.addListener(followSystemTheme);
-window.addEventListener('focus',followSystemTheme);
-document.addEventListener('visibilitychange',()=>{if(!document.hidden)followSystemTheme();});
-const followHostVisibility = () => { if(!systemThemeContext.document.hidden)followSystemTheme(); };
-if(systemThemeContext!==window){
-  systemThemeContext.addEventListener('focus',followSystemTheme);
-  systemThemeContext.addEventListener('pageshow',followSystemTheme);
-  systemThemeContext.document.addEventListener('visibilitychange',followHostVisibility);
-}
-window.addEventListener('pagehide',event=>{
-  if(event.persisted)return;
-  if(systemColorScheme.removeEventListener)systemColorScheme.removeEventListener('change',followSystemTheme);
-  else systemColorScheme.removeListener(followSystemTheme);
-  if(systemThemeContext!==window){
-    systemThemeContext.removeEventListener('focus',followSystemTheme);
-    systemThemeContext.removeEventListener('pageshow',followSystemTheme);
-    systemThemeContext.document.removeEventListener('visibilitychange',followHostVisibility);
-  }
-});
-window.addEventListener('pagehide',saveCourse);
-if ('ResizeObserver' in window) new ResizeObserver(resizeFrame).observe($('app'));
-
-</script>
-</body>
-</html>
-'''
-
-def feedback_configuration():
-    """One server-side token with access to the public and private destinations."""
-    defaults = {"public_repository": "OBE-26/electricitey-project", "private_repository": "OBE-26/electricity-feedback"}
-    try:
-        config = st.secrets.get("github_feedback", {})
-        token = str(config.get("token", "")).strip()
-        public = str(config.get("public_repository", defaults["public_repository"])).strip()
-        private = str(config.get("private_repository", config.get("repository", defaults["private_repository"]))).strip()
-    except (FileNotFoundError, KeyError):
-        return {"token": "", **defaults}
-    def valid_repository(value):
-        return bool(re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9-]{0,38}/[A-Za-z0-9_.-]{1,100}", value)) and value.split("/", 1)[1] not in {".", ".."}
-    return {"token": token, "public_repository": public if valid_repository(public) else "",
-            "private_repository": private if valid_repository(private) else ""}
-
-
-def github_feedback_request(token, repository, suffix="", payload=None, method=None):
-    data = None if payload is None else json.dumps(payload, ensure_ascii=False).encode("utf-8")
-    request = urllib.request.Request(
-        f"https://api.github.com/repos/{repository}{suffix}", data=data,
-        method=method or ("GET" if payload is None else "POST"),
-        headers={"Authorization": "Bearer " + token, "Accept": "application/vnd.github+json",
-                 "Content-Type": "application/json", "X-GitHub-Api-Version": "2026-03-10",
-                 "User-Agent": "OBE-26-Electricity-Contact"},
-    )
-    with urllib.request.urlopen(request, timeout=12) as response:
-        return json.load(response)
-
-
-def require_contact_repository(token, repository, private):
-    """Visibility is checked immediately before each write, without caching."""
-    if not token or not repository:
-        raise ValueError("Contact destination is not configured")
-    details = github_feedback_request(token, repository)
-    if not isinstance(details, dict) or details.get("private") is not private or details.get("has_issues") is not True:
-        raise ValueError("Contact destination has the wrong visibility or Issues are disabled")
-
-
-@st.cache_data(ttl=60, show_spinner=False)
-def contact_channel_available(token, repository, private):
-    try:
-        require_contact_repository(token, repository, private)
-        return True
-    except (urllib.error.URLError, TimeoutError, OSError, ValueError):
-        return False
-
-
-@st.cache_data(ttl=60, show_spinner=False)
-def public_rating_summary(token, repository):
-    """Read public reviews only; private notes never contribute to ratings."""
-    unavailable = {"available": False, "count": 0, "average": None, "summary_issue": None}
-    try:
-        require_contact_repository(token, repository, False)
-        total, count, page, seen, summary_issue = 0, 0, 1, set(), None
-        deadline = time.monotonic() + 20
-        while True:
-            if time.monotonic() > deadline:
-                raise TimeoutError("Rating aggregation timed out")
-            before_count = len(seen)
-            issues = github_feedback_request(token, repository, f"/issues?state=all&per_page=100&page={page}&sort=created&direction=asc")
-            if not isinstance(issues, list):
-                raise ValueError("Invalid issue list")
-            for issue in issues:
-                if not isinstance(issue, dict) or "pull_request" in issue:
-                    continue
-                number = issue.get("number")
-                if type(number) is not int or number in seen:
-                    continue
-                seen.add(number)
-                body = str(issue.get("body", ""))
-                if body.startswith("<!-- dc-basics-rating-summary:v1 -->"):
-                    summary_issue = summary_issue or number
-                    continue
-                if not str(issue.get("title", "")).startswith("[דירוג האפליקציה] "):
-                    continue
-                match = re.search(r"\n<!-- dc-basics-public-review:v1 rating=([1-5]) -->\s*\Z", body)
-                if match:
-                    total += int(match.group(1))
-                    count += 1
-            if len(issues) < 100:
-                break
-            if len(seen) == before_count:
-                raise ValueError("Issue pagination did not advance")
-            page += 1
-        return {"available": True, "count": count, "average": round(total / count, 1) if count else None,
-                "summary_issue": summary_issue}
-    except (urllib.error.URLError, TimeoutError, OSError, ValueError):
-        return unavailable
-
-
-@st.cache_resource
-def rating_summary_lock():
-    return threading.Lock()
-
-
-def update_github_rating_summary(token, repository):
-    """Create one summary issue, then update that same issue after each review."""
-    with rating_summary_lock():
-        require_contact_repository(token, repository, False)
-        public_rating_summary.clear()
-        summary = public_rating_summary(token, repository)
-        if not summary["available"]:
-            raise ValueError("Rating summary is unavailable")
-        count, average = summary["count"], summary["average"]
-        count_label = "דירוג אחד" if count == 1 else f"{count} דירוגים"
-        score = f"**{average:.1f} מתוך 5** · **{count_label}**" if count else "עדיין לא התקבלו דירוגים."
-        body = "\n\n".join([
-            "<!-- dc-basics-rating-summary:v1 -->", "# סיכום דירוג האפליקציה", score,
-            "הממוצע מחושב מכל הדירוגים הציבוריים שנשלחו דרך האפליקציה.",
-            f"[צפייה במשובים ובמלל](https://github.com/{repository}/issues)",
-            "הערות שנשלחו במסלול הפרטי נשמרות בנפרד ואינן מוצגות כאן.",
-        ])
-        number = summary["summary_issue"]
-        # Recheck visibility after reading the ratings and before publishing.
-        require_contact_repository(token, repository, False)
-        result = github_feedback_request(token, repository, f"/issues/{number}" if number else "/issues",
-            {"title": "סיכום דירוג האפליקציה", "body": body}, method="PATCH" if number else "POST")
-        created_number = result.get("number") if isinstance(result, dict) else None
-        if type(created_number) is not int or created_number < 1:
-            raise ValueError("Missing summary issue number")
-        public_rating_summary.clear()
-        return created_number
-
-
-def send_contact_message(token, repository, mode, subject, message, rating, context):
-    require_contact_repository(token, repository, mode == "note")
-    if mode == "review":
-        title = f"[דירוג האפליקציה] {rating}/5"
-        details = ["משוב ודירוג אפליקציה", f"דירוג: {'★' * rating}{'☆' * (5-rating)} ({rating}/5)"]
-        if message:
-            details += ["", message]
-        details += ["", f"<!-- dc-basics-public-review:v1 rating={rating} -->"]
-    else:
-        title = "[הערה פרטית] " + (subject or "הערה לאפליקציה")
-        details = ["הערה פרטית שנשלחה לעומר", "", message]
-        if context:
-            details += ["", "מיקום בתרגול:", context]
-        details += ["", "<!-- dc-basics-private-note:v1 -->"]
-    result = github_feedback_request(token, repository, "/issues", {"title": title, "body": "\n".join(details)})
-    number = result.get("number") if isinstance(result, dict) else None
-    if type(number) is not int or number < 1:
-        raise ValueError("Missing issue number")
-    return number
-
-
-def handle_feedback(event, config, session):
-    mode = event.get("mode")
-    if not isinstance(mode, str) or mode not in {"review", "note"}:
-        return {"ok": False, "message": "יש לבחור משוב ודירוג אפליקציה או הערות."}
-    token = config["token"]
-    repository = config["public_repository" if mode == "review" else "private_repository"]
-    if not token or not repository:
-        return {"ok": False, "message": "שליחת הפנייה עדיין לא זמינה. אפשר לנסות שוב בהמשך."}
-    subject, message = event.get("subject", ""), event.get("message", "")
-    rating, context = event.get("rating"), event.get("context", "")
-    if not isinstance(subject, str) or len(subject) > 120:
-        return {"ok": False, "message": "נושא ההערה יכול לכלול עד 120 תווים."}
-    if not isinstance(message, str) or len(message.strip()) > 4000 or (mode == "note" and len(message.strip()) < 5):
-        return {"ok": False, "message": "יש לכתוב הערה באורך 5–4,000 תווים." if mode == "note" else "המלל יכול לכלול עד 4,000 תווים."}
-    if mode == "review" and (type(rating) is not int or not 1 <= rating <= 5):
-        return {"ok": False, "message": "יש לבחור דירוג של 1–5 כוכבים לפני שליחת המשוב."}
-    if mode == "note" and rating is not None:
-        return {"ok": False, "message": "את דירוג האפליקציה שולחים דרך משוב ודירוג אפליקציה."}
-    if not isinstance(context, str) or len(context) > 400 or (mode == "review" and context):
-        return {"ok": False, "message": "לא ניתן לצרף את מיקום התרגיל לפנייה הזו."}
-    now = time.monotonic()
-    rate_key = "dc_contact_last_attempt_" + mode
-    if now - session.get(rate_key, float("-inf")) < 30:
-        return {"ok": False, "message": "יש להמתין חצי דקה בין פניות מאותו סוג."}
-    session[rate_key] = now
-    try:
-        number = send_contact_message(token, repository, mode, subject.strip(), message.strip(), rating, context.strip())
-    except urllib.error.HTTPError:
-        return {"ok": False, "message": "לא הצלחנו לשלוח את הפנייה כרגע. אפשר לנסות שוב בהמשך."}
-    except ValueError:
-        return {"ok": False, "message": "הפנייה לא נשלחה. יש לבדוק את הגדרת מסלול הפנייה."}
-    except (urllib.error.URLError, TimeoutError, OSError):
-        return {"ok": False, "message": "לא התקבל אישור לשליחה. הטקסט נשאר בטופס; אפשר לנסות שוב בהמשך."}
-    if mode == "note":
-        return {"ok": True, "message": "תודה! ההערה נשלחה לעומר באופן פרטי."}
-    result = {"ok": True, "message": "תודה! המשוב והדירוג פורסמו.", "url": f"https://github.com/{repository}/issues/{number}"}
-    # A summary failure must not turn an already-published review into a failed
-    # submission or cause a duplicate when the component reruns.
-    try:
-        update_github_rating_summary(token, repository)
-    except (urllib.error.URLError, TimeoutError, OSError, ValueError):
-        public_rating_summary.clear()
-        result["message"] = "תודה! המשוב והדירוג פורסמו. עדכון פניית הסיכום לא הושלם כרגע."
-    return result
-
-
-st.set_page_config(page_title="יסודות החשמל | תרגול DC", page_icon=APP_ICON_PNG, layout="wide")
-st.markdown("""<style>
-.stApp,[data-testid="stAppViewContainer"]{background:#fff8e8}
-[data-testid="stMainBlockContainer"],.block-container{max-width:1220px;padding:.5rem .25rem 1rem}
-[data-testid="stHeader"]{display:none}
-@media(max-width:600px){[data-testid="stMainBlockContainer"],.block-container{padding:.25rem 0 .5rem}}
-</style>""", unsafe_allow_html=True)
-
-@st.cache_resource
-def frontend_directory(html):
-    directory = Path(tempfile.mkdtemp(prefix="dc_basics_"))
-    (directory / "index.html").write_text(html, encoding="utf-8")
-    # These are served by Streamlit's component asset handler with image/png MIME.
-    (directory / "apple-touch-icon.png").write_bytes(APP_ICON_PNG)
-    (directory / "favicon.png").write_bytes(APP_ICON_PNG)
-    return str(directory)
-
-practice = components.declare_component("dc_electricity_basics", path=frontend_directory(APP_HTML))
-contact_config = feedback_configuration()
-contact_token = contact_config["token"]
-public_repository = contact_config["public_repository"]
-private_repository = contact_config["private_repository"]
-review_ready = contact_channel_available(contact_token, public_repository, False)
-note_ready = contact_channel_available(contact_token, private_repository, True)
-rating_summary = public_rating_summary(contact_token, public_repository)
-feedback_event = practice(
-    key="dc_electricity_basics_v1", default=None,
-    contact_availability={"review": review_ready, "note": note_ready},
-    rating_summary=rating_summary,
-    public_feedback_url=(f"https://github.com/{public_repository}/issues/" + str(rating_summary["summary_issue"]) if rating_summary.get("summary_issue") else f"https://github.com/{public_repository}/issues") if review_ready else "",
-    feedback_response=st.session_state.get("dc_feedback_reply"),
-)
-if isinstance(feedback_event, dict) and feedback_event.get("type") == "feedback":
-    submission_id = feedback_event.get("id", "")
-    if isinstance(submission_id, str) and re.fullmatch(r"[A-Za-z0-9_-]{8,80}", submission_id):
-        completed = st.session_state.setdefault("dc_feedback_completed", {})
-        if submission_id not in completed:
-            result = handle_feedback(feedback_event, contact_config, st.session_state)
-            completed[submission_id] = result
-            while len(completed) > 40:
-                completed.pop(next(iter(completed)))
-            st.session_state["dc_feedback_reply"] = {"id": submission_id, **result}
-            st.rerun()
+function rememberContactD
