@@ -20,7 +20,6 @@ Level A Ohm/power contains exactly 2 one-amp exercises; other displayed currents
 """
 from pathlib import Path
 import tempfile
-import base64
 import json
 import re
 import time
@@ -30,49 +29,11 @@ import urllib.request
 import streamlit as st
 import streamlit.components.v1 as components
 
-# Embedded PNG: no separate icon upload or extra package is required.
-APP_ICON_PNG = base64.b64decode(
-    'iVBORw0KGgoAAAANSUhEUgAAALQAAAC0CAIAAACyr5FlAAAQe0lEQVR42u2de3RV9ZXH9/79zn2R3Jt7SSBIMIQQQR7SUlDeY227ZoG6ZqntTDtVUdDRQevb+hgZIVBorUq1OlMcRc0w7SzX1K4+ptWptk5HHiJS6xPCIyQkPBNJcnNvch/n99vzxyECKsnNy3XP+e3vf/wFnPO5e3/3/u39OwAsFovFYrFYLBaLxWKxWCwWi8VisVgsFovFYrFYLBaLxWKxWCwWK1ch8jNgMRmsvpJRXlrg7f+m4DfdV0mBRPCNr1Zc/uVyALAkxxBWd8xAhBGx4LFXvrVwbpnDCkcOFiCAEEgEzy2fWxINvr+nFQCIOK2wAKREpeiuKydfcmnVrn2tLfE0ABAQw2G6hEBb0bwvjFxz8wydzB44kkyllUDkyMFWA4EgGvY//+D8AKJA2NUYBwD09PNjOHIMG6CJ1t87u6oqmu7MgsTd+9sdF8JwsNWgZVdM/ObfVNltaZ9PQEbtPdThbTcKABa/+16thlI0feLwR+86X3VkhEAhMJ2w9zZ6Hw6OHL10NQCgIGRtrF4QCligCIDAwqbjnUdaurxdqjAcvSUUgVrTE3fNmjK5WCUyTm8UfLL+YKIzbTs9D4bDUKthK7rmkvFL/nai3ZqWlgAAIACJtU6p4vW+OcPRk9WYUhl94p7ZOpn9uEdOAIDwYV2b50sVhuOMVgMBgn5Zs2JeuNBHWf1xkBAIkNV7m7zvRhmOM1oNpemRW2fMmF5qd2SkPBk2hMRMIrP/UILhMJQMW9E3vjL25iun2G1pyzr5iIgILHH4eKrpWNLzpQrD8anHgag0VZaFn3pgrk7ZnziNJwKwZN3hRGdKISJHDsOshgAp8fkH5w2PBSmjxekFCRGAD/c0xAFAGvDkGI7TrYaitf84fcGcMhVPy0+NeDl//vBA/ETZwnAY1dW4eG7ZPUunqba0sMRnhhbIUu3+NlOSLGMBAEKAUjRmZMGzD86jrBZAn+5hOKVKOpmpP5I0oVRhOE4kC0RExA3L55SWFui0ws8cCyUCSzS3ppqOJk9ULgyH9x+BRKXowevO++uLyu32jDzDNLkmAEvUHUkkumxEjhzGmNCLZoz65xumq7aMtM7YEycCsER3qWLEOoLRcAhETTQiGnx+5XxJgETYY/YBhJ0H4gY9H6PdhgAi+Lf755SfHVEpW/QYDxABbNpZ12aIGzUajhN7Bt+efNmiSrstJXtcXCMAITCdzNQ7pyocOTxvNWZPHbH2lpkqnpa99jsJwBItremm5k5DShVD4XBqjVjEv7F6vt9C1NTr2A4RgU80HEvGk1lDShVD4ZACNdGTd8+qqoqpZFbkUHo4dezuhjgACGHK5rRxcFgSbUXLrpjw7cvOsdu6h/9yCzi7Gry/q2IuHM5K4xcnDH/kzgt0Ryb3doVAAFvvrG83p1QxCw5EBICCkG9j9YJhQQtsyn1CWAi0O7P7nF0VjhxetBqgNT12x8ypU0pUIiNyvnTF6Y0ePZ5qajGoVDEIDudE/upFldd/81y7NdUHq9E9HXiwubO9I4OcVrxnNZSicyuKnrhntk7afT0ZcSJHbZNZpYoRcDh7BgG/2LhyflEkcOqeQa5wAIHAXXXtYNglgt6Hw9kz+OHNM2Z+qVR1pGXf73cTiKC0cyEHAcPhra7G1y8qv3Xx1L51NU7PSrrLdg7rSTMcHupqVI4Or39gLqVs2a+UcKJUaU0ddE5VTIodnoXDsRrOnkFJcUhndP/sgnOqcuBworUjbVSp4mU4HKux+obpC+aV2e39sRonI4fEfYeTRGaVKp6Fw1lpXDS37P7rp6n+Wo3uUgVAiF3728C8+849CIcz/Dd6xLBnls+jrO55+C+nB6So1qTpQM/Cgd3DfxsemDN6dKFOqwHmAiGRurK7G+PgHNwzHC5OKBKVouVLpi38SkWvw3+5GQ7R0p5uPGLKropn4XCsxoXTS6tvmq7aB2Q1Ti1VGo4kWzsyYFip4ik4BAIRjYgFn185XxAN0Gqc2uTY2xTXmqQw7tMZHoJDoCZYf9/siooi1aUGpewkABBQ29gBRn6aySNwOG3yO/5+8hWLxtutA7Uap9pb0FS7vx2MlPBGzLAVzZpS8oPbctszyDlsCIHUZe852GFgqeIFOJzhv2ihv2blAr/Iac8gdzrQEq3t6foT15wbR4fr7z6XAmxFT959wcSJw+3jXZY1aLgTEVrY0NzZ1pFxgBtq25Fv+LkbDmf474bLJlx5+QS7NTWIZDh5RPjknoa4rczLKG6Hwxn+m1YVW3fX+TqRHfRS01mr33coEfTLgF+ooUSEiPw+2ZlS6azKo5TtWqsBiBgKyC3PLJo2sVgns2IoPuGJ2NqRTnSpIb07UGsSAevg0eTFd7z6UXs6f/KLWyOH0wx99LaZ084boY6ne7h0ZYC/6FhRIBYbyp8QARBAyLp+zZaWtrQzacBpZaBdjasWVt74rcl2W9qyhvDlkU0Eesj+ArRt7SsOrXh8+0ubm/KKDFemFSFQa5pYHnmj5tJIQKIi9/YulSIZ8b+25eDXbnkFEbTKr3rFZX2O7j0DWVM9P1rk78eeQf5IaxJ+2dzSde2qzVoT6bwbT3UZHE7g/f6y6bNmnmXHM9LN35HXABiUN3xvy4GjSSlR51+TzU1wyO49gzuuPW/Quxqfs2xbW7Hg4//+/i//dMCSqPKyleKaX55jNcaOKty+8dKSQj/ZSrg2oyhFstC3/b3mv7rx5WxWa8rT1rw7fnyIgAhSYs2KeSNKQjrjYjKIAH0insguXrkplVaUxzNE7oDDud9t5XVfuHD+mIHsGeRF2NAkCny3/vCNXfXtUqLO49NeF8DhWI2Fs8seuPGLqi0lXW81As/9vLbmt/vy1mq4xnMIBAIYVTzszZpLykpClFbu3SzSmkTI2rm/bfaS3yW6bKJ8nwLI91+h8wGDDQ/MGVMW1r1dMpznVgMEprL66hWb4smsKzYr8xoOJ/Det3jqoq85ewYuTihKk4gE7n1s+46dH0mZX21y96UVp9914ZdKX12/EDNKkItHfJVNMhb4xUt1X7/vf6XEfGuTuwwORASg4ZHAmzWXVI52d0LRmkTQajicmHHNfx9vTwOgWyYORV6SAaL7ewaV46KqK+tqq0GINsCSVZs/aksLRBfNouYjHE5X49a/O/eKi8fbrWl3Ww2lZdS/+qm3X9txxHKJ1cjftOJYjfMnl7y+YZFPEbraaigtI4Hfv9646LY/ON8YdNcwan79KBGBAIoK/TUr5gcsAdrFsxqaSASsI0eT16/ZSkBau2+1wcozOFBrWnf7zEkTYunWlCXF0E1+CxzCm3qcExPhlzeu2dp4NCnzvhma73BIgVrT3VdNWbpkGrSnAsUhGLpXhwBZDV32EOVVZWurOLTu6Xd+/XqjM9ToxuCHeRMzAAgihb4ffGdmKGSRPYQjXgIxq/Q5ZeEF00uHYpZMKZJh/9Y/H/nysv9RmrR267Ic5tu/5nN7jHdeOeXRe2fZrWlrUM94NRFIEU/bs6757e4DcWcMxaW2Kb88h7O7jEPMiOMALji3GPTg/zi0Bivs+86qzbsPxF1qNfIUDgAY6t8ZOi1LgVXlYciqwc0ptq2t4aFn/vPDn75c516rkael7OeTugggFvZXjCwAm3Dw6NCKrEL/e+833/7YW/m2gcJw5FotA0DlmPDwWHAQbS8RgIWdafva6k3Jrix54gIx4+BwWhvnjAljUA5iClOaRDjw3XXb/1x73JIuNqFmpxUAAJhUGQWBg/UClU1WNPDCr/f864u1HrAa5sLhRPup46KDVapoTXKYta+u7aaHtyF6wWoYCgcCKE0+S1SWDU6pQgAkUBEsWbXpeHtaeOtj1YbBgQgAI2PBsaXDIKsHXqpom2RRYPm/7Hj97WOuO5FnOD4BBwDAuLLCSCRAaqClilIko4GXX61/aOP70nNkGArHpLFFELDUwD7IpYlEQB4+nFi6ZgsAkPbg5ddmweG8vknjojCwSoUANAH6xHWrNh9u6XI+4uHBst8sODQAwOSxEVADuhld2dqKBR969t2Xth70ZEIxDg5E0EShgKw8OwJZjf39rytFViSweeuh5U/9RQqP9LuMhwMQAEYND5WVhCCrsV9tDk2AftHallpcvcm2NZGXv7NhVuQAgPFnR4YV+vpdqmgiEbKWrd1ad7AjP6/jYTgGUKpURMBv9W8OXNnaigbW/2znC6/WWy6f1WA4PqNUmVwZBaJ+jMBpTTLsf+fd5jt/7JETeYbj1Lfb3eToe04hIpCis9O+asXrXSmbzPiklylwIAIRFQ6zKkYVQN+HirUGUei7/ZE339/XJqWXKxQz4UAAOHtkwVkj+nyqomwto4Gf/XLP07/abYLVMA8OAACoHBP2h3xa96EDpjXJYb69e1tvenibQFNihnFpBQCmjIuCT+T+fp0T+SzR1Ss3tScyiGZ9zMsUOBz/OHlcUZ+cpLJJRvz/9OMdb7zX7OE2uelwOOlg4tgiyHmoWCmyooHf/L7+kZ9+IE2yGmbB4SzvxyL+caMKIKtzueBWa5JB2dTU8Q9rtyKC1iZ+ycsQOBAAyksLimNBsHufHSUAjaClWLp689HjXQKRjPzKmymRw8kpVshSORzWK6WtaHDt0395ZdshyzyrYRgcAAAwqaIIpKDe1nCdE/nXNjWtfOYdaTAZpsDhJIVJFUWgezlVISL0i49aupau3qwUeftEnuE4sY6A6JQqqofLfJzhPxG0bvz+1vpDCXPa5AZHDgRw1hFGDINsT5vT2tYyGnzyPz548Y8NlpG1q3FwOIVr5ehwNBboYXNaK5Jh/463j373iR1CGG01jIsc48eEMWCdKU0QAfhERzK7uHpTKqMAjLYaZnkOADivKgbijIWK84Gc2x7e9mFdm2W81TAIDudFn1segTN4CGfPoObF2ud+s9dLO/IMR+9hQ2vyWaKqPAK2/nSpojXJQt/OXR/dum67EDjANTiGw110IACMKg6N/awZHyIggamsXlK9KZ7IoDMOyDIEDidUjC8LF0T8n15HUJpkUeC+x97a9kGLJblCMS2tnDhViYBffiJlONfx/OJ3+x5/Yadkq2EgHCfXEU5fcNOaZMhqaIgve+gNRCCOGSbCcXIdgT6mgwAIUQtcumrzseMpIZDZMA6O7s1pq7KsEDInL3lypslXPfX2H986zG1yU+EABICzSkJjikNgn9icVoqsosAf/nRg9bPvSjahJkcOAJgwNhII+0mRE0iEXx5r7lyyeovW5MnreBiOvpQqZ0fAJxSd+EAOBuQN39vSeDQphcd35BmOHt2oc+VoVQwI0LEaseCPat771f81clfDdDicwDBxTBiU1pqscGDb9sP3/+RtySfyhsOBCERQVOCvKAtDWgm/bO9IX1O9KZ1RxCfypsMBCABlI0Ojhwd1VssC3y0PvVHbEOfhv9xleThyAME5Y4tkQIJPbPivXRtfquMTeY4cp5YqYSgKvPtBy+0/2s7DfwzHaaXKtKrhOmVfU7050ZkFthqsU7X755ffd/UUAJAS+WmwTuaUqjHhn9w/BwCkYDJYJ0sVAIDS4mBJUeBjVlgsFiu3+MExg8VisVgsFovFYrFYLBaLxWKxWCwWi8VisVgsFovFYrFYLBaLxeqL/h8/564m+fRe7wAAAABJRU5ErkJggg=='
-)
-
 APP_HTML = r'''<!doctype html>
 <html lang="he" dir="rtl">
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>יסודות החשמל | תרגול DC</title>
-  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=electricity-gold-1">
-  <link rel="icon" type="image/png" href="favicon.png?v=electricity-gold-1">
-  <meta name="apple-mobile-web-app-title" content="יסודות החשמל">
-  <script>
-    // Safari reads the top-level page's head when saving a Home Screen icon.
-    // Streamlit hosts this UI in an iframe, so use its real, same-origin PNG URL
-    // in the host head as well. The fallback head above also supports the UI
-    // when it is opened directly. No data/blob URLs or external image host.
-    function installHomeScreenIcon() {
-      const iconURL=new URL('apple-touch-icon.png?v=electricity-gold-1',window.location.href).href;
-      const faviconURL=new URL('favicon.png?v=electricity-gold-1',window.location.href).href;
-      function install(doc,frame) {
-        let icon=doc.querySelector('link[rel="apple-touch-icon"]');
-        if(!icon){icon=doc.createElement('link');icon.rel='apple-touch-icon';doc.head.append(icon);}
-        icon.id='dc-home-screen-icon';icon.setAttribute('sizes','180x180');icon.href=iconURL;
-        // Remove obsolete competing Apple icons so Safari consistently selects this one.
-        doc.querySelectorAll('link[rel="apple-touch-icon"],link[rel="apple-touch-icon-precomposed"]').forEach(link=>{if(link!==icon)link.remove();});
-        let title=doc.querySelector('meta[name="apple-mobile-web-app-title"]');
-        if(!title){title=doc.createElement('meta');title.name='apple-mobile-web-app-title';doc.head.append(title);}
-        title.content='יסודות החשמל';
-        if(frame){const favicon=doc.querySelector('link[rel="icon"]');if(favicon)favicon.href=faviconURL;}
-      }
-      install(document,true);
-      try {
-        if(window.parent!==window){
-          const host=window.parent.document;
-          if(host.querySelector('.stApp,[data-testid="stAppViewContainer"]'))install(host,false);
-        }
-      }catch{} // An unrelated cross-origin embedding cannot expose its document.
-    }
-    installHomeScreenIcon();
-    window.addEventListener('pageshow',installHomeScreenIcon);
-  </script>
   <script>
     // Use the same scale before the first paint and after an accessibility change.
     function applyTextScale(value) {
@@ -2621,4 +2582,398 @@ function feedbackContext(){
   const q=currentQuestion();
   return `${topicNames[tab]??'סימולטור'} · ${DC.levelNames[levels[tab]]??''} · תרגיל ${positions[tab][levels[tab]]+1} · סעיף ${q.cursor+1}`;
 }
-function rememberContactD
+function rememberContactDraft(){
+  if(!feedbackMode)return;
+  contactDrafts[feedbackMode]={subject:$('feedback-subject').value,message:$('feedback-message').value,
+    rating:feedbackMode==='review'?feedbackRating:null,context:$('feedback-context').checked};
+}
+function paintFeedbackAvailability(){
+  const enabled=contactAvailability[feedbackMode]===true;
+  $('feedback-send').disabled=!enabled||!!feedbackPending;
+  $('feedback-send').textContent=feedbackPending?'שולחים…':feedbackMode==='review'?'שליחת משוב ודירוג':'שליחת הערה';
+  document.querySelectorAll('[data-contact-mode]').forEach(button=>button.disabled=!!feedbackPending);
+  if(!feedbackPending&&!enabled){
+    $('feedback-status').className='feedback';
+    $('feedback-status').textContent='שליחת הפנייה הזו עדיין לא זמינה. אפשר לנסות שוב בהמשך.';
+  }
+}
+function openContact(){
+  if($('feedback-dialog').open)rememberContactDraft();
+  paintFeedbackAvailability();openDialog('contact-dialog');
+}
+function openFeedback(mode){
+  if(!['review','note'].includes(mode)||feedbackPending)return;
+  rememberContactDraft();feedbackMode=mode;
+  const review=mode==='review',draft=contactDrafts[mode];
+  $('feedback-title').textContent=review?'משוב ודירוג אפליקציה':'הערות';
+  $('feedback-disclosure').textContent=review?'דירוג הכוכבים חובה. אפשר לצרף מלל. המשוב והדירוג יפורסמו ב־GitHub ויהיו גלויים לכולם.':'ההערה תישלח לעומר באופן פרטי. רק בעלי הרשאה למאגר ההערות יוכלו לקרוא אותה.';
+  document.querySelectorAll('[data-review-only]').forEach(node=>node.hidden=!review);
+  document.querySelectorAll('[data-note-only]').forEach(node=>node.hidden=review);
+  $('feedback-message-label').textContent=review?'מה דעתכם על האפליקציה? (רשות)':'ההערה שלכם';
+  $('feedback-message').required=!review;
+  $('feedback-subject').value=draft.subject;$('feedback-message').value=draft.message;
+  $('feedback-context').checked=draft.context;$('feedback-context-label').textContent=feedbackContext();
+  document.querySelectorAll('[name="feedback-rating"]').forEach(input=>input.required=review);
+  updateFeedbackRating(review?draft.rating:null);
+  $('feedback-subject').removeAttribute('aria-invalid');$('feedback-message').removeAttribute('aria-invalid');
+  $('feedback-rating-group').removeAttribute('aria-invalid');
+  $('feedback-status').textContent='';$('feedback-status').className='feedback';$('feedback-result-link').hidden=true;
+  paintFeedbackAvailability();paintPublicRatings(lastRatingSummary,lastPublicFeedbackURL);openDialog('feedback-dialog');
+}
+function updateFeedbackRating(value){
+  feedbackRating=value;
+  document.querySelectorAll('[name="feedback-rating"]').forEach(input=>{
+    input.checked=Number(input.value)===value;
+    input.closest('label').classList.toggle('rated',value!==null&&Number(input.value)<=value);
+  });
+  $('feedback-rating-label').textContent=value===null?'עדיין לא נבחר דירוג':`${value} מתוך 5 כוכבים`;
+  if(value!==null)$('feedback-rating-group').removeAttribute('aria-invalid');
+}
+document.querySelectorAll('[name="feedback-rating"]').forEach(input=>input.addEventListener('change',()=>updateFeedbackRating(Number(input.value))));
+$('feedback-rating-clear').addEventListener('click',()=>updateFeedbackRating(null));
+$('feedback-dialog').addEventListener('close',rememberContactDraft);
+function submitFeedback(){
+  if(!contactAvailability[feedbackMode]||feedbackPending)return;
+  const subject=$('feedback-subject'),message=$('feedback-message'),status=$('feedback-status'),review=feedbackMode==='review';
+  message.removeAttribute('aria-invalid');
+  if(review&&feedbackRating===null){
+    status.className='feedback error';status.textContent='יש לבחור דירוג של 1–5 כוכבים.';
+    $('feedback-rating-group').setAttribute('aria-invalid','true');
+    document.querySelector('[name="feedback-rating"]').focus();fitDialogs();return;
+  }
+  if(!review&&message.value.trim().length<5){
+    status.className='feedback error';status.textContent='יש לכתוב הערה באורך של לפחות 5 תווים.';
+    message.setAttribute('aria-invalid','true');message.focus();fitDialogs();return;
+  }
+  const id=crypto.randomUUID?.()??`feedback-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  feedbackPending={id,mode:feedbackMode};rememberContactDraft();
+  status.className='feedback';status.textContent='שולחים את הפנייה לעומר…';
+  $('feedback-result-link').hidden=true;paintFeedbackAvailability();
+  sendStreamlitMessage('streamlit:setComponentValue',{value:{
+    type:'feedback',id,mode:feedbackMode,subject:review?'':subject.value.trim(),message:message.value.trim(),rating:review?feedbackRating:null,
+    context:!review&&$('feedback-context').checked?$('feedback-context-label').textContent:''
+  },dataType:'json'});
+  feedbackTimeout=setTimeout(()=>{
+    if(!feedbackPending)return;
+    status.className='feedback error';status.textContent='השליחה מתעכבת. אפשר להמתין לאישור או לנסות שוב בהמשך.';
+    feedbackPending=null;paintFeedbackAvailability();fitDialogs();
+  },25000);
+  fitDialogs();
+}
+window.addEventListener('message',event=>{
+  if(event.source!==window.parent||event.data?.type!=='streamlit:render')return;
+  const args=event.data.args??{};
+  contactAvailability={review:args.contact_availability?.review===true,note:args.contact_availability?.note===true};
+  lastRatingSummary=args.rating_summary;lastPublicFeedbackURL=args.public_feedback_url??'';
+  paintPublicRatings(lastRatingSummary,lastPublicFeedbackURL);
+  const reply=args.feedback_response;
+  if(reply&&reply.id===feedbackPending?.id){
+    const mode=feedbackPending.mode;clearTimeout(feedbackTimeout);feedbackPending=null;
+    const status=$('feedback-status');status.className=`feedback ${reply.ok?'success':'error'}`;status.textContent=reply.message;
+    if(reply.ok){
+      contactDrafts[mode]={subject:'',message:'',rating:null,context:mode==='note'};
+      if(feedbackMode===mode){$('feedback-subject').value='';$('feedback-message').value='';updateFeedbackRating(null);}
+      if(mode==='review'&&typeof reply.url==='string'&&/^https:\/\/github\.com\/[^/]+\/[^/]+\/issues\/\d+$/.test(reply.url)){
+        const link=$('feedback-result-link');link.href=reply.url;link.hidden=false;
+      }
+    }
+  }
+  paintFeedbackAvailability();syncQuickbar();fitDialogs();resizeFrame();
+});
+
+
+sendStreamlitMessage('streamlit:componentReady', { apiVersion:1 });
+if(!restoreCourse())newCourse();
+initializePersonal();
+function finishInitialLayout(){
+  applyPreferences();
+  const app = $('app'), started = performance.now();
+  let viewport = '', unchangedSince = started;
+  function settleLayout(){
+    const nextViewport = `${innerWidth}x${innerHeight}`;
+    if (nextViewport !== viewport) {
+      viewport = nextViewport; unchangedSince = performance.now();
+      // Rebuild every section's layout after the host applies its frame size.
+      // This is done while hidden, without changing text preferences or DOM nodes.
+      const display = app.style.getPropertyValue('display'), priority = app.style.getPropertyPriority('display');
+      app.style.setProperty('display','none','important');
+      void app.offsetHeight;
+      if (display) app.style.setProperty('display',display,priority); else app.style.removeProperty('display');
+      void app.offsetHeight;
+    }
+    syncQuickbar();fitDialogs();resizeFrame();
+    const heightApplied = window.parent === window || Math.abs(innerHeight-lastFrameHeight) <= 2;
+    const quiet = performance.now()-unchangedSince >= 80;
+    if (quiet && (heightApplied || performance.now()-started >= 1500)) {
+      document.documentElement.classList.add('ui-ready');
+    } else requestAnimationFrame(settleLayout);
+  }
+  requestAnimationFrame(settleLayout);
+}
+if(document.fonts?.ready)document.fonts.ready.then(finishInitialLayout);else finishInitialLayout();
+window.addEventListener('pageshow',event=>{
+  followSystemTheme();
+  if(event.persisted){document.documentElement.classList.remove('ui-ready');finishInitialLayout();}
+});
+function followSystemTheme() {
+  if(personal.preferences.theme==='system'&&document.documentElement.classList.contains('dark-mode')!==systemPrefersDark())applyPreferences();
+}
+if (systemColorScheme.addEventListener) systemColorScheme.addEventListener('change',followSystemTheme);
+else systemColorScheme.addListener(followSystemTheme);
+window.addEventListener('focus',followSystemTheme);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)followSystemTheme();});
+const followHostVisibility = () => { if(!systemThemeContext.document.hidden)followSystemTheme(); };
+if(systemThemeContext!==window){
+  systemThemeContext.addEventListener('focus',followSystemTheme);
+  systemThemeContext.addEventListener('pageshow',followSystemTheme);
+  systemThemeContext.document.addEventListener('visibilitychange',followHostVisibility);
+}
+window.addEventListener('pagehide',event=>{
+  if(event.persisted)return;
+  if(systemColorScheme.removeEventListener)systemColorScheme.removeEventListener('change',followSystemTheme);
+  else systemColorScheme.removeListener(followSystemTheme);
+  if(systemThemeContext!==window){
+    systemThemeContext.removeEventListener('focus',followSystemTheme);
+    systemThemeContext.removeEventListener('pageshow',followSystemTheme);
+    systemThemeContext.document.removeEventListener('visibilitychange',followHostVisibility);
+  }
+});
+window.addEventListener('pagehide',saveCourse);
+if ('ResizeObserver' in window) new ResizeObserver(resizeFrame).observe($('app'));
+
+</script>
+</body>
+</html>
+'''
+
+def feedback_configuration():
+    """One server-side token with access to the public and private destinations."""
+    defaults = {"public_repository": "OBE-26/electricitey-project", "private_repository": "OBE-26/electricity-feedback"}
+    try:
+        config = st.secrets.get("github_feedback", {})
+        token = str(config.get("token", "")).strip()
+        public = str(config.get("public_repository", defaults["public_repository"])).strip()
+        private = str(config.get("private_repository", config.get("repository", defaults["private_repository"]))).strip()
+    except (FileNotFoundError, KeyError):
+        return {"token": "", **defaults}
+    def valid_repository(value):
+        return bool(re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9-]{0,38}/[A-Za-z0-9_.-]{1,100}", value)) and value.split("/", 1)[1] not in {".", ".."}
+    return {"token": token, "public_repository": public if valid_repository(public) else "",
+            "private_repository": private if valid_repository(private) else ""}
+
+
+def github_feedback_request(token, repository, suffix="", payload=None, method=None):
+    data = None if payload is None else json.dumps(payload, ensure_ascii=False).encode("utf-8")
+    request = urllib.request.Request(
+        f"https://api.github.com/repos/{repository}{suffix}", data=data,
+        method=method or ("GET" if payload is None else "POST"),
+        headers={"Authorization": "Bearer " + token, "Accept": "application/vnd.github+json",
+                 "Content-Type": "application/json", "X-GitHub-Api-Version": "2026-03-10",
+                 "User-Agent": "OBE-26-Electricity-Contact"},
+    )
+    with urllib.request.urlopen(request, timeout=12) as response:
+        return json.load(response)
+
+
+def require_contact_repository(token, repository, private):
+    """Visibility is checked immediately before each write, without caching."""
+    if not token or not repository:
+        raise ValueError("Contact destination is not configured")
+    details = github_feedback_request(token, repository)
+    if not isinstance(details, dict) or details.get("private") is not private or details.get("has_issues") is not True:
+        raise ValueError("Contact destination has the wrong visibility or Issues are disabled")
+
+
+@st.cache_data(ttl=60, show_spinner=False)
+def contact_channel_available(token, repository, private):
+    try:
+        require_contact_repository(token, repository, private)
+        return True
+    except (urllib.error.URLError, TimeoutError, OSError, ValueError):
+        return False
+
+
+@st.cache_data(ttl=60, show_spinner=False)
+def public_rating_summary(token, repository):
+    """Read public reviews only; private notes never contribute to ratings."""
+    unavailable = {"available": False, "count": 0, "average": None, "summary_issue": None}
+    try:
+        require_contact_repository(token, repository, False)
+        total, count, page, seen, summary_issue = 0, 0, 1, set(), None
+        deadline = time.monotonic() + 20
+        while True:
+            if time.monotonic() > deadline:
+                raise TimeoutError("Rating aggregation timed out")
+            before_count = len(seen)
+            issues = github_feedback_request(token, repository, f"/issues?state=all&per_page=100&page={page}&sort=created&direction=asc")
+            if not isinstance(issues, list):
+                raise ValueError("Invalid issue list")
+            for issue in issues:
+                if not isinstance(issue, dict) or "pull_request" in issue:
+                    continue
+                number = issue.get("number")
+                if type(number) is not int or number in seen:
+                    continue
+                seen.add(number)
+                body = str(issue.get("body", ""))
+                if body.startswith("<!-- dc-basics-rating-summary:v1 -->"):
+                    summary_issue = summary_issue or number
+                    continue
+                if not str(issue.get("title", "")).startswith("[דירוג האפליקציה] "):
+                    continue
+                match = re.search(r"\n<!-- dc-basics-public-review:v1 rating=([1-5]) -->\s*\Z", body)
+                if match:
+                    total += int(match.group(1))
+                    count += 1
+            if len(issues) < 100:
+                break
+            if len(seen) == before_count:
+                raise ValueError("Issue pagination did not advance")
+            page += 1
+        return {"available": True, "count": count, "average": round(total / count, 1) if count else None,
+                "summary_issue": summary_issue}
+    except (urllib.error.URLError, TimeoutError, OSError, ValueError):
+        return unavailable
+
+
+@st.cache_resource
+def rating_summary_lock():
+    return threading.Lock()
+
+
+def update_github_rating_summary(token, repository):
+    """Create one summary issue, then update that same issue after each review."""
+    with rating_summary_lock():
+        require_contact_repository(token, repository, False)
+        public_rating_summary.clear()
+        summary = public_rating_summary(token, repository)
+        if not summary["available"]:
+            raise ValueError("Rating summary is unavailable")
+        count, average = summary["count"], summary["average"]
+        count_label = "דירוג אחד" if count == 1 else f"{count} דירוגים"
+        score = f"**{average:.1f} מתוך 5** · **{count_label}**" if count else "עדיין לא התקבלו דירוגים."
+        body = "\n\n".join([
+            "<!-- dc-basics-rating-summary:v1 -->", "# סיכום דירוג האפליקציה", score,
+            "הממוצע מחושב מכל הדירוגים הציבוריים שנשלחו דרך האפליקציה.",
+            f"[צפייה במשובים ובמלל](https://github.com/{repository}/issues)",
+            "הערות שנשלחו במסלול הפרטי נשמרות בנפרד ואינן מוצגות כאן.",
+        ])
+        number = summary["summary_issue"]
+        # Recheck visibility after reading the ratings and before publishing.
+        require_contact_repository(token, repository, False)
+        result = github_feedback_request(token, repository, f"/issues/{number}" if number else "/issues",
+            {"title": "סיכום דירוג האפליקציה", "body": body}, method="PATCH" if number else "POST")
+        created_number = result.get("number") if isinstance(result, dict) else None
+        if type(created_number) is not int or created_number < 1:
+            raise ValueError("Missing summary issue number")
+        public_rating_summary.clear()
+        return created_number
+
+
+def send_contact_message(token, repository, mode, subject, message, rating, context):
+    require_contact_repository(token, repository, mode == "note")
+    if mode == "review":
+        title = f"[דירוג האפליקציה] {rating}/5"
+        details = ["משוב ודירוג אפליקציה", f"דירוג: {'★' * rating}{'☆' * (5-rating)} ({rating}/5)"]
+        if message:
+            details += ["", message]
+        details += ["", f"<!-- dc-basics-public-review:v1 rating={rating} -->"]
+    else:
+        title = "[הערה פרטית] " + (subject or "הערה לאפליקציה")
+        details = ["הערה פרטית שנשלחה לעומר", "", message]
+        if context:
+            details += ["", "מיקום בתרגול:", context]
+        details += ["", "<!-- dc-basics-private-note:v1 -->"]
+    result = github_feedback_request(token, repository, "/issues", {"title": title, "body": "\n".join(details)})
+    number = result.get("number") if isinstance(result, dict) else None
+    if type(number) is not int or number < 1:
+        raise ValueError("Missing issue number")
+    return number
+
+
+def handle_feedback(event, config, session):
+    mode = event.get("mode")
+    if not isinstance(mode, str) or mode not in {"review", "note"}:
+        return {"ok": False, "message": "יש לבחור משוב ודירוג אפליקציה או הערות."}
+    token = config["token"]
+    repository = config["public_repository" if mode == "review" else "private_repository"]
+    if not token or not repository:
+        return {"ok": False, "message": "שליחת הפנייה עדיין לא זמינה. אפשר לנסות שוב בהמשך."}
+    subject, message = event.get("subject", ""), event.get("message", "")
+    rating, context = event.get("rating"), event.get("context", "")
+    if not isinstance(subject, str) or len(subject) > 120:
+        return {"ok": False, "message": "נושא ההערה יכול לכלול עד 120 תווים."}
+    if not isinstance(message, str) or len(message.strip()) > 4000 or (mode == "note" and len(message.strip()) < 5):
+        return {"ok": False, "message": "יש לכתוב הערה באורך 5–4,000 תווים." if mode == "note" else "המלל יכול לכלול עד 4,000 תווים."}
+    if mode == "review" and (type(rating) is not int or not 1 <= rating <= 5):
+        return {"ok": False, "message": "יש לבחור דירוג של 1–5 כוכבים לפני שליחת המשוב."}
+    if mode == "note" and rating is not None:
+        return {"ok": False, "message": "את דירוג האפליקציה שולחים דרך משוב ודירוג אפליקציה."}
+    if not isinstance(context, str) or len(context) > 400 or (mode == "review" and context):
+        return {"ok": False, "message": "לא ניתן לצרף את מיקום התרגיל לפנייה הזו."}
+    now = time.monotonic()
+    rate_key = "dc_contact_last_attempt_" + mode
+    if now - session.get(rate_key, float("-inf")) < 30:
+        return {"ok": False, "message": "יש להמתין חצי דקה בין פניות מאותו סוג."}
+    session[rate_key] = now
+    try:
+        number = send_contact_message(token, repository, mode, subject.strip(), message.strip(), rating, context.strip())
+    except urllib.error.HTTPError:
+        return {"ok": False, "message": "לא הצלחנו לשלוח את הפנייה כרגע. אפשר לנסות שוב בהמשך."}
+    except ValueError:
+        return {"ok": False, "message": "הפנייה לא נשלחה. יש לבדוק את הגדרת מסלול הפנייה."}
+    except (urllib.error.URLError, TimeoutError, OSError):
+        return {"ok": False, "message": "לא התקבל אישור לשליחה. הטקסט נשאר בטופס; אפשר לנסות שוב בהמשך."}
+    if mode == "note":
+        return {"ok": True, "message": "תודה! ההערה נשלחה לעומר באופן פרטי."}
+    result = {"ok": True, "message": "תודה! המשוב והדירוג פורסמו.", "url": f"https://github.com/{repository}/issues/{number}"}
+    # A summary failure must not turn an already-published review into a failed
+    # submission or cause a duplicate when the component reruns.
+    try:
+        update_github_rating_summary(token, repository)
+    except (urllib.error.URLError, TimeoutError, OSError, ValueError):
+        public_rating_summary.clear()
+        result["message"] = "תודה! המשוב והדירוג פורסמו. עדכון פניית הסיכום לא הושלם כרגע."
+    return result
+
+
+st.set_page_config(page_title="יסודות החשמל | תרגול DC", layout="wide")
+st.markdown("""<style>
+.stApp,[data-testid="stAppViewContainer"]{background:#fff8e8}
+[data-testid="stMainBlockContainer"],.block-container{max-width:1220px;padding:.5rem .25rem 1rem}
+[data-testid="stHeader"]{display:none}
+@media(max-width:600px){[data-testid="stMainBlockContainer"],.block-container{padding:.25rem 0 .5rem}}
+</style>""", unsafe_allow_html=True)
+
+@st.cache_resource
+def frontend_directory(html):
+    directory = Path(tempfile.mkdtemp(prefix="dc_basics_"))
+    (directory / "index.html").write_text(html, encoding="utf-8")
+    return str(directory)
+
+practice = components.declare_component("dc_electricity_basics", path=frontend_directory(APP_HTML))
+contact_config = feedback_configuration()
+contact_token = contact_config["token"]
+public_repository = contact_config["public_repository"]
+private_repository = contact_config["private_repository"]
+review_ready = contact_channel_available(contact_token, public_repository, False)
+note_ready = contact_channel_available(contact_token, private_repository, True)
+rating_summary = public_rating_summary(contact_token, public_repository)
+feedback_event = practice(
+    key="dc_electricity_basics_v1", default=None,
+    contact_availability={"review": review_ready, "note": note_ready},
+    rating_summary=rating_summary,
+    public_feedback_url=(f"https://github.com/{public_repository}/issues/" + str(rating_summary["summary_issue"]) if rating_summary.get("summary_issue") else f"https://github.com/{public_repository}/issues") if review_ready else "",
+    feedback_response=st.session_state.get("dc_feedback_reply"),
+)
+if isinstance(feedback_event, dict) and feedback_event.get("type") == "feedback":
+    submission_id = feedback_event.get("id", "")
+    if isinstance(submission_id, str) and re.fullmatch(r"[A-Za-z0-9_-]{8,80}", submission_id):
+        completed = st.session_state.setdefault("dc_feedback_completed", {})
+        if submission_id not in completed:
+            result = handle_feedback(feedback_event, contact_config, st.session_state)
+            completed[submission_id] = result
+            while len(completed) > 40:
+                completed.pop(next(iter(completed)))
+            st.session_state["dc_feedback_reply"] = {"id": submission_id, **result}
+            st.rerun()
