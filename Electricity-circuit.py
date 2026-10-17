@@ -11,6 +11,7 @@ four-operation calculator and a DC circuit simulator with resistive lamp models.
 Practice resumes at the saved exercise; reset creates 90 fresh exercises (3 levels x 10 per topic).
 Parallel levels contain exactly 3 equal-resistance and 7 pairwise-distinct exercises.
 Level C uses coherent kΩ/mA/mW or MΩ/μA/μW units; physics and simulation remain in SI.
+Level B has whole resistances/source voltage and decimal currents; parallel Req is decimal.
 Password-gated QA runs on an in-memory copy and never saves practice progress.
 Recent question signatures are
 kept in browser storage to avoid immediate repeats; public reviews and private notes use separate GitHub repositories with server-side tokens.
@@ -612,15 +613,15 @@ const DC = (() => {
   function step(key, label, unit, value, formula, substitution, hint, explanation) {
     return { key, label, unit, value, formula, substitution, hint, explanation };
   }
-  function ohm(rng, level, index, oneAmp = false) {
-    const r = level ? integer(rng, 1 + index, 10 + index * 3) + .5
+  function ohm(rng, level, index, oneAmp = false, inputs = null) {
+    const r = inputs ? inputs.resistances[0] : level ? integer(rng, 1 + index, 10 + index * 3) + .5
       : integer(rng, 2 + index, 8 + index * 4);
     // Level A has exactly two one-amp slots; all other currents are 2–12.
     // Decimal levels use non-integer displayed currents from 2.1 to 11.9.
     // withUnits converts level C to the corresponding mA/μA unit system.
-    const i = level ? integer(rng, 2, 11) + integer(rng, 1, 9) / 10
+    const i = inputs ? inputs.voltage / r : level ? integer(rng, 2, 11) + integer(rng, 1, 9) / 10
       : oneAmp ? 1 : integer(rng, 2, 12);
-    const u = r * i, p = u * i;
+    const u = inputs ? inputs.voltage : r * i, p = u * i;
     const fields = {
       I: step('I', 'הזרם במעגל', 'A', i, 'I = U ÷ R', `${fmt(u)} ÷ ${fmt(r)}`, 'כדי למצוא זרם, מחלקים את המתח בהתנגדות.', 'יחידת הזרם היא אמפר (A).'),
       U: step('U', 'מתח המקור', 'V', u, 'U = I × R', `${fmt(i)} × ${fmt(r)}`, 'כדי למצוא מתח, כופלים את הזרם בהתנגדות.', 'יחידת המתח היא וולט (V).'),
@@ -640,9 +641,11 @@ const DC = (() => {
     }
     return withUnits({ kind: 'ohm', level, index, title, voltage: u, resistances: [r], lamps: [false], givens, steps });
   }
-  function circuit(rng, kind, level, index, equal = false) {
+  function circuit(rng, kind, level, index, equal = false, inputs = null) {
     let resistances, voltage;
-    if (kind === 'series') {
+    if (inputs) {
+      ({resistances, voltage} = inputs);
+    } else if (kind === 'series') {
       const count = index < 5 ? 2 : 3;
       resistances = Array.from({ length: count }, () => integer(rng, 2 + index, 7 + index * 4) + (level ? .5 : 0));
       const current = level ? pick(rng, [.2, .4, .6, .8, 1.2, 1.4, 1.6]) : integer(rng, 1, 2 + Math.floor(index / 2));
@@ -694,6 +697,44 @@ const DC = (() => {
     return withUnits({ kind, level, index, title: kind === 'series' ? `מעגל טורי עם ${resistances.length} רכיבים` : `מעגל מקבילי עם ${resistances.length} ענפים`,
       voltage, resistances, lamps, givens, steps });
   }
+  function decimalInputs(rng, kind, index, equal) {
+    // Keep every given resistance and source voltage whole. Given Ohm currents
+    // and powers also have exact finite decimals, so displayed givens are exact.
+    const divisor = pick(rng, [2, 4, 5, 10]);
+    if (kind === 'ohm') {
+      const resistance = divisor * integer(rng, 1 + Math.floor(index / 4), 4 + Math.floor(index / 2));
+      const numerator = pick(rng, Array.from({length:10 * divisor - 1}, (_,i) => 2 * divisor + 1 + i).filter(n => n % divisor));
+      return {resistances:[resistance], voltage:resistance / divisor * numerator};
+    }
+    const count = index < 5 ? 2 : 3;
+    if (kind === 'series') {
+      const resistances = Array.from({length:count}, () => integer(rng, 2 + index, 7 + index * 4));
+      const sum = resistances.reduce((a,b) => a + b, 0);
+      resistances[count - 1] += (divisor - sum % divisor) % divisor;
+      const req = resistances.reduce((a,b) => a + b, 0);
+      const numerator = pick(rng, Array.from({length:2 * divisor - 1}, (_,i) => i + 1).filter(n => n % divisor));
+      return {resistances, voltage:req / divisor * numerator};
+    }
+    const voltage = pick(rng, Array.from({length:19 + index * 4}, (_,i) => 12 + index * 2 + i).filter(u => u % 5));
+    const nonInteger = value => Math.abs(value - Math.round(value)) > 1e-7;
+    const pool = [4,5,8,10,16,20,25,40,50,80,100].filter(r => voltage * 100 % r === 0 && voltage % r !== 0);
+    const candidates = [];
+    const consider = resistances => {
+      const model = physics('parallel', voltage, resistances);
+      if (nonInteger(round(model.req)) && nonInteger(round(model.total))) candidates.push(resistances);
+    };
+    if (equal) pool.forEach(r => consider(Array(count).fill(r)));
+    else {
+      const collect = (start, values) => {
+        if (values.length === count) { consider(values); return; }
+        for (let j = start; j < pool.length; j++) collect(j + 1, [...values, pool[j]]);
+      };
+      collect(0, []);
+    }
+    // The pool always contains 5, 10 and 25; U is not divisible by 5.
+    // Thus equal and distinct candidates exist for both branch counts.
+    return {resistances:shuffle(rng, pick(rng, candidates)), voltage};
+  }
   function course(seed, previous = []) {
     const rng = random(seed), seen = new Set(previous), result = {};
     for (const kind of kinds) {
@@ -713,6 +754,24 @@ const DC = (() => {
           seen.add(q.signature);
           return q;
         });
+      });
+    }
+    // Preserve the original random stream for levels A/C and old saved courses.
+    // Replace only level B using an independent deterministic random stream.
+    const decimalRng = random((seed ^ 0xBDEC1A1) >>> 0);
+    for (const kind of kinds) {
+      const equalSlots = result[kind][1].map(q => q.resistances.every(r => r === q.resistances[0]));
+      result[kind][1] = result[kind][1].map((old, index) => {
+        let q;
+        for (let attempt = 0; attempt < 400; attempt++) {
+          const inputs = decimalInputs(decimalRng, kind, index, equalSlots[index]);
+          q = kind === 'ohm' ? ohm(decimalRng, 1, index, false, inputs) : circuit(decimalRng, kind, 1, index, equalSlots[index], inputs);
+          const signatureR = kind === 'parallel' ? q.resistances.slice().sort((a,b) => a-b) : q.resistances;
+          q.signature = JSON.stringify([kind, 1, q.voltage, signatureR, Object.keys(q.givens)]);
+          if (!seen.has(q.signature)) break;
+        }
+        seen.add(q.signature);
+        return q;
       });
     }
     return result;
@@ -1241,7 +1300,7 @@ function saveCourse() {
     cursor:q.cursor,draft:q.draft,accepted:q.accepted===true,attempts:q.attempts,help:q.help,hint:q.hint,solution:q.solution,
     simVoltage:q.simVoltage,simAnimate:q.simAnimate,manualWork:q.manualWork,personalSteps:q.personalSteps
   })))]));
-  try{localStorage.setItem(courseKey,JSON.stringify({version:3,seed:courseSeed,generationPrevious:coursePrevious,states,tab,levels,positions,feedback,feedbackType,reviewReturn}));}
+  try{localStorage.setItem(courseKey,JSON.stringify({version:4,seed:courseSeed,generationPrevious:coursePrevious,states,tab,levels,positions,feedback,feedbackType,reviewReturn}));}
   catch{storageAvailable=false;showStorageNotice();}
 }
 function restoreManualWork(raw,q) {
@@ -1273,9 +1332,9 @@ function restoreManualWork(raw,q) {
 function restoreCourse() {
   try {
     const saved=JSON.parse(localStorage.getItem(courseKey)||'null');
-    // Versions 1 and 2 used different generators. Never apply old answers to new questions.
-    // Personal totals/profile live under a separate key and remain intact on upgrade.
-    if(!saved||saved.version!==3||!Number.isSafeInteger(saved.seed)||!Array.isArray(saved.generationPrevious))return false;
+    // Version 4 changes only level B; preserve A/C and personal totals/profile.
+    // Never apply version 3 answers to the new level B questions.
+    if(!saved||![3,4].includes(saved.version)||!Number.isSafeInteger(saved.seed)||!Array.isArray(saved.generationPrevious))return false;
     const prior=saved.generationPrevious.filter(value=>typeof value==='string').slice(-280);
     const restored=DC.course(saved.seed,prior),restoredLevels={},restoredPositions={};
     for(const kind of DC.kinds) {
@@ -1287,9 +1346,15 @@ function restoreCourse() {
       for(let j=0;j<restored[kind].length;j++) {
         const list=restored[kind][j],states=stateLevels[j],position=saved.positions?.[kind]?.[j];
         if(!Array.isArray(states)||states.length!==list.length||!Number.isInteger(position)||position<0||position>=list.length)return false;
-        restoredPositions[kind].push(position);
+        const resetDecimalLevel=saved.version===3&&j===1;
+        restoredPositions[kind].push(resetDecimalLevel?0:position);
         for(let i=0;i<list.length;i++) {
           const q=list[i],state=states[i];
+          if(resetDecimalLevel) {
+            Object.assign(q,{cursor:0,draft:'',accepted:false,attempts:0,help:{},hint:false,solution:false,
+              simVoltage:q.voltage,simAnimate:!personal.preferences.motion,manualWork:{},personalSteps:{}});
+            continue;
+          }
           if(!state||!Number.isInteger(state.cursor)||state.cursor<0||state.cursor>q.steps.length)return false;
           Object.assign(q,{cursor:state.cursor,draft:typeof state.draft==='string'?state.draft.slice(0,24):'',
             attempts:Number.isSafeInteger(state.attempts)&&state.attempts>=0?state.attempts:0,
@@ -1310,8 +1375,8 @@ function restoreCourse() {
     questions=restored;courseSeed=saved.seed;coursePrevious=prior;
     levels=restoredLevels;positions=restoredPositions;tab=DC.kinds.includes(saved.tab)?saved.tab:'ohm';viewTab=tab;
     const back=saved.reviewReturn;
-    reviewReturn=back&&DC.kinds.includes(back.kind)&&Number.isInteger(back.level)&&Number.isInteger(back.index)&&questions[back.kind]?.[back.level]?.[back.index]?{kind:back.kind,level:back.level,index:back.index}:null;
-    feedback=typeof saved.feedback==='string'?saved.feedback.slice(0,1000):'';feedbackType=saved.feedbackType==='error'?'error':'success';
+    reviewReturn=back&&!(saved.version===3&&back.level===1)&&DC.kinds.includes(back.kind)&&Number.isInteger(back.level)&&Number.isInteger(back.index)&&questions[back.kind]?.[back.level]?.[back.index]?{kind:back.kind,level:back.level,index:back.index}:null;
+    feedback=saved.version===3&&levels[tab]===1?'':typeof saved.feedback==='string'?saved.feedback.slice(0,1000):'';feedbackType=saved.feedbackType==='error'?'error':'success';
     render();return true;
   }catch{return false;}
 }
@@ -1665,8 +1730,8 @@ function render(focus = false) {
   const hints = !done && q.hint ? `<div class="hint" id="exercise-hint"><strong>כיוון לפתרון</strong>${escapeHTML(step.hint)}<div class="math" style="margin-top:8px">${mathNotation(step.formula)}</div></div>` : '';
   const tools = exerciseToolsHTML(q);
   const next = done ? `<div class="completion-actions">${index < sequence.length - 1 ? '<button class="btn" data-next-question>לתרגיל הבא ←</button>' : level < questions[tab].length - 1 ? '<button class="btn" data-next-level>לרמה הבאה ←</button>' : '<button class="btn" data-new-course>סבב חדש</button>'}</div>${doneCount === sequence.length ? `<div class="level-note">השלמתם את ${sequence.length} התרגילים ברמה ${letters[level]}. ${level < questions[tab].length - 1 ? 'אפשר להתקדם לרמה הבאה.' : 'אפשר לעבור ללשונית אחרת או להתחיל סבב חדש.'}</div>` : ''}` : '';
-  const descriptions = { ohm:'מתחילים בנתונים ידועים ומוצאים את הערך החסר.', series:'בטור הזרם זהה בכל הרכיבים. המתח מתחלק ביניהם.', parallel:'שניים ושלושה ענפים: 30% מהתרגילים עם נגדים זהים ו־70% עם נגדים שונים. בכל ענף אותו מתח.' };
-  $('workspace').innerHTML = `<div class="course-head"><div><h2>${names[tab]}</h2><p class="muted small" style="margin:0">${descriptions[tab]}</p></div><div class="levels" aria-label="רמות תרגול">${levelButtons}</div></div><div class="progress-row"><span>תרגיל ${index + 1} מתוך ${sequence.length} · רמה ${letters[level]}</span><div class="question-dots">${dots}</div></div>${exerciseNavigationHTML()}<div class="progress-track" role="progressbar" aria-label="תרגילים שהושלמו ברמה" aria-valuemin="0" aria-valuemax="${sequence.length}" aria-valuenow="${doneCount}"><div style="width:${doneCount / sequence.length * 100}%"></div></div><div class="exercise-grid"><section class="card"><div class="exercise-title"><div class="eyebrow">הנתונים שלכם</div><h3 style="margin-top:6px">${q.title}</h3><p class="muted small" style="margin:0">${tab === 'ohm' ? 'המקור הוא מקור מתח ישר (DC). מצאו את הנעלם המבוקש.' : 'כל ההתנגדויות ומתח המקור נתונים. פתרו לפי הסדר.'}</p></div><div class="givens">${given}</div>${unitNote(q)}<figure class="diagram">${diagramPreview(q)}<figcaption>${q.lamps.some(Boolean) ? 'סימון עיגול עם X הוא נורה. בתרגול הנורה היא רכיב בעל התנגדות קבועה.' : 'מלבן הוא נגד. המקור הוא DC; U מציין מתח ו־I מציין זרם.'}${tab !== 'ohm' ? ' לאחר השלמת המעגל אפשר לפתוח אותו בלשונית הסימולטור. לחצו על הסכמה להגדלה.' : ''}</figcaption></figure>${simulationReady(q) ? '<button class="btn sim-jump" data-go-simulator>סימולטור</button>' : ''}</section><section class="card ${done ? 'success-summary' : ''}">${active}<p id="rounding-text" class="rounding">${rounding}</p>${tools}<div class="feedback ${feedbackType}" id="form-feedback" role="status" aria-live="polite">${escapeHTML(feedback)}</div>${hints}${explain}${q.cursor ? `<div class="completed-steps"><strong class="small">החישובים שהשלמתם</strong>${rows}</div>` : ''}${next}</section></div>`;
+  const descriptions = { ohm:'מתחילים בנתונים ידועים ומוצאים את הערך החסר.', series:'בטור הזרם זהה בכל הרכיבים. המתח מתחלק ביניהם.', parallel:'' };
+  $('workspace').innerHTML = `<div class="course-head"><div><h2>${names[tab]}</h2>${descriptions[tab]?`<p class="muted small" style="margin:0">${descriptions[tab]}</p>`:''}</div><div class="levels" aria-label="רמות תרגול">${levelButtons}</div></div><div class="progress-row"><span>תרגיל ${index + 1} מתוך ${sequence.length} · רמה ${letters[level]}</span><div class="question-dots">${dots}</div></div>${exerciseNavigationHTML()}<div class="progress-track" role="progressbar" aria-label="תרגילים שהושלמו ברמה" aria-valuemin="0" aria-valuemax="${sequence.length}" aria-valuenow="${doneCount}"><div style="width:${doneCount / sequence.length * 100}%"></div></div><div class="exercise-grid"><section class="card"><div class="exercise-title"><div class="eyebrow">הנתונים שלכם</div><h3 style="margin-top:6px">${q.title}</h3><p class="muted small" style="margin:0">${tab === 'ohm' ? 'המקור הוא מקור מתח ישר (DC). מצאו את הנעלם המבוקש.' : 'כל ההתנגדויות ומתח המקור נתונים. פתרו לפי הסדר.'}</p></div><div class="givens">${given}</div>${unitNote(q)}<figure class="diagram">${diagramPreview(q)}<figcaption>${q.lamps.some(Boolean) ? 'סימון עיגול עם X הוא נורה. בתרגול הנורה היא רכיב בעל התנגדות קבועה.' : 'מלבן הוא נגד. המקור הוא DC; U מציין מתח ו־I מציין זרם.'}${tab !== 'ohm' ? ' לאחר השלמת המעגל אפשר לפתוח אותו בלשונית הסימולטור. לחצו על הסכמה להגדלה.' : ''}</figcaption></figure>${simulationReady(q) ? '<button class="btn sim-jump" data-go-simulator>סימולטור</button>' : ''}</section><section class="card ${done ? 'success-summary' : ''}">${active}<p id="rounding-text" class="rounding">${rounding}</p>${tools}<div class="feedback ${feedbackType}" id="form-feedback" role="status" aria-live="polite">${escapeHTML(feedback)}</div>${hints}${explain}${q.cursor ? `<div class="completed-steps"><strong class="small">החישובים שהשלמתם</strong>${rows}</div>` : ''}${next}</section></div>`;
   if ($('formula-dialog').open) renderFormulas();
   if (focus && !done) requestAnimationFrame(() => {if($('formula-dialog').open&&formulaView==='manual')focusManualEntry();else ($('formula-dialog').open ? formulaAnswerField() : q.accepted ? $('workspace').querySelector('[data-next-step]') : $('answer'))?.focus();});
   renderProgress(); fitDialogs(); resizeFrame();saveCourse();
