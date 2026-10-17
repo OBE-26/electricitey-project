@@ -20,6 +20,7 @@ Level A Ohm/power contains exactly 2 one-amp exercises; other displayed currents
 """
 from pathlib import Path
 import tempfile
+import base64
 import json
 import re
 import time
@@ -29,11 +30,49 @@ import urllib.request
 import streamlit as st
 import streamlit.components.v1 as components
 
+# Embedded PNG: no separate icon upload or extra package is required.
+APP_ICON_PNG = base64.b64decode(
+    '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'
+)
+
 APP_HTML = r'''<!doctype html>
 <html lang="he" dir="rtl">
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>יסודות החשמל | תרגול DC</title>
+  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=electricity-gold-1">
+  <link rel="icon" type="image/png" href="favicon.png?v=electricity-gold-1">
+  <meta name="apple-mobile-web-app-title" content="יסודות החשמל">
+  <script>
+    // Safari reads the top-level page's head when saving a Home Screen icon.
+    // Streamlit hosts this UI in an iframe, so use its real, same-origin PNG URL
+    // in the host head as well. The fallback head above also supports the UI
+    // when it is opened directly. No data/blob URLs or external image host.
+    function installHomeScreenIcon() {
+      const iconURL=new URL('apple-touch-icon.png?v=electricity-gold-1',window.location.href).href;
+      const faviconURL=new URL('favicon.png?v=electricity-gold-1',window.location.href).href;
+      function install(doc,frame) {
+        let icon=doc.querySelector('link[rel="apple-touch-icon"]');
+        if(!icon){icon=doc.createElement('link');icon.rel='apple-touch-icon';doc.head.append(icon);}
+        icon.id='dc-home-screen-icon';icon.setAttribute('sizes','180x180');icon.href=iconURL;
+        // Remove obsolete competing Apple icons so Safari consistently selects this one.
+        doc.querySelectorAll('link[rel="apple-touch-icon"],link[rel="apple-touch-icon-precomposed"]').forEach(link=>{if(link!==icon)link.remove();});
+        let title=doc.querySelector('meta[name="apple-mobile-web-app-title"]');
+        if(!title){title=doc.createElement('meta');title.name='apple-mobile-web-app-title';doc.head.append(title);}
+        title.content='יסודות החשמל';
+        if(frame){const favicon=doc.querySelector('link[rel="icon"]');if(favicon)favicon.href=faviconURL;}
+      }
+      install(document,true);
+      try {
+        if(window.parent!==window){
+          const host=window.parent.document;
+          if(host.querySelector('.stApp,[data-testid="stAppViewContainer"]'))install(host,false);
+        }
+      }catch{} // An unrelated cross-origin embedding cannot expose its document.
+    }
+    installHomeScreenIcon();
+    window.addEventListener('pageshow',installHomeScreenIcon);
+  </script>
   <script>
     // Use the same scale before the first paint and after an accessibility change.
     function applyTextScale(value) {
@@ -2854,7 +2893,7 @@ def handle_feedback(event, config, session):
     return result
 
 
-st.set_page_config(page_title="יסודות החשמל | תרגול DC", page_icon="⚡", layout="wide")
+st.set_page_config(page_title="יסודות החשמל | תרגול DC", page_icon=APP_ICON_PNG, layout="wide")
 st.markdown("""<style>
 .stApp,[data-testid="stAppViewContainer"]{background:#fff8e8}
 [data-testid="stMainBlockContainer"],.block-container{max-width:1220px;padding:.5rem .25rem 1rem}
@@ -2866,6 +2905,9 @@ st.markdown("""<style>
 def frontend_directory(html):
     directory = Path(tempfile.mkdtemp(prefix="dc_basics_"))
     (directory / "index.html").write_text(html, encoding="utf-8")
+    # These are served by Streamlit's component asset handler with image/png MIME.
+    (directory / "apple-touch-icon.png").write_bytes(APP_ICON_PNG)
+    (directory / "favicon.png").write_bytes(APP_ICON_PNG)
     return str(directory)
 
 practice = components.declare_component("dc_electricity_basics", path=frontend_directory(APP_HTML))
@@ -2892,5 +2934,4 @@ if isinstance(feedback_event, dict) and feedback_event.get("type") == "feedback"
             completed[submission_id] = result
             while len(completed) > 40:
                 completed.pop(next(iter(completed)))
-            st.session_state["dc_feedback_reply"] = {"id": submission_id, **result}
-            st.rerun()
+            st.session_state["dc_fe
