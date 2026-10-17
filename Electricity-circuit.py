@@ -2934,4 +2934,5 @@ if isinstance(feedback_event, dict) and feedback_event.get("type") == "feedback"
             completed[submission_id] = result
             while len(completed) > 40:
                 completed.pop(next(iter(completed)))
-            st.session_state["dc_fe
+            st.session_state["dc_feedback_reply"] = {"id": submission_id, **result}
+            st.rerun()
