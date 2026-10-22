@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1022" height="789" viewBox="0 0 600 463.20939334637967" role="img" aria-labelledby="title">
+<title id="title">Parallel circuit with R1, R2, an open switch S and a two-cell source</title>
+<rect width="600" height="463.20939334637967" fill="#ffffff"/>
+<g fill="none" stroke="#111111" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+
+<path d="M65 100 H240 M340 100 H405 M485 100 H535 V420 H360 M240 420 H65 V100"/>
+<rect x="240" y="87" width="100" height="26"/>
+<path d="M405 100 L470 64"/>
+<circle cx="405" cy="100" r="3.3" fill="#ffffff"/>
+<circle cx="485" cy="100" r="3.3" fill="#ffffff"/>
+<path d="M65 260 H240 M340 260 H535"/>
+<rect x="240" y="247" width="100" height="26"/>
+<circle cx="65" cy="260" r="5" fill="#111111"/>
+<circle cx="535" cy="260" r="5" fill="#111111"/>
+<path d="M240 395 V445 M255 405 V435 M345 395 V445 M360 405 V435"/>
+<path d="M255 420 H345" stroke-dasharray="2 6"/>
+<text x="290" y="69" fill="#111111" stroke="none" font-family="DejaVu Sans, Arial, sans-serif" font-size="27" text-anchor="middle">R₁</text>
+<text x="290" y="231" fill="#111111" stroke="none" font-family="DejaVu Sans, Arial, sans-serif" font-size="27" text-anchor="middle">R₂</text>
+<text x="446" y="37" fill="#111111" stroke="none" font-family="DejaVu Sans, Arial, sans-serif" font-size="27" text-anchor="middle">S</text>
+
+</g>
+</svg>

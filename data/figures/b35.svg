@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="493" height="305" viewBox="0 0 600 371.1967545638945" role="img" aria-labelledby="title">
+<title id="title">Series circuit with a 12 ohm resistor, an 8 ohm resistor, an ammeter and a two-cell source</title>
+<rect width="600" height="371.1967545638945" fill="#ffffff"/>
+<g fill="none" stroke="#111111" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+
+<path d="M70 172 V90 H180 M280 90 H360 M460 90 H540 V315 H360 M260 315 H70 V228"/>
+<rect x="180" y="77" width="100" height="26"/>
+<rect x="360" y="77" width="100" height="26"/>
+<circle cx="70" cy="200" r="28"/>
+<path d="M260 291 V339 M275 301 V329 M345 291 V339 M360 301 V329"/>
+<path d="M275 315 H345" stroke-dasharray="2 6"/>
+<text x="230" y="57" fill="#111111" stroke="none" font-family="DejaVu Sans, Arial, sans-serif" font-size="30" text-anchor="middle">12Ω</text>
+<text x="410" y="57" fill="#111111" stroke="none" font-family="DejaVu Sans, Arial, sans-serif" font-size="30" text-anchor="middle">8Ω</text>
+<text x="70" y="210" fill="#111111" stroke="none" font-family="DejaVu Sans, Arial, sans-serif" font-size="28" text-anchor="middle">A</text>
+
+</g>
+</svg>

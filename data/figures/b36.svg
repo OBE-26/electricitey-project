@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="634" height="409" viewBox="0 0 600 387.06624605678235" role="img" aria-labelledby="title">
+<title id="title">Three parallel branches carrying 0.2 A, 0.4 A and 0.8 A, with unknown total current I</title>
+<rect width="600" height="387.06624605678235" fill="#ffffff"/>
+<g fill="none" stroke="#111111" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+
+<path d="M60 195 V70 H490 M490 330 H60 V208"/>
+<path d="M40 195 H80 M48 208 H72"/>
+<path d="M155 64 L169 70 L155 76 Z" fill="#111111" stroke="none"/>
+<text x="133" y="44" fill="#111111" stroke="none" font-family="DejaVu Sans, Arial, sans-serif" font-size="25" text-anchor="middle">I=?</text>
+
+<path d="M220 70 V180 M220 260 V330"/>
+<path d="M220 180 l-9 8 l18 12 l-18 12 l18 12 l-18 12 l18 12 l-9 12"/>
+<path d="M214 149 L220 162 L226 149 Z" fill="#111111" stroke="none"/>
+<circle cx="220" cy="70" r="4.2" fill="#111111"/>
+<circle cx="220" cy="330" r="4.2" fill="#111111"/>
+<text x="231" y="123" fill="#111111" stroke="none" font-family="DejaVu Sans, Arial, sans-serif" font-size="21">I<tspan baseline-shift="sub" font-size="14">1</tspan><tspan>=0.2A</tspan></text>
+
+<path d="M355 70 V180 M355 260 V330"/>
+<path d="M355 180 l-9 8 l18 12 l-18 12 l18 12 l-18 12 l18 12 l-9 12"/>
+<path d="M349 149 L355 162 L361 149 Z" fill="#111111" stroke="none"/>
+<circle cx="355" cy="70" r="4.2" fill="#111111"/>
+<circle cx="355" cy="330" r="4.2" fill="#111111"/>
+<text x="366" y="123" fill="#111111" stroke="none" font-family="DejaVu Sans, Arial, sans-serif" font-size="21">I<tspan baseline-shift="sub" font-size="14">2</tspan><tspan>=0.4A</tspan></text>
+
+<path d="M490 70 V180 M490 260 V330"/>
+<path d="M490 180 l-9 8 l18 12 l-18 12 l18 12 l-18 12 l18 12 l-9 12"/>
+<path d="M484 149 L490 162 L496 149 Z" fill="#111111" stroke="none"/>
+<circle cx="490" cy="70" r="4.2" fill="#111111"/>
+<circle cx="490" cy="330" r="4.2" fill="#111111"/>
+<text x="501" y="123" fill="#111111" stroke="none" font-family="DejaVu Sans, Arial, sans-serif" font-size="21">I<tspan baseline-shift="sub" font-size="14">3</tspan><tspan>=0.8A</tspan></text>
+
+
+</g>
+</svg>
