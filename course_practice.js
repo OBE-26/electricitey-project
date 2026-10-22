@@ -4,6 +4,7 @@ const CoursePractice = (() => {
   const integer = (rng, lo, hi) => lo + Math.floor(rng() * (hi - lo + 1));
   const fmt = value => String(Math.round((value + Number.EPSILON) * 100) / 100);
   const step = (key, label, unit, value, formula, substitution) => ({key,label,unit,value,formula,substitution});
+  const integralBatteryIndices=[0,1,2,3,5,7,8];
   function random(seed) {
     let value=seed>>>0;
     return ()=>{value+=0x6D2B79F5;let t=value;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return ((t^t>>>14)>>>0)/4294967296;};
@@ -105,18 +106,27 @@ const CoursePractice = (() => {
       givens:[['U',u,'V'],...r.map((value,i)=>['R'+(i+1),value,resistanceUnit])]};
   }
   function battery(rng, course, level, index) {
-    if(course==='mobile'&&index>=7)return internalResistance(rng,level,index);
+    // Seven integral exercises and three fractional exercises per batch,
+    // independently of the topic split (Ah / Wh / internal resistance).
+    const whole=integralBatteryIndices.includes(index%10);
+    if(course==='mobile'&&index>=7)return internalResistance(rng,level,index,whole);
     const energy=course==='security'&&index>=7;
-    const current=level===0?integer(rng,1,6):pick(rng,[.2,.4,.5,.8,1.2,1.5,2.5]);
-    const hours=level===0?integer(rng,2,8):pick(rng,[.5,.75,1.25,1.5,2.5,3.5]);
-    const voltage=pick(rng,[6,12,24]),q=current*hours,p=voltage*current,e=p*hours;
-    const variant=index%3,charging=index%2===0,minutes=level===2;
+    const variant=index%3,charging=index%2===0,minutes=level===2||!whole;
+    const currents=whole?Array.from({length:10},(_,i)=>i+1):[.2,.4,.5,.75,1.25,1.5,2.5];
+    const times=whole?Array.from({length:9},(_,i)=>i+2):[1.25,1.5,1.75,2.25,2.5,2.75,3.5,4.5];
+    const pairs=currents.flatMap(current=>times.map(hours=>({current,hours}))).filter(({current,hours})=>{
+      const answer=variant===0?current*hours:variant===1?hours:energy?current*hours:current;
+      const exactDisplay=Math.abs(current*hours*100-Math.round(current*hours*100))<1e-7;
+      return whole?Number.isInteger(answer)&&answer>=2&&answer<=10:exactDisplay&&!Number.isInteger(answer);
+    });
+    const {current,hours}=pick(rng,pairs);
+    const voltage=pick(rng,[6,12,24]),q=Number(fmt(current*hours)),p=Number(fmt(energy&&variant===0?current:voltage*current)),e=Number(fmt(p*hours));
     const timeText=minutes?`${fmt(hours*60)} דקות`:`${fmt(hours)} שעות`;
     const device=course==='security'?'מערכת מיגון':'מכשיר סלולרי';
     let title,text,steps,givens;
     if(energy){
       title=charging?'אנרגיה בטעינת סוללת גיבוי':'זמן פעולה של סוללת גיבוי';
-      if(variant===0){text=`סוללת גיבוי מזינה ${device} במתח ${voltage} וולט ובזרם קבוע של ${fmt(current)} אמפר במשך ${timeText}. מה האנרגיה שנצרכה בוואט־שעה?`;steps=[step('E','האנרגיה שנצרכה','Wh',e,'E = U × I × t',`${voltage} × ${fmt(current)} × ${fmt(hours)}`)];givens=[['U',voltage,'V'],['I',current,'A'],['t',minutes?hours*60:hours,minutes?'min':'h']];}
+      if(variant===0){text=`סוללת גיבוי מזינה ${device} בהספק קבוע של ${fmt(p)} ואט במשך ${timeText}. מה האנרגיה שנצרכה בוואט־שעה?`;steps=[step('E','האנרגיה שנצרכה','Wh',e,'E = P × t',`${fmt(p)} × ${fmt(hours)}`)];givens=[['P',p,'W'],['t',minutes?hours*60:hours,minutes?'min':'h']];}
       if(variant===1){text=`בסוללת הגיבוי זמינות ${fmt(e)} ואט־שעה. מערכת מיגון צורכת הספק קבוע של ${fmt(p)} ואט. לכמה שעות תספיק הסוללה?`;steps=[step('t','משך הפעולה','h',hours,'t = E ÷ P',`${fmt(e)} ÷ ${fmt(p)}`)];givens=[['E',e,'Wh'],['P',p,'W']];}
       if(variant===2){text=`סוללת גיבוי במתח ${voltage} וולט אוגרת ${fmt(e)} ואט־שעה. מה המטען שלה באמפר־שעה?`;steps=[step('Q','מטען הסוללה','Ah',q,'Q = E ÷ U',`${fmt(e)} ÷ ${voltage}`)];givens=[['E',e,'Wh'],['U',voltage,'V']];}
     }else{
@@ -125,17 +135,30 @@ const CoursePractice = (() => {
       if(variant===1){text=charging?`יש להשלים לסוללה מטען של ${fmt(q)} אמפר־שעה. זרם הטעינה קבוע ושווה ל־${fmt(current)} אמפר. כמה שעות נדרשות?`:`בסוללת ${device} נשאר מטען של ${fmt(q)} אמפר־שעה. צריכת הזרם קבועה ושווה ל־${fmt(current)} אמפר. לכמה שעות יספיק המטען?`;steps=[step('t',charging?'זמן הטעינה':'זמן הפריקה','h',hours,'t = Q ÷ I',`${fmt(q)} ÷ ${fmt(current)}`)];givens=[['Q',q,'Ah'],['I',current,'A']];}
       if(variant===2){text=`במהלך ${charging?'טעינה':'פריקה'} של סוללת ${device}, מטען של ${fmt(q)} אמפר־שעה הועבר במשך ${timeText}. מה היה הזרם הקבוע?`;steps=[step('I',charging?'זרם הטעינה':'זרם הפריקה','A',current,'I = Q ÷ t',`${fmt(q)} ÷ ${fmt(hours)}`)];givens=[['Q',q,'Ah'],['t',minutes?hours*60:hours,minutes?'min':'h']];}
     }
-    if(minutes&&variant!==1){steps.unshift(step('t_h','המרת זמן מדקות לשעות','h',hours,'t_h = t_min ÷ 60',`${fmt(hours*60)} ÷ 60`));}
-    return {kind:'battery',level,index,title,text,steps,givens,unitFamily:energy?'Wh':'Ah',note:'בתרגיל מניחים זרם קבוע ומודל אידאלי ללא הפסדים.'};
+    if(minutes&&givens.some(([key,_,unit])=>key==='t'&&unit==='min')){
+      steps.unshift(step('t_h','המרת זמן מדקות לשעות','h',hours,'t_h = t_min ÷ 60',`${fmt(hours*60)} ÷ 60`));
+    }
+    if(!whole&&variant===1){
+      const wholeHours=Math.floor(hours),remainder=Math.round((hours-wholeHours)*60);
+      steps.push(step('t_minutes','הזמן הכולל בדקות','min',hours*60,'t_min = t × 60',`${fmt(hours)} × 60`));
+      steps.push(step('t_remainder',`הדקות הנותרות מעבר ל־${wholeHours} שעות שלמות`,'min',remainder,'t_remaining = t_min − t_whole × 60',`${fmt(hours*60)} − ${wholeHours} × 60`));
+      text+=` לאחר החישוב, המירו לדקות והציגו את הזמן גם בשעות ובדקות.`;
+    }
+    return {kind:'battery',schemaVersion:3,whole,level,index,title,text,steps,givens,unitFamily:energy?'Wh':'Ah',note:'בתרגיל מניחים זרם קבוע ומודל אידאלי ללא הפסדים.'};
   }
-  function internalResistance(rng,level,index){
-    const ut=pick(rng,[3.8,4,4.2]),rs=pick(rng,[.04,.06,.08,.1,.12,.16,.2]),current=pick(rng,[1,1.5,2,2.5]);
+  function internalResistance(rng,level,index,whole=integralBatteryIndices.includes(index%10)){
+    const pairs=[2,3,4,5].flatMap(rs=>[2,3,4,5].filter(current=>rs*current<=10).map(current=>({rs,current})));
+    const integral=whole?pick(rng,pairs):null;
+    const ut=whole?pick(rng,[3800,4000,4200]):pick(rng,[3.8,4,4.2]);
+    const rs=whole?integral.rs:pick(rng,[.04,.06,.08,.12,.16]);
+    const current=whole?integral.current:pick(rng,[1.5,2,2.5]);
     const du=rs*current,ul=ut-du,limit=.12;
-    return {kind:'battery',level,index,unitFamily:'Rs',title:'התנגדות פנימית של סוללה',
-      text:`מתח הסוללה ללא עומס הוא ${fmt(ut)} וולט. כשהסוללה מספקת זרם של ${fmt(current)} אמפר, מתח העומס שלה הוא ${fmt(ul)} וולט. חשבו את מפל המתח הפנימי ואת ההתנגדות הפנימית.`,
-      givens:[['U_t',ut,'V'],['U_L',ul,'V'],['I',current,'A']],
-      steps:[step('ΔU','מפל המתח על ההתנגדות הפנימית','V',du,'ΔU = U_t − U_L',`${fmt(ut)} − ${fmt(ul)}`),step('R_s','ההתנגדות הפנימית','Ω',rs,'R_s = ΔU ÷ I',`${fmt(du)} ÷ ${fmt(current)}`)],
-      note:`לצורך התרגיל בלבד, נתון יצרן: התנגדות פנימית מרבית ${fmt(limit)} Ω. ${rs<=limit?'התוצאה עומדת בגבול הנתון.':'התוצאה חורגת מהגבול הנתון ונדרשת בדיקה לפי הוראות היצרן.'} התנגדות פנימית לבדה אינה קובעת אחוז בריאות סוללה.`,limit,rs};
+    const voltageUnit=whole?'mV':'V',resistanceUnit=whole?'mΩ':'Ω',rsOhms=whole?rs/1000:rs;
+    return {kind:'battery',schemaVersion:3,whole,level,index,unitFamily:'Rs',title:'התנגדות פנימית של סוללה',voltageUnit,resistanceUnit,
+      text:`מתח הסוללה ללא עומס הוא ${fmt(ut)} ${whole?'מיליוולט':'וולט'}. כשהסוללה מספקת זרם של ${fmt(current)} אמפר, מתח העומס שלה הוא ${fmt(ul)} ${whole?'מיליוולט':'וולט'}. חשבו את מפל המתח הפנימי ואת ההתנגדות הפנימית${whole?' במיליאוהם':''}.`,
+      givens:[['U_t',ut,voltageUnit],['U_L',ul,voltageUnit],['I',current,'A']],
+      steps:[step('ΔU','מפל המתח על ההתנגדות הפנימית',voltageUnit,du,'ΔU = U_t − U_L',`${fmt(ut)} − ${fmt(ul)}`),step('R_s','ההתנגדות הפנימית',resistanceUnit,rs,'R_s = ΔU ÷ I',`${fmt(du)} ÷ ${fmt(current)}`)],
+      note:`לצורך התרגיל בלבד, נתון יצרן: התנגדות פנימית מרבית ${fmt(whole?limit*1000:limit)} ${resistanceUnit}. ${rsOhms<=limit?'התוצאה עומדת בגבול הנתון.':'התוצאה חורגת מהגבול הנתון ונדרשת בדיקה לפי הוראות היצרן.'} התנגדות פנימית לבדה אינה קובעת אחוז בריאות סוללה.`,limit,rs,rsOhms};
   }
   function batch(course,kind,level,seed){
     const rng=random(seed),result=Array.from({length:10},(_,index)=>kind==='mixed'?mixed(rng,level,index):battery(rng,course,level,index));
@@ -144,7 +167,7 @@ const CoursePractice = (() => {
     for(let i=result.length-1;i>0;i--){const j=Math.floor(rng()*(i+1));[result[i],result[j]]=[result[j],result[i]];}
     return result.map(q=>({...q,cursor:0,draft:'',attempts:0,hint:false,solution:false,accepted:false,helped:false}));
   }
-  function mixedSVG(q,stage=0){
+  function mixedSVG(q,stage=0,showNodes=false){
     const groups=q.diagrams[Math.max(0,Math.min(stage,q.diagrams.length-1))];
     const ink='var(--ink)',card='var(--card)';
     const wire=path=>`<path d="${path}" fill="none" stroke="${ink}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>`;
@@ -152,7 +175,7 @@ const CoursePractice = (() => {
     const symbol=(x,y,value,anchor='middle')=>{const m=/^([A-Za-z]+)_?([A-Za-z]+|\d+)$/.exec(value);return m?`<text x="${x}" y="${y}" fill="${ink}" text-anchor="${anchor}" font-size="19" font-family="Arial,sans-serif" direction="ltr">${m[1]}<tspan dy="5" font-size="13">${m[2]}</tspan><tspan dy="-5"> </tspan></text>`:text(x,y,value,anchor);};
     const node=(x,y,resistor,vertical=false)=>`<g class="mixed-resistor" data-symbol="${resistor.symbol}" data-from="${resistor.from}" data-to="${resistor.to}"><rect x="${x-(vertical?12:38)}" y="${y-(vertical?30:12)}" width="${vertical?24:76}" height="${vertical?60:24}" fill="${card}" stroke="${ink}" stroke-width="2.5"/>${symbol(x+(vertical?29:0),y+(vertical?-4:-26),resistor.symbol,vertical?'start':'middle')}${text(x+(vertical?29:0),y+(vertical?22:43),fmt(resistor.value)+' '+q.resistanceUnit,vertical?'start':'middle')}</g>`;
     const dot=(x,y)=>`<circle cx="${x}" cy="${y}" r="4" fill="${ink}"/>`;
-    const junction=(x,y,label,dx=-18,dy=-13)=>`<g class="mixed-junction" data-node="${label}">${dot(x,y)}${text(x+dx,y+dy,label)}</g>`;
+    const junction=(x,y,label,dx=-18,dy=-13)=>showNodes?`<g class="mixed-junction" data-node="${label}">${dot(x,y)}${text(x+dx,y+dy,label)}</g>`:dot(x,y);
     const source=(x,top,bottom)=>{
       const mid=(top+bottom)/2;
       return wire(`M${x} ${top}V${mid-13}M${x} ${mid+13}V${bottom}M${x-23} ${mid-13}H${x+23}M${x-13} ${mid+13}H${x+13}`)+text(x-32,mid-21,'+')+text(x-32,mid+30,'−')+symbol(x-46,mid-14,'U','end')+text(x-46,mid+20,fmt(q.u)+' V','end');
@@ -199,14 +222,15 @@ const CoursePractice = (() => {
     const ink='var(--ink)',current='var(--phone-current,#b52e2e)',voltage='var(--phone-voltage,#116e65)';
     const symbolText=(x,y,base,sub,suffix='',color=ink)=>`<text x="${x}" y="${y}" fill="${color}" font-family="Arial,sans-serif" font-size="17" text-anchor="start" direction="ltr">${base}<tspan dy="5" font-size="12">${sub}</tspan><tspan dy="-5" font-size="17">${suffix}</tspan></text>`;
     const text=(x,y,value,color=ink,size=17)=>`<text x="${x}" y="${y}" fill="${color}" font-size="${size}" font-family="Arial,sans-serif" text-anchor="middle" direction="ltr">${value}</text>`;
-    const rs=showResistance?`${fmt(q.rs)} Ω`:'?',drop=showDrop?`${fmt(given.U_t-given.U_L)} V`:'?';
+    const voltageUnit=q.voltageUnit??'V',resistanceUnit=q.resistanceUnit??'Ω';
+    const rs=showResistance?`${fmt(q.rs)} ${resistanceUnit}`:'?',drop=showDrop?`${fmt(given.U_t-given.U_L)} ${voltageUnit}`:'?';
     return `<svg class="phone-battery-svg" viewBox="0 0 640 345" role="img" aria-label="מודל סוללת טלפון: מתח ללא עומס, התנגדות פנימית בטור, ועומס המייצג את מעגלי הטלפון">
       <rect x="30" y="65" width="270" height="242" rx="17" fill="none" stroke="var(--line)" stroke-dasharray="6 5"/>
       ${text(177,30,'סוללה',ink,19)}
       <path d="M100 144V90H205M275 90H515V145M515 215V280H100V196" fill="none" stroke="${ink}" stroke-width="2.5"/>
       <circle cx="100" cy="170" r="26" fill="var(--card)" stroke="${ink}" stroke-width="2.5"/>
       ${text(100,164,'+',ink,22)}${text(100,187,'−',ink,22)}
-      ${symbolText(144,178,'U','t',` = ${fmt(given.U_t)} V`)}
+      ${symbolText(144,178,'U','t',` = ${fmt(given.U_t)} ${voltageUnit}`)}
       <rect x="205" y="77" width="70" height="26" fill="var(--card)" stroke="${ink}" stroke-width="2.5"/>
       ${symbolText(215,130,'R','s',` = ${rs}`)}
       <path d="M205 61H275M205 61l7 -4M205 61l7 4M275 61l-7 -4M275 61l-7 4" fill="none" stroke="${voltage}" stroke-width="2"/>
@@ -215,7 +239,7 @@ const CoursePractice = (() => {
       ${text(365,72,`I = ${fmt(given.I)} A`,current,16)}
       <circle cx="390" cy="90" r="4" fill="${ink}"/><circle cx="390" cy="280" r="4" fill="${ink}"/>
       <path d="M391 112V258M391 112l-5 9M391 112l5 9M391 258l-5 -9M391 258l5 -9" fill="none" stroke="${voltage}" stroke-width="2"/>
-      ${symbolText(343,187,'U','L','',voltage)}${text(354,211,`${fmt(given.U_L)} V`,voltage,16)}
+      ${symbolText(343,187,'U','L','',voltage)}${text(354,211,`${fmt(given.U_L)} ${voltageUnit}`,voltage,16)}
       <rect x="437" y="45" width="168" height="272" rx="24" fill="none" stroke="${ink}" stroke-width="2.5"/>
       <path d="M490 60H550M495 302H545" stroke="${ink}" stroke-width="3"/>
       <rect x="500" y="145" width="30" height="70" fill="var(--card)" stroke="${ink}" stroke-width="2.5"/>

@@ -66,7 +66,7 @@ const CourseApp = window.CourseApp = (() => {
   function saveExtra(){if(!qaActive)put(extKey(),extraState);}
   function currentExtra(){
     const key=extra+':'+extraLevel;
-    if(!extraState[key]||!Array.isArray(extraState[key].questions)||extraState[key].questions.length!==10||extra==='mixed'&&extraState[key].questions.some(q=>q.schemaVersion!==2)){
+    if(!extraState[key]||!Array.isArray(extraState[key].questions)||extraState[key].questions.length!==10||extraState[key].questions.some(q=>q.schemaVersion!==(extra==='mixed'?2:3))){
       const seed=crypto.getRandomValues(new Uint32Array(1))[0];
       extraState[key]={seed,index:0,questions:CoursePractice.batch(selected,extra,extraLevel,seed)};
     }
@@ -107,21 +107,21 @@ const CourseApp = window.CourseApp = (() => {
   function nodeGuide(q){
     return `<div class="mixed-node-guide"><p><strong>סימון צמתים:</strong> מעבר לכל נגד מגיעים לצומת אחרת. לאורך מוליך רציף נשארת אותה אות. ענפים במקביל מחוברים לאותן שתי צמתים.</p><details><summary>מפת החיבורים לפי הצמתים</summary><div class="mixed-node-map">${q.resistorNodes.map((nodes,i)=>`<span>${math('R'+(i+1))}: <bdi>${nodes.from} ↔ ${nodes.to}</bdi></span>`).join('')}</div></details></div>`;
   }
-  function mixedPreview(q,stage=0){return `<button type="button" class="diagram-preview" data-open-mixed="${stage}" aria-label="הגדלת סכמה ${stage===0?'מקורית':'לאחר צמצום '+stage}">${CoursePractice.mixedSVG(q,stage)}<span class="diagram-open-label">הגדלת הסכמה ⤢</span></button>`;}
+  function mixedPreview(q,stage=0,showNodes=false){return `<button type="button" class="diagram-preview" data-open-mixed="${stage}" data-mixed-nodes="${showNodes}" aria-label="הגדלת סכמה ${stage===0?'מקורית':'לאחר צמצום '+stage}">${CoursePractice.mixedSVG(q,stage,showNodes)}<span class="diagram-open-label">הגדלת הסכמה ⤢</span></button>`;}
   function openMixedDiagram(stage){
     const {q}=currentExtra();if(q.kind!=='mixed')return;
     diagramReturnToFormulas=false;diagramReturnFieldId=null;diagramZoom=1;diagramBaseWidth=0;
     $('diagram-dialog').classList.remove('dark-diagram');
     $('diagram-context').innerHTML=`<h3>${escapeHTML(q.title)}</h3><p>${stage===0?'המעגל המקורי':escapeHTML(q.reductions[stage-1].title)}</p>`;
-    $('diagram-canvas').innerHTML=CoursePractice.mixedSVG(q,stage);
+    $('diagram-canvas').innerHTML=CoursePractice.mixedSVG(q,stage,q.solution);
     $('diagram-canvas').style.width='100%';openDialog('diagram-dialog');zoomDiagram('reset');
   }
   function renderExtra(){
     const {state,q}=currentExtra(),s=q.steps[q.cursor],done=!s,levelCount=selected==='mobile'?2:3;
-    const levelsHTML=Array.from({length:levelCount},(_,i)=>`<button class="level" data-extra-level="${i}" aria-pressed="${extraLevel===i}">רמה ${letters[i]}<small>${extra==='mixed'?DC.levelNames[i]:i===0?'חישובים בסיסיים':i===1?'מספרים עשרוניים':'המרת דקות לשעות'}</small></button>`).join('');
+    const levelsHTML=Array.from({length:levelCount},(_,i)=>`<button class="level" data-extra-level="${i}" aria-pressed="${extraLevel===i}">רמה ${letters[i]}<small>${extra==='mixed'?DC.levelNames[i]:i===0?'חישובים בסיסיים':i===1?'חישובים והמרות זמן':'המרת דקות לשעות'}</small></button>`).join('');
     const qaPicker=qaActive?`<label class="qa-extra-picker" for="qa-extra-exercise">תרגיל לבדיקה<select id="qa-extra-exercise">${state.questions.map((item,i)=>`<option value="${i}" ${state.index===i?'selected':''}>${i+1}. ${escapeHTML(item.title)}</option>`).join('')}</select></label>`:'';
-    const picture=q.unitFamily==='Rs'?`<figure class="diagram phone-schematic">${CoursePractice.phoneBatterySVG(q)}<figcaption>מודל שקול של סוללת טלפון. ההתנגדות הפנימית מחוברת בטור לעומס של מעגלי הטלפון.</figcaption></figure>`:extra==='mixed'?`<figure class="diagram mixed-schematic">${mixedPreview(q)}<figcaption>${escapeHTML(q.caption)}</figcaption></figure>${nodeGuide(q)}`:'';
-    const reduction=extra==='mixed'?`<div class="circuit-reductions"><h3>צמצום המעגל לפי הצמתים</h3>${q.reductions.map((item,i)=>`<section class="circuit-reduction"><h4>${i+1}. ${escapeHTML(item.title)}</h4>${solutionRows(q,item.steps)}<figure class="diagram">${mixedPreview(q,i+1)}</figure></section>`).join('')}<p class="small muted">אותיות הצמתים נשמרות. צומת פנימית שנבלעה בנגד שקול אינה מסומנת בסכמה המצומצמת.</p></div>`:'';
+    const picture=q.unitFamily==='Rs'?`<figure class="diagram phone-schematic">${CoursePractice.phoneBatterySVG(q)}<figcaption>מודל שקול של סוללת טלפון. ההתנגדות הפנימית מחוברת בטור לעומס של מעגלי הטלפון.</figcaption></figure>`:extra==='mixed'?`<figure class="diagram mixed-schematic">${mixedPreview(q,0,q.solution)}<figcaption>${escapeHTML(q.caption)}</figcaption></figure>`:'';
+    const reduction=extra==='mixed'?`${nodeGuide(q)}<div class="circuit-reductions"><h3>צמצום המעגל לפי הצמתים</h3>${q.reductions.map((item,i)=>`<section class="circuit-reduction"><h4>${i+1}. ${escapeHTML(item.title)}</h4>${solutionRows(q,item.steps)}<figure class="diagram">${mixedPreview(q,i+1,true)}</figure></section>`).join('')}<p class="small muted">אותיות הצמתים נשמרות. צומת פנימית שנבלעה בנגד שקול אינה מסומנת בסכמה המצומצמת.</p></div>`:'';
     const remainingSteps=extra==='mixed'?q.steps.slice(q.reductions.reduce((sum,item)=>sum+item.steps.length,0)):q.steps;
     const answer=done?`<div class="complete-badge">✓ התרגיל הושלם</div><h2>כל החישובים הושלמו</h2><button class="btn" data-extra-action="next">${state.index===9?'סבב חדש':'לתרגיל הבא ←'}</button>`:`<div class="task-kicker">שלב ${q.cursor+1} מתוך ${q.steps.length}</div><h2>${escapeHTML(s.label)}</h2><form id="extra-answer-form"><label for="extra-answer">התשובה ביחידות ${escapeHTML(s.unit)}</label><div class="answer-row"><div class="answer-wrap"><input class="numeric${q.accepted?' answer-correct':q.attempts?' answer-incorrect':''}" id="extra-answer" inputmode="decimal" autocomplete="off" maxlength="24" value="${escapeHTML(q.draft??'')}" ${q.accepted?'readonly':''}><span class="unit">${escapeHTML(s.unit)}</span></div><button class="btn" type="${q.accepted?'button':'submit'}" ${q.accepted?'data-extra-action="step"':''}>${q.accepted?'הבא ←':'בדיקת תשובה'}</button></div></form><p class="small muted">אפשר לעגל לשתי ספרות אחרי הנקודה.</p>`;
     $('course-panel').innerHTML=`<div class="course-head"><h2>${extra==='mixed'?'מעגל מעורב מורכב':'חישובי סוללות'}</h2><div class="levels">${levelsHTML}</div></div>${qaPicker}<div class="progress-row"><span>תרגיל ${state.index+1} מתוך 10</span><span>רמה ${letters[extraLevel]}</span></div><div class="exercise-grid"><section class="card"><h3>${escapeHTML(q.title)}</h3>${q.text?`<p>${escapeHTML(q.text)}</p>`:''}<div class="givens">${statementRows(q)}</div>${picture}${q.unitFamily==='Rs'?notationKey():''}${q.kind==='battery'&&q.unitFamily!=='Rs'?`<p class="small muted">${escapeHTML(q.note)}</p>`:''}</section><section class="card">${answer}<div class="answer-tools"><button class="btn secondary tiny" data-extra-action="hint">רמז</button><button class="btn secondary tiny" data-extra-action="solution">${q.solution?'סגירת פתרון מלא':'פתרון מלא'}</button><button class="btn secondary tiny" data-open-calculator>מחשבון</button><button class="btn secondary tiny" data-extra-action="new">תרגילים חדשים</button></div>${status(extraMessage,extraError)}${q.hint&&s?`<div class="hint">השתמשו בנוסחה ${math(s.formula)}</div>`:''}${q.solution?`<div class="solution"><div class="dialog-head"><h3>פתרון מלא</h3><button class="close" data-extra-action="solution" aria-label="סגירת פתרון מלא">×</button></div>${reduction}${solutionRows(q,remainingSteps)}</div>`:''}${done?`<div class="completed-steps">${solutionRows(q)}</div>`:''}${(done||q.solution)&&q.unitFamily==='Rs'?`<p class="small muted">${escapeHTML(q.note)}</p>`:''}</section></div>`;
@@ -227,7 +227,7 @@ const CourseApp = window.CourseApp = (() => {
     finally{button.disabled=false;}
   }
   function openQATheory(){
-    if(!qaActive||examBusy||adminBusy)return;
+    if(!qaActive||examBusy||adminBusy||adminConfig?.unavailable)return;
     if(selected!=='hvac')switchCourse('hvac');
     screen='theory';extra=null;adminExpanded=false;examMessage='';render();
     if(!theory.current)theoryRequest('new');
@@ -251,6 +251,10 @@ const CourseApp = window.CourseApp = (() => {
     if(!qaActive||!adminConfig)return;
     $('course-admin')?.remove();
     const value=adminDraft??adminConfig,container=document.createElement('section');container.id='course-admin';container.className='qa-banner';
+    if(adminConfig.unavailable){
+      container.innerHTML=`<div class="qa-course-switch"><label for="qa-course-switch">מעבר מהיר בין קורסים<select id="qa-course-switch">${Object.entries(config.names).map(([id,name])=>`<option value="${id}" ${selected===id?'selected':''}>${escapeHTML(name)}</option>`).join('')}</select></label><button type="button" class="btn" data-course-action="qa-theory" disabled>שאלות עיוניות — החיבור לשמירה אינו זמין</button></div><h3>הכניסה ל־QA הצליחה; החיבור לשמירה דורש תיקון</h3><p class="feedback error admin-storage-status" role="alert">${escapeHTML(adminConfig.storage_message)}</p><p>אפשר לבדוק את התרגילים ולעבור בין הקורסים. רשימת הסיסמאות ושמות הקורסים לא נטענו; ניהול ומבחנים עיוניים יהיו זמינים לאחר חידוש החיבור.</p>${status(adminMessage,adminError)}<button type="button" class="btn secondary" data-course-action="admin-refresh" ${adminBusy?'disabled':''}>בדיקה מחדש של החיבור לשמירה</button>`;
+      $('qa-panel').append(container);return;
+    }
     const savedCount=adminConfig.passwords.length,disabled=adminBusy?'disabled':'';
     const passwordRows=value.passwords.map((row,i)=>{
       const saved=adminConfig.passwords.find(item=>item.id===row.id);
@@ -279,7 +283,7 @@ const CourseApp = window.CourseApp = (() => {
           return edited&&row.id!==changedId?{...row,...edited}:row;
         }).concat(pendingRows)};
       }
-      deletePasswordId=null;applyConfig(reply.config);adminMessage=reply.message;
+      deletePasswordId=null;applyConfig(reply.config);adminMessage=reply.message;adminError=!!reply.config.unavailable;
     }catch(error){if(qaActive&&token===adminToken){adminMessage=error.message;adminError=true;}}
     finally{adminBusy=false;if(qaActive&&token===adminToken){renderAdmin();resizeFrame();}}
   }

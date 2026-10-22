@@ -3,6 +3,8 @@ import json
 import random
 import tempfile
 import unittest
+import urllib.error
+from unittest.mock import patch
 from datetime import date
 from pathlib import Path
 from course_backend import ConfigStore, CourseService, code_active, password_hash, password_matches, remap_choice_references, select_questions
@@ -15,6 +17,40 @@ class CoursesTest(unittest.TestCase):
   self.service=CourseService(self.store,ROOT/'data/questions.json')
   self.session={}
  def tearDown(self):self.temp.cleanup()
+ def test_qa_login_is_independent_of_storage_and_recovers(self):
+  self.store.save(self.store.public()['names'],[{'label':'preserved','password':'sample-pass','expires_on':'','active':True}])
+  original=self.store.path.read_bytes()
+  self.store.repository='OBE-26/electricity-access'
+  self.store.token='הדבק כאן את הטוקן השני'
+  wrong=self.service.handle({'action':'admin_login','password':'wrong'},self.session)
+  self.assertFalse(wrong['ok']);self.assertNotIn('course_admin',self.session)
+  with patch.object(self.store,'_request') as network:
+   login=self.service.handle({'action':'admin_login','password':'210592'},self.session)
+   self.assertTrue(login['ok']);self.assertTrue(login['config']['unavailable'])
+   self.assertIn('storage_token',login['config']['storage_message'])
+   self.assertNotIn('passwords',login['config'],'An outage is not an empty password list')
+   network.assert_not_called()
+   token=login['token']
+   refresh=self.service.handle({'action':'admin_refresh','token':token},self.session)
+   self.assertTrue(refresh['config']['unavailable'])
+   denied=self.service.handle({'action':'admin_password_save','token':token,'password':{'label':'new','password':'new-code','active':True}},self.session)
+   self.assertFalse(denied['ok'])
+  self.assertEqual(original,self.store.path.read_bytes(),'An outage must not overwrite existing access settings')
+  self.store.repository=''
+  refreshed=self.service.handle({'action':'admin_refresh','token':token},self.session)
+  self.assertTrue(refreshed['ok']);self.assertEqual(refreshed['config']['passwords'][0]['label'],'preserved')
+  exam=self.service.handle({'action':'admin_exam_new','token':token},self.session)
+  self.assertTrue(exam['ok']);self.assertTrue(exam['qa'])
+  self.assertTrue(self.service.handle({'action':'admin_logout','token':token},self.session)['ok'])
+ def test_qa_storage_errors_are_actionable_and_do_not_leak_credentials(self):
+  for failure in (urllib.error.HTTPError('https://api.github.com/',code,'bad',{},None) for code in (401,403,404)):
+   with self.subTest(code=failure.code),patch.object(self.store,'read',side_effect=failure):
+    login=self.service.handle({'action':'admin_login','password':'210592'}, {})
+    self.assertTrue(login['ok']);self.assertTrue(login['config']['unavailable'])
+    self.assertIn('Contents',login['config']['storage_message'])
+  with patch.object(self.store,'read',side_effect=urllib.error.URLError('offline')):
+   login=self.service.handle({'action':'admin_login','password':'210592'}, {})
+   self.assertTrue(login['ok']);self.assertIn('אינו זמין',login['config']['storage_message'])
  def test_bank_and_requested_corrections(self):
   self.assertEqual(len(self.service.pool),193)
   self.assertEqual(self.service.by_id['a-001']['correct_choice_id'],'a-001-3')

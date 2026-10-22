@@ -1,0 +1,500 @@
+diff --git a/README.md b/README.md
+index 4dff07d..e2a23f1 100644
+--- a/README.md
++++ b/README.md
+@@ -36,6 +36,8 @@ streamlit run Electricity-circuit.py
+ 
+ מבחן QA אינו משנה את הציונים או את סבב השאלות האישי. ביציאה מ־QA חוזרים למצב הרגיל, וגישה רגילה למבחן שוב דורשת סיסמת תלמיד תקפה.
+ 
++סיסמת מנהל נכונה מאפשרת כניסה ל־QA גם כשחיבור השמירה הפרטית אינו תקין. במקרה כזה מוצגת הודעת תיקון מפורשת, ואפשר לבדוק את תרגילי החישוב ולעבור בין הקורסים. רשימת הסיסמאות אינה מוצגת כריקה ואין מעבר לשמירה חלופית. ניהול סיסמאות ומבחנים עיוניים דורשים חיבור תקין; לאחר תיקון החיבור אפשר ללחוץ **בדיקה מחדש של החיבור לשמירה** כדי לטעון את הנתונים המקוריים ללא כניסה נוספת.
++
+ ### סיסמאות שהוגדרו בגרסה הישנה
+ 
+ הגרסה הקודמת שמרה רק גיבוב לבדיקת הסיסמה, ולכן אין דרך לשחזר את הטקסט שלה. הסיסמאות הישנות ממשיכות לעבוד כל עוד נשמרו בשרת והן בתוקף. כדי להציג סיסמה כזו בטבלה, לחצו **עריכה**, הקלידו אותה פעם אחת בשדה החלפת הסיסמה ושמרו. אפשר גם להגדיר סיסמה חדשה במקום הישנה.
+@@ -80,6 +82,8 @@ storage_token = "PASTE_YOUR_GITHUB_TOKEN_HERE"
+ 
+ אם כבר יש טוקן של `github_feedback` עם הרשאת Contents למאגר הפרטי שנבחר, אפשר להשמיט `storage_token` ולהשתמש בו. עדיין חייבים להגדיר `storage_repository` במפורש. כשל בחיבור מוצג למנהל ואינו יוצר רשימה חלופית בשקט.
+ 
++אם `storage_token` עדיין מכיל ״הדבק כאן את הטוקן השני״ או `PASTE_YOUR_GITHUB_TOKEN_HERE`, ההגדרה לא הושלמה. החליפו את טקסט הדוגמה בטוקן עצמו ב־Secrets. סיסמת QA אינה טוקן GitHub.
++
+ פרטים טכניים למפתח: ללא מאגר פרטי הנתונים נשמרים ב־`~/.local/share/electricity/course_admin.json`; ניתן לבחור נתיב בדיסק קבוע באמצעות `DC_COURSE_CONFIG_PATH`. מאגר ציבורי אינו מתקבל כשמירת הגדרות. חתימת קוד השרת נכללת במפתח המטמון כך שעדכון מנגנון ההרשאות יוצר שירות חדש.
+ 
+ מקורות להגדרה: [הגדרות ו־Secrets ב־Streamlit](https://docs.streamlit.io/deploy/streamlit-community-cloud/manage-your-app/app-settings), [יצירת טוקן GitHub](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens).
+@@ -95,11 +99,13 @@ storage_token = "PASTE_YOUR_GITHUB_TOKEN_HERE"
+ 
+ הנוסחאות מוצגות ב־MathML, לרבות שברים, חזקות וכתיב תחתי. חישובי טעינה ופריקה מניחים זרם קבוע ומודל אידאלי ללא הפסדים. בתרגילי אבחון נמסר גבול התנגדות לצורך הדוגמה בלבד. אין מיפוי גורף בין ערך התנגדות מוחלט לבין אחוז בריאות הסוללה.
+ 
++בכל סבב סוללות של עשר שאלות, במיגון ובסלולר ובכל הרמות, שבע שאלות מכילות נתונים ותשובות שלמים ושלוש כוללות תשובות לא שלמות. כל התשובות בשאלות השלמות הן בין 2 ל־10, ללא תשובות 1. נשמרת חלוקת הנושאים: במיגון שבע שאלות מטען ושלוש אנרגיה; בסלולר שבע שאלות מטען ושלוש התנגדות פנימית. בשאלות ההתנגדות הפנימית השלמות משתמשים ב־mV וב־mΩ; חלוקת מתח במיליוולט בזרם באמפר נותנת התנגדות במיליאוהם. בחלק העשרוני יש המרות מדקות לשעות ומשעות עשרוניות לזמן בדקות ולשעות ודקות. סבבי סוללות ישנים מתחדשים בפתיחה הבאה כדי להחיל את החלוקה החדשה; נתוני הביצוע המצטברים נשמרים.
++
+ ## מאגר ומפתח תשובות
+ 
+ `data/questions.json` הוא המאגר המעודכן מ־22.10.2026: א׳ 50, ב׳ 48, ג׳ 92 ועוד שלוש שאלות השלמה — 193 שאלות בסך הכול, כולל המחיקות ותיקוני המשתמש. הציון משתמש במפתח המשתמש המאושר. בשאלת מיקום לוח החשמל התשובה היא ״כל התשובות נכונות״. שאלות 31–40 מה־PDF הושוו למאגר: שמונה כבר קיימות ושתי שאלות נוספו; שאלה 40 עודכנה לאפשרויות שב־PDF ולמפתח ב׳. שאלה 34 מהצילום נוספה עם תשובה ב׳. המיפוי מתועד ב־`data/question_updates.json`. `data/technical_review.json` שומר את ההערות המקצועיות הקיימות לשאלות שדורשות בירור; התשובות שלהן לא הוחלפו. התרשימים המקוריים המעודכנים נשמרים ב־`data/figures`.
+ 
+-תרגילי המעגל המעורב עודכנו לפי דף הדוגמאות שסופק: נגד בטור לשניים, שלושה או ארבעה נגדים במקביל; שתי קבוצות מקבילות ונגדי טור; נגד במקביל לזוג נגדים בטור; ושני ענפים שבכל אחד זוג נגדי טור. הסכמות שומרות על מיקום המקור ועל סדר הנגדים בדוגמאות. הצמתים מסומנים A, B, C וכו׳: כל מוליך רציף מקבל אותה אות, ומעבר לנגד מגיעים לצומת אחרת. ענפים במקביל חולקים את אותם צמתי קצה. בצמצום נשמרות האותיות של צמתי הקצה וצמתים פנימיים שנבלעו מוסרים. קיימת גם מפת חיבורים נפתחת ואפשר לפתוח כל סכמה להגדלה ולזום. סבבי מעגל מעורב מגרסה קודמת מתחדשים אוטומטית; שאר ההתקדמות נשמרת.
++תרגילי המעגל המעורב עודכנו לפי דף הדוגמאות שסופק: נגד בטור לשניים, שלושה או ארבעה נגדים במקביל; שתי קבוצות מקבילות ונגדי טור; נגד במקביל לזוג נגדים בטור; ושני ענפים שבכל אחד זוג נגדי טור. הסכמות שומרות על מיקום המקור ועל סדר הנגדים בדוגמאות. אותיות הצמתים A, B, C וכו׳ ומפת החיבורים מופיעות רק בפתרון מלא. בסכמת השאלה ובהגדלתה אין אותיות צמתים; נקודות החיבור החשמליות נשארות. בפתרון כל מוליך רציף מקבל אותה אות, ומעבר לנגד מגיעים לצומת אחרת. ענפים במקביל חולקים את אותם צמתי קצה. בצמצום נשמרות האותיות של צמתי הקצה וצמתים פנימיים שנבלעו מוסרים. סגירת הפתרון מסתירה את הסימונים מחדש. אפשר לפתוח כל סכמה להגדלה ולזום. סבבי מעגל מעורב מגרסה קודמת מתחדשים אוטומטית; שאר ההתקדמות נשמרת.
+ 
+ אייקונים וקטוריים נפרדים מלווים את בחירת הקורס ואת כותרתו: מזגן למיזוג, מגן עם מנעול למיגון וטלפון לסלולר. הם משתמשים בצבע הטקסט הקיים כדי להתאים גם למצב לילה.
+ 
+diff --git a/course_backend.py b/course_backend.py
+index e1fddac..ab26fba 100644
+--- a/course_backend.py
++++ b/course_backend.py
+@@ -59,6 +59,8 @@ class ConfigStore:
+     def _remote(self):
+         if not re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", self.repository):
+             raise ValueError("Invalid storage repository")
++        if not self.token or not self.token.isascii() or self.token.strip().upper() in {"XXX", "PASTE_YOUR_GITHUB_TOKEN_HERE"}:
++            raise ValueError("יש להחליף את טקסט הדוגמה ב־course_admin.storage_token בטוקן GitHub אמיתי ב־Streamlit Secrets, עם הרשאת Contents: Read and write למאגר הפרטי.")
+         if self._request("").get("private") is not True:
+             raise ValueError("Course access configuration requires a private repository")
+         try:
+@@ -270,6 +272,21 @@ class CourseService:
+             result["figure"] = {"src": f"data:{mime};base64," + base64.b64encode(path.read_bytes()).decode(), "alt": figure.get("alt", "תרשים המעגל")}
+         return result
+ 
++    def _admin_config(self):
++        try:
++            self.store.read(fresh=True)
++            return self.store.public(admin=True)
++        except (ValueError, OSError, urllib.error.URLError) as error:
++            if isinstance(error, ValueError):
++                message = str(error)
++            elif isinstance(error, urllib.error.HTTPError) and error.code in (401, 403, 404):
++                message = "לא ניתן לגשת למאגר השמירה הפרטי. בדקו ב־Streamlit Secrets את course_admin.storage_repository ואת storage_token, ואת הרשאת Contents: Read and write של הטוקן למאגר הזה."
++            else:
++                message = "החיבור לשמירה אינו זמין כרגע. אפשר לבדוק את התרגילים ב־QA ולנסות לרענן את החיבור בהמשך."
++            # Authentication is independent of storage. Do not invent an empty
++            # password list or fall back to another store during an outage.
++            return {"names": dict(COURSES), "unavailable": True, "storage_message": message}
++
+     def handle(self, event, session):
+         action = event.get("action")
+         try:
+@@ -279,16 +296,14 @@ class CourseService:
+                     raise ValueError("סיסמה שגויה. נסו שוב.")
+                 token = secrets.token_urlsafe(24)
+                 session["course_admin"] = {"token": token, "until": time.time() + 8 * 3600}
+-                self.store.read(fresh=True)
+-                return {"ok": True, "token": token, "config": self.store.public(admin=True),
++                return {"ok": True, "token": token, "config": self._admin_config(),
+                         "capabilities": {"qa_theory": True, "password_management": True}}
+             if action in {"admin_refresh", "admin_names_save", "admin_password_save", "admin_password_delete"}:
+                 if not self._authorized(event, session, admin=True):
+                     return {"ok": False, "unauthorized": True, "message": "נדרשת כניסה מחדש למצב בדיקות."}
+                 if action == "admin_refresh":
+-                    self.store.read(fresh=True)
+-                    config = self.store.public(admin=True)
+-                    message = "הרשימה נטענה מחדש מהשמירה."
++                    config = self._admin_config()
++                    message = config.get("storage_message", "הרשימה נטענה מחדש מהשמירה.")
+                 elif action == "admin_names_save":
+                     config = self.store.update(names=event.get("names", {}))
+                     message = "שמות הקורסים נשמרו."
+diff --git a/course_practice.js b/course_practice.js
+index 062ba3e..512a47b 100644
+--- a/course_practice.js
++++ b/course_practice.js
+@@ -4,6 +4,7 @@ const CoursePractice = (() => {
+   const integer = (rng, lo, hi) => lo + Math.floor(rng() * (hi - lo + 1));
+   const fmt = value => String(Math.round((value + Number.EPSILON) * 100) / 100);
+   const step = (key, label, unit, value, formula, substitution) => ({key,label,unit,value,formula,substitution});
++  const integralBatteryIndices=[0,1,2,3,5,7,8];
+   function random(seed) {
+     let value=seed>>>0;
+     return ()=>{value+=0x6D2B79F5;let t=value;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return ((t^t>>>14)>>>0)/4294967296;};
+@@ -105,18 +106,27 @@ const CoursePractice = (() => {
+       givens:[['U',u,'V'],...r.map((value,i)=>['R'+(i+1),value,resistanceUnit])]};
+   }
+   function battery(rng, course, level, index) {
+-    if(course==='mobile'&&index>=7)return internalResistance(rng,level,index);
++    // Seven integral exercises and three fractional exercises per batch,
++    // independently of the topic split (Ah / Wh / internal resistance).
++    const whole=integralBatteryIndices.includes(index%10);
++    if(course==='mobile'&&index>=7)return internalResistance(rng,level,index,whole);
+     const energy=course==='security'&&index>=7;
+-    const current=level===0?integer(rng,1,6):pick(rng,[.2,.4,.5,.8,1.2,1.5,2.5]);
+-    const hours=level===0?integer(rng,2,8):pick(rng,[.5,.75,1.25,1.5,2.5,3.5]);
+-    const voltage=pick(rng,[6,12,24]),q=current*hours,p=voltage*current,e=p*hours;
+-    const variant=index%3,charging=index%2===0,minutes=level===2;
++    const variant=index%3,charging=index%2===0,minutes=level===2||!whole;
++    const currents=whole?Array.from({length:10},(_,i)=>i+1):[.2,.4,.5,.75,1.25,1.5,2.5];
++    const times=whole?Array.from({length:9},(_,i)=>i+2):[1.25,1.5,1.75,2.25,2.5,2.75,3.5,4.5];
++    const pairs=currents.flatMap(current=>times.map(hours=>({current,hours}))).filter(({current,hours})=>{
++      const answer=variant===0?current*hours:variant===1?hours:energy?current*hours:current;
++      const exactDisplay=Math.abs(current*hours*100-Math.round(current*hours*100))<1e-7;
++      return whole?Number.isInteger(answer)&&answer>=2&&answer<=10:exactDisplay&&!Number.isInteger(answer);
++    });
++    const {current,hours}=pick(rng,pairs);
++    const voltage=pick(rng,[6,12,24]),q=Number(fmt(current*hours)),p=Number(fmt(energy&&variant===0?current:voltage*current)),e=Number(fmt(p*hours));
+     const timeText=minutes?`${fmt(hours*60)} דקות`:`${fmt(hours)} שעות`;
+     const device=course==='security'?'מערכת מיגון':'מכשיר סלולרי';
+     let title,text,steps,givens;
+     if(energy){
+       title=charging?'אנרגיה בטעינת סוללת גיבוי':'זמן פעולה של סוללת גיבוי';
+-      if(variant===0){text=`סוללת גיבוי מזינה ${device} במתח ${voltage} וולט ובזרם קבוע של ${fmt(current)} אמפר במשך ${timeText}. מה האנרגיה שנצרכה בוואט־שעה?`;steps=[step('E','האנרגיה שנצרכה','Wh',e,'E = U × I × t',`${voltage} × ${fmt(current)} × ${fmt(hours)}`)];givens=[['U',voltage,'V'],['I',current,'A'],['t',minutes?hours*60:hours,minutes?'min':'h']];}
++      if(variant===0){text=`סוללת גיבוי מזינה ${device} בהספק קבוע של ${fmt(p)} ואט במשך ${timeText}. מה האנרגיה שנצרכה בוואט־שעה?`;steps=[step('E','האנרגיה שנצרכה','Wh',e,'E = P × t',`${fmt(p)} × ${fmt(hours)}`)];givens=[['P',p,'W'],['t',minutes?hours*60:hours,minutes?'min':'h']];}
+       if(variant===1){text=`בסוללת הגיבוי זמינות ${fmt(e)} ואט־שעה. מערכת מיגון צורכת הספק קבוע של ${fmt(p)} ואט. לכמה שעות תספיק הסוללה?`;steps=[step('t','משך הפעולה','h',hours,'t = E ÷ P',`${fmt(e)} ÷ ${fmt(p)}`)];givens=[['E',e,'Wh'],['P',p,'W']];}
+       if(variant===2){text=`סוללת גיבוי במתח ${voltage} וולט אוגרת ${fmt(e)} ואט־שעה. מה המטען שלה באמפר־שעה?`;steps=[step('Q','מטען הסוללה','Ah',q,'Q = E ÷ U',`${fmt(e)} ÷ ${voltage}`)];givens=[['E',e,'Wh'],['U',voltage,'V']];}
+     }else{
+@@ -125,17 +135,30 @@ const CoursePractice = (() => {
+       if(variant===1){text=charging?`יש להשלים לסוללה מטען של ${fmt(q)} אמפר־שעה. זרם הטעינה קבוע ושווה ל־${fmt(current)} אמפר. כמה שעות נדרשות?`:`בסוללת ${device} נשאר מטען של ${fmt(q)} אמפר־שעה. צריכת הזרם קבועה ושווה ל־${fmt(current)} אמפר. לכמה שעות יספיק המטען?`;steps=[step('t',charging?'זמן הטעינה':'זמן הפריקה','h',hours,'t = Q ÷ I',`${fmt(q)} ÷ ${fmt(current)}`)];givens=[['Q',q,'Ah'],['I',current,'A']];}
+       if(variant===2){text=`במהלך ${charging?'טעינה':'פריקה'} של סוללת ${device}, מטען של ${fmt(q)} אמפר־שעה הועבר במשך ${timeText}. מה היה הזרם הקבוע?`;steps=[step('I',charging?'זרם הטעינה':'זרם הפריקה','A',current,'I = Q ÷ t',`${fmt(q)} ÷ ${fmt(hours)}`)];givens=[['Q',q,'Ah'],['t',minutes?hours*60:hours,minutes?'min':'h']];}
+     }
+-    if(minutes&&variant!==1){steps.unshift(step('t_h','המרת זמן מדקות לשעות','h',hours,'t_h = t_min ÷ 60',`${fmt(hours*60)} ÷ 60`));}
+-    return {kind:'battery',level,index,title,text,steps,givens,unitFamily:energy?'Wh':'Ah',note:'בתרגיל מניחים זרם קבוע ומודל אידאלי ללא הפסדים.'};
++    if(minutes&&givens.some(([key,_,unit])=>key==='t'&&unit==='min')){
++      steps.unshift(step('t_h','המרת זמן מדקות לשעות','h',hours,'t_h = t_min ÷ 60',`${fmt(hours*60)} ÷ 60`));
++    }
++    if(!whole&&variant===1){
++      const wholeHours=Math.floor(hours),remainder=Math.round((hours-wholeHours)*60);
++      steps.push(step('t_minutes','הזמן הכולל בדקות','min',hours*60,'t_min = t × 60',`${fmt(hours)} × 60`));
++      steps.push(step('t_remainder',`הדקות הנותרות מעבר ל־${wholeHours} שעות שלמות`,'min',remainder,'t_remaining = t_min − t_whole × 60',`${fmt(hours*60)} − ${wholeHours} × 60`));
++      text+=` לאחר החישוב, המירו לדקות והציגו את הזמן גם בשעות ובדקות.`;
++    }
++    return {kind:'battery',schemaVersion:3,whole,level,index,title,text,steps,givens,unitFamily:energy?'Wh':'Ah',note:'בתרגיל מניחים זרם קבוע ומודל אידאלי ללא הפסדים.'};
+   }
+-  function internalResistance(rng,level,index){
+-    const ut=pick(rng,[3.8,4,4.2]),rs=pick(rng,[.04,.06,.08,.1,.12,.16,.2]),current=pick(rng,[1,1.5,2,2.5]);
++  function internalResistance(rng,level,index,whole=integralBatteryIndices.includes(index%10)){
++    const pairs=[2,3,4,5].flatMap(rs=>[2,3,4,5].filter(current=>rs*current<=10).map(current=>({rs,current})));
++    const integral=whole?pick(rng,pairs):null;
++    const ut=whole?pick(rng,[3800,4000,4200]):pick(rng,[3.8,4,4.2]);
++    const rs=whole?integral.rs:pick(rng,[.04,.06,.08,.12,.16]);
++    const current=whole?integral.current:pick(rng,[1.5,2,2.5]);
+     const du=rs*current,ul=ut-du,limit=.12;
+-    return {kind:'battery',level,index,unitFamily:'Rs',title:'התנגדות פנימית של סוללה',
+-      text:`מתח הסוללה ללא עומס הוא ${fmt(ut)} וולט. כשהסוללה מספקת זרם של ${fmt(current)} אמפר, מתח העומס שלה הוא ${fmt(ul)} וולט. חשבו את מפל המתח הפנימי ואת ההתנגדות הפנימית.`,
+-      givens:[['U_t',ut,'V'],['U_L',ul,'V'],['I',current,'A']],
+-      steps:[step('ΔU','מפל המתח על ההתנגדות הפנימית','V',du,'ΔU = U_t − U_L',`${fmt(ut)} − ${fmt(ul)}`),step('R_s','ההתנגדות הפנימית','Ω',rs,'R_s = ΔU ÷ I',`${fmt(du)} ÷ ${fmt(current)}`)],
+-      note:`לצורך התרגיל בלבד, נתון יצרן: התנגדות פנימית מרבית ${fmt(limit)} Ω. ${rs<=limit?'התוצאה עומדת בגבול הנתון.':'התוצאה חורגת מהגבול הנתון ונדרשת בדיקה לפי הוראות היצרן.'} התנגדות פנימית לבדה אינה קובעת אחוז בריאות סוללה.`,limit,rs};
++    const voltageUnit=whole?'mV':'V',resistanceUnit=whole?'mΩ':'Ω',rsOhms=whole?rs/1000:rs;
++    return {kind:'battery',schemaVersion:3,whole,level,index,unitFamily:'Rs',title:'התנגדות פנימית של סוללה',voltageUnit,resistanceUnit,
++      text:`מתח הסוללה ללא עומס הוא ${fmt(ut)} ${whole?'מיליוולט':'וולט'}. כשהסוללה מספקת זרם של ${fmt(current)} אמפר, מתח העומס שלה הוא ${fmt(ul)} ${whole?'מיליוולט':'וולט'}. חשבו את מפל המתח הפנימי ואת ההתנגדות הפנימית${whole?' במיליאוהם':''}.`,
++      givens:[['U_t',ut,voltageUnit],['U_L',ul,voltageUnit],['I',current,'A']],
++      steps:[step('ΔU','מפל המתח על ההתנגדות הפנימית',voltageUnit,du,'ΔU = U_t − U_L',`${fmt(ut)} − ${fmt(ul)}`),step('R_s','ההתנגדות הפנימית',resistanceUnit,rs,'R_s = ΔU ÷ I',`${fmt(du)} ÷ ${fmt(current)}`)],
++      note:`לצורך התרגיל בלבד, נתון יצרן: התנגדות פנימית מרבית ${fmt(whole?limit*1000:limit)} ${resistanceUnit}. ${rsOhms<=limit?'התוצאה עומדת בגבול הנתון.':'התוצאה חורגת מהגבול הנתון ונדרשת בדיקה לפי הוראות היצרן.'} התנגדות פנימית לבדה אינה קובעת אחוז בריאות סוללה.`,limit,rs,rsOhms};
+   }
+   function batch(course,kind,level,seed){
+     const rng=random(seed),result=Array.from({length:10},(_,index)=>kind==='mixed'?mixed(rng,level,index):battery(rng,course,level,index));
+@@ -144,7 +167,7 @@ const CoursePractice = (() => {
+     for(let i=result.length-1;i>0;i--){const j=Math.floor(rng()*(i+1));[result[i],result[j]]=[result[j],result[i]];}
+     return result.map(q=>({...q,cursor:0,draft:'',attempts:0,hint:false,solution:false,accepted:false,helped:false}));
+   }
+-  function mixedSVG(q,stage=0){
++  function mixedSVG(q,stage=0,showNodes=false){
+     const groups=q.diagrams[Math.max(0,Math.min(stage,q.diagrams.length-1))];
+     const ink='var(--ink)',card='var(--card)';
+     const wire=path=>`<path d="${path}" fill="none" stroke="${ink}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>`;
+@@ -152,7 +175,7 @@ const CoursePractice = (() => {
+     const symbol=(x,y,value,anchor='middle')=>{const m=/^([A-Za-z]+)_?([A-Za-z]+|\d+)$/.exec(value);return m?`<text x="${x}" y="${y}" fill="${ink}" text-anchor="${anchor}" font-size="19" font-family="Arial,sans-serif" direction="ltr">${m[1]}<tspan dy="5" font-size="13">${m[2]}</tspan><tspan dy="-5"> </tspan></text>`:text(x,y,value,anchor);};
+     const node=(x,y,resistor,vertical=false)=>`<g class="mixed-resistor" data-symbol="${resistor.symbol}" data-from="${resistor.from}" data-to="${resistor.to}"><rect x="${x-(vertical?12:38)}" y="${y-(vertical?30:12)}" width="${vertical?24:76}" height="${vertical?60:24}" fill="${card}" stroke="${ink}" stroke-width="2.5"/>${symbol(x+(vertical?29:0),y+(vertical?-4:-26),resistor.symbol,vertical?'start':'middle')}${text(x+(vertical?29:0),y+(vertical?22:43),fmt(resistor.value)+' '+q.resistanceUnit,vertical?'start':'middle')}</g>`;
+     const dot=(x,y)=>`<circle cx="${x}" cy="${y}" r="4" fill="${ink}"/>`;
+-    const junction=(x,y,label,dx=-18,dy=-13)=>`<g class="mixed-junction" data-node="${label}">${dot(x,y)}${text(x+dx,y+dy,label)}</g>`;
++    const junction=(x,y,label,dx=-18,dy=-13)=>showNodes?`<g class="mixed-junction" data-node="${label}">${dot(x,y)}${text(x+dx,y+dy,label)}</g>`:dot(x,y);
+     const source=(x,top,bottom)=>{
+       const mid=(top+bottom)/2;
+       return wire(`M${x} ${top}V${mid-13}M${x} ${mid+13}V${bottom}M${x-23} ${mid-13}H${x+23}M${x-13} ${mid+13}H${x+13}`)+text(x-32,mid-21,'+')+text(x-32,mid+30,'−')+symbol(x-46,mid-14,'U','end')+text(x-46,mid+20,fmt(q.u)+' V','end');
+@@ -199,14 +222,15 @@ const CoursePractice = (() => {
+     const ink='var(--ink)',current='var(--phone-current,#b52e2e)',voltage='var(--phone-voltage,#116e65)';
+     const symbolText=(x,y,base,sub,suffix='',color=ink)=>`<text x="${x}" y="${y}" fill="${color}" font-family="Arial,sans-serif" font-size="17" text-anchor="start" direction="ltr">${base}<tspan dy="5" font-size="12">${sub}</tspan><tspan dy="-5" font-size="17">${suffix}</tspan></text>`;
+     const text=(x,y,value,color=ink,size=17)=>`<text x="${x}" y="${y}" fill="${color}" font-size="${size}" font-family="Arial,sans-serif" text-anchor="middle" direction="ltr">${value}</text>`;
+-    const rs=showResistance?`${fmt(q.rs)} Ω`:'?',drop=showDrop?`${fmt(given.U_t-given.U_L)} V`:'?';
++    const voltageUnit=q.voltageUnit??'V',resistanceUnit=q.resistanceUnit??'Ω';
++    const rs=showResistance?`${fmt(q.rs)} ${resistanceUnit}`:'?',drop=showDrop?`${fmt(given.U_t-given.U_L)} ${voltageUnit}`:'?';
+     return `<svg class="phone-battery-svg" viewBox="0 0 640 345" role="img" aria-label="מודל סוללת טלפון: מתח ללא עומס, התנגדות פנימית בטור, ועומס המייצג את מעגלי הטלפון">
+       <rect x="30" y="65" width="270" height="242" rx="17" fill="none" stroke="var(--line)" stroke-dasharray="6 5"/>
+       ${text(177,30,'סוללה',ink,19)}
+       <path d="M100 144V90H205M275 90H515V145M515 215V280H100V196" fill="none" stroke="${ink}" stroke-width="2.5"/>
+       <circle cx="100" cy="170" r="26" fill="var(--card)" stroke="${ink}" stroke-width="2.5"/>
+       ${text(100,164,'+',ink,22)}${text(100,187,'−',ink,22)}
+-      ${symbolText(144,178,'U','t',` = ${fmt(given.U_t)} V`)}
++      ${symbolText(144,178,'U','t',` = ${fmt(given.U_t)} ${voltageUnit}`)}
+       <rect x="205" y="77" width="70" height="26" fill="var(--card)" stroke="${ink}" stroke-width="2.5"/>
+       ${symbolText(215,130,'R','s',` = ${rs}`)}
+       <path d="M205 61H275M205 61l7 -4M205 61l7 4M275 61l-7 -4M275 61l-7 4" fill="none" stroke="${voltage}" stroke-width="2"/>
+@@ -215,7 +239,7 @@ const CoursePractice = (() => {
+       ${text(365,72,`I = ${fmt(given.I)} A`,current,16)}
+       <circle cx="390" cy="90" r="4" fill="${ink}"/><circle cx="390" cy="280" r="4" fill="${ink}"/>
+       <path d="M391 112V258M391 112l-5 9M391 112l5 9M391 258l-5 -9M391 258l5 -9" fill="none" stroke="${voltage}" stroke-width="2"/>
+-      ${symbolText(343,187,'U','L','',voltage)}${text(354,211,`${fmt(given.U_L)} V`,voltage,16)}
++      ${symbolText(343,187,'U','L','',voltage)}${text(354,211,`${fmt(given.U_L)} ${voltageUnit}`,voltage,16)}
+       <rect x="437" y="45" width="168" height="272" rx="24" fill="none" stroke="${ink}" stroke-width="2.5"/>
+       <path d="M490 60H550M495 302H545" stroke="${ink}" stroke-width="3"/>
+       <rect x="500" y="145" width="30" height="70" fill="var(--card)" stroke="${ink}" stroke-width="2.5"/>
+diff --git a/courses.js b/courses.js
+index 325e911..60fa565 100644
+--- a/courses.js
++++ b/courses.js
+@@ -66,7 +66,7 @@ const CourseApp = window.CourseApp = (() => {
+   function saveExtra(){if(!qaActive)put(extKey(),extraState);}
+   function currentExtra(){
+     const key=extra+':'+extraLevel;
+-    if(!extraState[key]||!Array.isArray(extraState[key].questions)||extraState[key].questions.length!==10||extra==='mixed'&&extraState[key].questions.some(q=>q.schemaVersion!==2)){
++    if(!extraState[key]||!Array.isArray(extraState[key].questions)||extraState[key].questions.length!==10||extraState[key].questions.some(q=>q.schemaVersion!==(extra==='mixed'?2:3))){
+       const seed=crypto.getRandomValues(new Uint32Array(1))[0];
+       extraState[key]={seed,index:0,questions:CoursePractice.batch(selected,extra,extraLevel,seed)};
+     }
+@@ -107,21 +107,21 @@ const CourseApp = window.CourseApp = (() => {
+   function nodeGuide(q){
+     return `<div class="mixed-node-guide"><p><strong>סימון צמתים:</strong> מעבר לכל נגד מגיעים לצומת אחרת. לאורך מוליך רציף נשארת אותה אות. ענפים במקביל מחוברים לאותן שתי צמתים.</p><details><summary>מפת החיבורים לפי הצמתים</summary><div class="mixed-node-map">${q.resistorNodes.map((nodes,i)=>`<span>${math('R'+(i+1))}: <bdi>${nodes.from} ↔ ${nodes.to}</bdi></span>`).join('')}</div></details></div>`;
+   }
+-  function mixedPreview(q,stage=0){return `<button type="button" class="diagram-preview" data-open-mixed="${stage}" aria-label="הגדלת סכמה ${stage===0?'מקורית':'לאחר צמצום '+stage}">${CoursePractice.mixedSVG(q,stage)}<span class="diagram-open-label">הגדלת הסכמה ⤢</span></button>`;}
++  function mixedPreview(q,stage=0,showNodes=false){return `<button type="button" class="diagram-preview" data-open-mixed="${stage}" data-mixed-nodes="${showNodes}" aria-label="הגדלת סכמה ${stage===0?'מקורית':'לאחר צמצום '+stage}">${CoursePractice.mixedSVG(q,stage,showNodes)}<span class="diagram-open-label">הגדלת הסכמה ⤢</span></button>`;}
+   function openMixedDiagram(stage){
+     const {q}=currentExtra();if(q.kind!=='mixed')return;
+     diagramReturnToFormulas=false;diagramReturnFieldId=null;diagramZoom=1;diagramBaseWidth=0;
+     $('diagram-dialog').classList.remove('dark-diagram');
+     $('diagram-context').innerHTML=`<h3>${escapeHTML(q.title)}</h3><p>${stage===0?'המעגל המקורי':escapeHTML(q.reductions[stage-1].title)}</p>`;
+-    $('diagram-canvas').innerHTML=CoursePractice.mixedSVG(q,stage);
++    $('diagram-canvas').innerHTML=CoursePractice.mixedSVG(q,stage,q.solution);
+     $('diagram-canvas').style.width='100%';openDialog('diagram-dialog');zoomDiagram('reset');
+   }
+   function renderExtra(){
+     const {state,q}=currentExtra(),s=q.steps[q.cursor],done=!s,levelCount=selected==='mobile'?2:3;
+-    const levelsHTML=Array.from({length:levelCount},(_,i)=>`<button class="level" data-extra-level="${i}" aria-pressed="${extraLevel===i}">רמה ${letters[i]}<small>${extra==='mixed'?DC.levelNames[i]:i===0?'חישובים בסיסיים':i===1?'מספרים עשרוניים':'המרת דקות לשעות'}</small></button>`).join('');
++    const levelsHTML=Array.from({length:levelCount},(_,i)=>`<button class="level" data-extra-level="${i}" aria-pressed="${extraLevel===i}">רמה ${letters[i]}<small>${extra==='mixed'?DC.levelNames[i]:i===0?'חישובים בסיסיים':i===1?'חישובים והמרות זמן':'המרת דקות לשעות'}</small></button>`).join('');
+     const qaPicker=qaActive?`<label class="qa-extra-picker" for="qa-extra-exercise">תרגיל לבדיקה<select id="qa-extra-exercise">${state.questions.map((item,i)=>`<option value="${i}" ${state.index===i?'selected':''}>${i+1}. ${escapeHTML(item.title)}</option>`).join('')}</select></label>`:'';
+-    const picture=q.unitFamily==='Rs'?`<figure class="diagram phone-schematic">${CoursePractice.phoneBatterySVG(q)}<figcaption>מודל שקול של סוללת טלפון. ההתנגדות הפנימית מחוברת בטור לעומס של מעגלי הטלפון.</figcaption></figure>`:extra==='mixed'?`<figure class="diagram mixed-schematic">${mixedPreview(q)}<figcaption>${escapeHTML(q.caption)}</figcaption></figure>${nodeGuide(q)}`:'';
+-    const reduction=extra==='mixed'?`<div class="circuit-reductions"><h3>צמצום המעגל לפי הצמתים</h3>${q.reductions.map((item,i)=>`<section class="circuit-reduction"><h4>${i+1}. ${escapeHTML(item.title)}</h4>${solutionRows(q,item.steps)}<figure class="diagram">${mixedPreview(q,i+1)}</figure></section>`).join('')}<p class="small muted">אותיות הצמתים נשמרות. צומת פנימית שנבלעה בנגד שקול אינה מסומנת בסכמה המצומצמת.</p></div>`:'';
++    const picture=q.unitFamily==='Rs'?`<figure class="diagram phone-schematic">${CoursePractice.phoneBatterySVG(q)}<figcaption>מודל שקול של סוללת טלפון. ההתנגדות הפנימית מחוברת בטור לעומס של מעגלי הטלפון.</figcaption></figure>`:extra==='mixed'?`<figure class="diagram mixed-schematic">${mixedPreview(q,0,q.solution)}<figcaption>${escapeHTML(q.caption)}</figcaption></figure>`:'';
++    const reduction=extra==='mixed'?`${nodeGuide(q)}<div class="circuit-reductions"><h3>צמצום המעגל לפי הצמתים</h3>${q.reductions.map((item,i)=>`<section class="circuit-reduction"><h4>${i+1}. ${escapeHTML(item.title)}</h4>${solutionRows(q,item.steps)}<figure class="diagram">${mixedPreview(q,i+1,true)}</figure></section>`).join('')}<p class="small muted">אותיות הצמתים נשמרות. צומת פנימית שנבלעה בנגד שקול אינה מסומנת בסכמה המצומצמת.</p></div>`:'';
+     const remainingSteps=extra==='mixed'?q.steps.slice(q.reductions.reduce((sum,item)=>sum+item.steps.length,0)):q.steps;
+     const answer=done?`<div class="complete-badge">✓ התרגיל הושלם</div><h2>כל החישובים הושלמו</h2><button class="btn" data-extra-action="next">${state.index===9?'סבב חדש':'לתרגיל הבא ←'}</button>`:`<div class="task-kicker">שלב ${q.cursor+1} מתוך ${q.steps.length}</div><h2>${escapeHTML(s.label)}</h2><form id="extra-answer-form"><label for="extra-answer">התשובה ביחידות ${escapeHTML(s.unit)}</label><div class="answer-row"><div class="answer-wrap"><input class="numeric${q.accepted?' answer-correct':q.attempts?' answer-incorrect':''}" id="extra-answer" inputmode="decimal" autocomplete="off" maxlength="24" value="${escapeHTML(q.draft??'')}" ${q.accepted?'readonly':''}><span class="unit">${escapeHTML(s.unit)}</span></div><button class="btn" type="${q.accepted?'button':'submit'}" ${q.accepted?'data-extra-action="step"':''}>${q.accepted?'הבא ←':'בדיקת תשובה'}</button></div></form><p class="small muted">אפשר לעגל לשתי ספרות אחרי הנקודה.</p>`;
+     $('course-panel').innerHTML=`<div class="course-head"><h2>${extra==='mixed'?'מעגל מעורב מורכב':'חישובי סוללות'}</h2><div class="levels">${levelsHTML}</div></div>${qaPicker}<div class="progress-row"><span>תרגיל ${state.index+1} מתוך 10</span><span>רמה ${letters[extraLevel]}</span></div><div class="exercise-grid"><section class="card"><h3>${escapeHTML(q.title)}</h3>${q.text?`<p>${escapeHTML(q.text)}</p>`:''}<div class="givens">${statementRows(q)}</div>${picture}${q.unitFamily==='Rs'?notationKey():''}${q.kind==='battery'&&q.unitFamily!=='Rs'?`<p class="small muted">${escapeHTML(q.note)}</p>`:''}</section><section class="card">${answer}<div class="answer-tools"><button class="btn secondary tiny" data-extra-action="hint">רמז</button><button class="btn secondary tiny" data-extra-action="solution">${q.solution?'סגירת פתרון מלא':'פתרון מלא'}</button><button class="btn secondary tiny" data-open-calculator>מחשבון</button><button class="btn secondary tiny" data-extra-action="new">תרגילים חדשים</button></div>${status(extraMessage,extraError)}${q.hint&&s?`<div class="hint">השתמשו בנוסחה ${math(s.formula)}</div>`:''}${q.solution?`<div class="solution"><div class="dialog-head"><h3>פתרון מלא</h3><button class="close" data-extra-action="solution" aria-label="סגירת פתרון מלא">×</button></div>${reduction}${solutionRows(q,remainingSteps)}</div>`:''}${done?`<div class="completed-steps">${solutionRows(q)}</div>`:''}${(done||q.solution)&&q.unitFamily==='Rs'?`<p class="small muted">${escapeHTML(q.note)}</p>`:''}</section></div>`;
+@@ -227,7 +227,7 @@ const CourseApp = window.CourseApp = (() => {
+     finally{button.disabled=false;}
+   }
+   function openQATheory(){
+-    if(!qaActive||examBusy||adminBusy)return;
++    if(!qaActive||examBusy||adminBusy||adminConfig?.unavailable)return;
+     if(selected!=='hvac')switchCourse('hvac');
+     screen='theory';extra=null;adminExpanded=false;examMessage='';render();
+     if(!theory.current)theoryRequest('new');
+@@ -251,6 +251,10 @@ const CourseApp = window.CourseApp = (() => {
+     if(!qaActive||!adminConfig)return;
+     $('course-admin')?.remove();
+     const value=adminDraft??adminConfig,container=document.createElement('section');container.id='course-admin';container.className='qa-banner';
++    if(adminConfig.unavailable){
++      container.innerHTML=`<div class="qa-course-switch"><label for="qa-course-switch">מעבר מהיר בין קורסים<select id="qa-course-switch">${Object.entries(config.names).map(([id,name])=>`<option value="${id}" ${selected===id?'selected':''}>${escapeHTML(name)}</option>`).join('')}</select></label><button type="button" class="btn" data-course-action="qa-theory" disabled>שאלות עיוניות — החיבור לשמירה אינו זמין</button></div><h3>הכניסה ל־QA הצליחה; החיבור לשמירה דורש תיקון</h3><p class="feedback error admin-storage-status" role="alert">${escapeHTML(adminConfig.storage_message)}</p><p>אפשר לבדוק את התרגילים ולעבור בין הקורסים. רשימת הסיסמאות ושמות הקורסים לא נטענו; ניהול ומבחנים עיוניים יהיו זמינים לאחר חידוש החיבור.</p>${status(adminMessage,adminError)}<button type="button" class="btn secondary" data-course-action="admin-refresh" ${adminBusy?'disabled':''}>בדיקה מחדש של החיבור לשמירה</button>`;
++      $('qa-panel').append(container);return;
++    }
+     const savedCount=adminConfig.passwords.length,disabled=adminBusy?'disabled':'';
+     const passwordRows=value.passwords.map((row,i)=>{
+       const saved=adminConfig.passwords.find(item=>item.id===row.id);
+@@ -279,7 +283,7 @@ const CourseApp = window.CourseApp = (() => {
+           return edited&&row.id!==changedId?{...row,...edited}:row;
+         }).concat(pendingRows)};
+       }
+-      deletePasswordId=null;applyConfig(reply.config);adminMessage=reply.message;
++      deletePasswordId=null;applyConfig(reply.config);adminMessage=reply.message;adminError=!!reply.config.unavailable;
+     }catch(error){if(qaActive&&token===adminToken){adminMessage=error.message;adminError=true;}}
+     finally{adminBusy=false;if(qaActive&&token===adminToken){renderAdmin();resizeFrame();}}
+   }
+diff --git a/package.json b/package.json
+index bcc096c..f048adc 100644
+--- a/package.json
++++ b/package.json
+@@ -3,7 +3,7 @@
+   "private": true,
+   "scripts": {
+     "dev": "node scripts/dev.mjs",
+-    "test": "python3 -m unittest discover -s tests && node tests/practice.test.cjs && node tests/frontend.test.cjs"
++    "test": "python3 -m unittest discover -s tests && node tests/practice.test.cjs && node tests/frontend.test.cjs && DC_TEST_STORAGE_FAILURE=1 node tests/frontend.test.cjs"
+   },
+   "devDependencies": {
+     "jsdom": "^30.1.3"
+diff --git a/tests/course_bridge.py b/tests/course_bridge.py
+index 3b04861..fe0655e 100644
+--- a/tests/course_bridge.py
++++ b/tests/course_bridge.py
+@@ -1,5 +1,6 @@
+ """Test-only JSON-lines bridge to the real course service (no HTTP/browser)."""
+ import json
++import os
+ import sys
+ import tempfile
+ from pathlib import Path
+@@ -8,9 +9,14 @@ from course_backend import ConfigStore,CourseService
+ root=Path(__file__).resolve().parents[1]
+ store=ConfigStore(Path(tempfile.mkdtemp())/'config.json')
+ store.save(store.public()['names'],[{'label':'unit tests','password':'test-only','expires_on':'','active':True}])
++if os.environ.get('DC_TEST_STORAGE_FAILURE')=='1':
++ store.repository='OBE-26/electricity-access'
++ store.token='הדבק כאן את הטוקן השני'
+ service=CourseService(store,root/'data/questions.json');session={}
+ for line in sys.stdin:
+  event=json.loads(line)
+- if event.get('action')=='config':reply={'ok':True,'config':store.public()}
++ if event.get('action')=='test_storage_recover':
++  store.repository='';reply={'ok':True}
++ elif event.get('action')=='config':reply={'ok':True,'config':store.public()}
+  else:reply=service.handle(event,session)
+  print(json.dumps({'request_id':event.get('id'),**reply},ensure_ascii=False),flush=True)
+diff --git a/tests/frontend.test.cjs b/tests/frontend.test.cjs
+index cfc2604..6ce9622 100644
+--- a/tests/frontend.test.cjs
++++ b/tests/frontend.test.cjs
+@@ -27,6 +27,32 @@ const submit=selector=>d.querySelector(selector).dispatchEvent(new w.Event('subm
+ const waitFor=async test=>{for(let n=0;n<100;n++){if(test())return;await new Promise(resolve=>setTimeout(resolve,20));}throw Error('Timed out waiting for state');};
+ (async()=>{
+  try{
++  if(process.env.DC_TEST_STORAGE_FAILURE==='1'){
++   const saved=w.localStorage.getItem('dc.basics.personal.v1');
++   click('[data-open-qa]');input('#qa-password','wrong');submit('#qa-login-form');
++   await waitFor(()=>d.querySelector('#qa-login-error').textContent.includes('שגויה'));
++   assert.equal(d.body.classList.contains('qa-mode'),false);
++   input('#qa-password','210592');submit('#qa-login-form');
++   await waitFor(()=>d.querySelector('.admin-storage-status'));
++   assert.equal(d.body.classList.contains('qa-mode'),true,'Valid admin can use QA during storage failure');
++   assert.ok(d.querySelector('.admin-storage-status').textContent.includes('storage_token'));
++   assert.equal(d.querySelectorAll('[data-password-form],.admin-empty-passwords').length,0,'Never misrepresent unavailable passwords as empty');
++   assert.equal(d.querySelector('[data-course-action="qa-theory"]').disabled,true);
++   change('#qa-course-switch','security');click('[data-extra-tab="mixed"]');
++   assert.ok(d.querySelector('#extra-answer'),'Practice QA works without storage');
++   assert.equal(d.querySelectorAll('.mixed-junction').length,0);
++   click('[data-course-action="admin-refresh"]');
++   await waitFor(()=>!d.querySelector('[data-course-action="admin-refresh"]').disabled);
++   assert.ok(d.querySelector('.admin-storage-status'));
++   child.stdin.write(JSON.stringify({action:'test_storage_recover'})+'\n');
++   click('[data-course-action="admin-refresh"]');
++   await waitFor(()=>d.querySelector('[data-password-form="0"]'));
++   assert.equal(d.querySelector('.admin-password-text bdi').textContent,'test-only','Refresh restores existing passwords after recovery');
++   click('[data-exit-qa]');assert.equal(w.localStorage.getItem('dc.basics.personal.v1'),saved);
++   assert.equal(errors.length,0,errors.join('\n'));
++   console.log('Frontend storage outage: valid login, practice QA, blocked management, actionable message and recovery passed');
++   return;
++  }
+   assert.equal(d.querySelectorAll('[data-select-course]').length,3);
+   for(const id of ['hvac','security','mobile'])assert.ok(d.querySelector(`[data-select-course="${id}"] [data-course-icon="${id}"]`),'Distinct course icon');
+   assert.equal(d.querySelector('#profile-dialog').open,false,'Existing terms approval should be reused');
+@@ -70,7 +96,10 @@ const waitFor=async test=>{for(let n=0;n<100;n++){if(test())return;await new Pro
+   click('[data-select-course="security"]');
+   assert.ok(d.querySelector('#course-title [data-course-icon="security"]'));
+   assert.equal(w.testState.questions().ohm.length,3);
+-  click('[data-extra-tab="mixed"]');click('[data-extra-action="solution"]');
++  click('[data-extra-tab="mixed"]');
++  assert.equal(d.querySelectorAll('.mixed-junction,.mixed-node-guide').length,0,'No node markings or guide in the question');
++  click('[data-open-mixed="0"]');assert.equal(d.querySelectorAll('#diagram-canvas .mixed-junction').length,0,'Question zoom has no node markings');click('[data-close-dialog="diagram-dialog"]');
++  click('[data-extra-action="solution"]');
+   assert.equal(d.querySelectorAll('#course-panel svg').length,3,'Original and two reduction schematics');
+   assert.ok(d.querySelector('#course-panel msub'));
+   assert.ok(d.querySelector('.mixed-node-map').textContent.includes('↔'));
+@@ -81,6 +110,8 @@ const waitFor=async test=>{for(let n=0;n<100;n++){if(test())return;await new Pro
+   click('[data-diagram-zoom="in"]');assert.equal(d.querySelector('#diagram-zoom-label').textContent,'150%');
+   click('[data-close-dialog="diagram-dialog"]');
+   click('[data-open-mixed="2"]');assert.equal(d.querySelector('#diagram-canvas svg').dataset.stage,'2');click('[data-close-dialog="diagram-dialog"]');
++  click('[data-extra-action="solution"]');assert.equal(d.querySelectorAll('#course-panel .mixed-junction,#course-panel .mixed-node-guide').length,0,'Closing the solution removes node markings');
++  click('[data-open-mixed="0"]');assert.equal(d.querySelectorAll('#diagram-canvas .mixed-junction').length,0,'Reopening question zoom removes the previous solution markings');click('[data-close-dialog="diagram-dialog"]');
+   click('[data-extra-tab="battery"]');assert.ok(d.querySelector('#extra-answer'));
+   click('[data-extra-tab="formulas"]');assert.ok(d.querySelector('.course-formula-page'));assert.ok(d.querySelector('.course-formula-page').textContent.includes('אנרגיה בסוללה'));
+   click('[data-course-action="home"]');click('[data-select-course="mobile"]');
+@@ -129,10 +160,10 @@ const waitFor=async test=>{for(let n=0;n<100;n++){if(test())return;await new Pro
+   click('[data-extra-tab="mixed"]');
+   for(const option of [...d.querySelectorAll('#qa-extra-exercise option')]){
+    change('#qa-extra-exercise',option.value);
++   if(!d.querySelector('.circuit-reductions'))click('[data-extra-action="solution"]');
+    const original=d.querySelector('.mixed-schematic svg');
+    assert.ok(original.querySelector('[data-node="A"]'));
+    for(const node of original.querySelectorAll('.mixed-resistor'))assert.notEqual(node.dataset.from,node.dataset.to);
+-   if(!d.querySelector('.circuit-reductions'))click('[data-extra-action="solution"]');
+    const reductions=[...d.querySelectorAll('.circuit-reductions svg')];assert.equal(reductions.length,2);
+    const last=reductions.at(-1).querySelector('.mixed-resistor');assert.equal(last.dataset.symbol,'R_T');
+    assert.equal(last.dataset.from,'A');
+diff --git a/tests/practice.test.cjs b/tests/practice.test.cjs
+index c313386..664e7d9 100644
+--- a/tests/practice.test.cjs
++++ b/tests/practice.test.cjs
+@@ -69,7 +69,8 @@ for(let seed=1;seed<=60;seed++){
+    }
+    q.diagrams.forEach((diagram,stage)=>{
+     close(solve(diagram.flat(2)).resistance,q.rt,'Each reduction preserves terminal resistance');
+-    const svg=practice.mixedSVG(q,stage);
++    assert.ok(!practice.mixedSVG(q,stage).includes('data-node='),'Question schematics have no node markings');
++    const svg=practice.mixedSVG(q,stage,true);
+     for(const node of new Set(diagram.flat(2).flatMap(e=>[e.from,e.to])))assert.ok(svg.includes(`data-node="${node}"`),'Display every surviving node '+node);
+     for(const e of diagram.flat(2))assert.ok(svg.includes(`data-symbol="${e.symbol}" data-from="${e.from}" data-to="${e.to}"`));
+    });
+@@ -85,6 +86,29 @@ for(let seed=1;seed<=60;seed++){
+   const mobile=practice.batch('mobile','battery',level,seed);
+   assert.equal(mobile.filter(q=>q.unitFamily==='Wh').length,0);
+   assert.equal(mobile.filter(q=>q.unitFamily==='Rs').length,3);
++  for(const batch of [security,mobile]){
++   const integral=batch.filter(q=>q.givens.every(([,value])=>Number.isInteger(value))&&q.steps.every(s=>Number.isInteger(s.value)));
++   assert.equal(integral.length,7,'Exactly 70% integral questions in every batch and level');
++   assert.ok(integral.every(q=>q.steps.every(s=>s.value>=2&&s.value<=10)),'Integral answers are 2–10');
++   assert.ok(batch.filter(q=>q.steps.some(s=>s.value===1)).length<=2,'At most 20% with answer 1');
++   const fractional=batch.filter(q=>!integral.includes(q));
++   assert.equal(fractional.length,3);
++   assert.ok(fractional.every(q=>q.steps.some(s=>!Number.isInteger(s.value))),'Every fractional question has a fractional answer');
++   assert.ok(fractional.some(q=>q.steps.some(s=>s.key==='t_h')),'Minutes to fractional hours');
++   assert.ok(fractional.some(q=>q.steps.some(s=>s.key==='t_minutes')&&q.steps.some(s=>s.key==='t_remainder')),'Fractional hours to hours and minutes');
++   for(const q of batch){
++    assert.equal(q.schemaVersion,3);
++    const given=Object.fromEntries(q.givens.map(([key,value,unit])=>[key,unit==='min'?value/60:value]));
++    const primary=q.steps.find(s=>['Q','I','t','E','R_s'].includes(s.key));
++    if(q.unitFamily==='Rs'){
++     const drop=given.U_t-given.U_L;close(q.steps[0].value,drop);close(primary.value,drop/given.I);
++     assert.equal(q.steps[1].unit,q.givens[0][2]==='mV'?'mΩ':'Ω');
++    }else{
++     const expected={Q:()=>given.E!==undefined?given.E/given.U:given.I*given.t,I:()=>given.Q/given.t,t:()=>given.E!==undefined?given.E/given.P:given.Q/given.I,E:()=>given.P*given.t};
++     close(primary.value,expected[primary.key](),'Solve from the displayed givens, including time conversion');
++    }
++   }
++  }
+   for(const q of [...security,...mobile])assert.ok(q.steps.every(s=>Number.isFinite(s.value)&&s.value>0));
+   for(const q of mobile.filter(q=>q.unitFamily==='Rs')){const svg=practice.phoneBatterySVG(q);assert.ok(svg.includes('phone-battery-svg'));assert.ok(svg.includes('מעגלי הטלפון'));assert.ok(svg.includes(' = ?'));assert.ok(svg.includes('dy="5"'));}
+  }
+diff --git a/tests/test_courses.py b/tests/test_courses.py
+index d67d84b..b7ee3be 100644
+--- a/tests/test_courses.py
++++ b/tests/test_courses.py
+@@ -3,6 +3,8 @@ import json
+ import random
+ import tempfile
+ import unittest
++import urllib.error
++from unittest.mock import patch
+ from datetime import date
+ from pathlib import Path
+ from course_backend import ConfigStore, CourseService, code_active, password_hash, password_matches, remap_choice_references, select_questions
+@@ -15,6 +17,40 @@ class CoursesTest(unittest.TestCase):
+   self.service=CourseService(self.store,ROOT/'data/questions.json')
+   self.session={}
+  def tearDown(self):self.temp.cleanup()
++ def test_qa_login_is_independent_of_storage_and_recovers(self):
++  self.store.save(self.store.public()['names'],[{'label':'preserved','password':'sample-pass','expires_on':'','active':True}])
++  original=self.store.path.read_bytes()
++  self.store.repository='OBE-26/electricity-access'
++  self.store.token='הדבק כאן את הטוקן השני'
++  wrong=self.service.handle({'action':'admin_login','password':'wrong'},self.session)
++  self.assertFalse(wrong['ok']);self.assertNotIn('course_admin',self.session)
++  with patch.object(self.store,'_request') as network:
++   login=self.service.handle({'action':'admin_login','password':'210592'},self.session)
++   self.assertTrue(login['ok']);self.assertTrue(login['config']['unavailable'])
++   self.assertIn('storage_token',login['config']['storage_message'])
++   self.assertNotIn('passwords',login['config'],'An outage is not an empty password list')
++   network.assert_not_called()
++   token=login['token']
++   refresh=self.service.handle({'action':'admin_refresh','token':token},self.session)
++   self.assertTrue(refresh['config']['unavailable'])
++   denied=self.service.handle({'action':'admin_password_save','token':token,'password':{'label':'new','password':'new-code','active':True}},self.session)
++   self.assertFalse(denied['ok'])
++  self.assertEqual(original,self.store.path.read_bytes(),'An outage must not overwrite existing access settings')
++  self.store.repository=''
++  refreshed=self.service.handle({'action':'admin_refresh','token':token},self.session)
++  self.assertTrue(refreshed['ok']);self.assertEqual(refreshed['config']['passwords'][0]['label'],'preserved')
++  exam=self.service.handle({'action':'admin_exam_new','token':token},self.session)
++  self.assertTrue(exam['ok']);self.assertTrue(exam['qa'])
++  self.assertTrue(self.service.handle({'action':'admin_logout','token':token},self.session)['ok'])
++ def test_qa_storage_errors_are_actionable_and_do_not_leak_credentials(self):
++  for failure in (urllib.error.HTTPError('https://api.github.com/',code,'bad',{},None) for code in (401,403,404)):
++   with self.subTest(code=failure.code),patch.object(self.store,'read',side_effect=failure):
++    login=self.service.handle({'action':'admin_login','password':'210592'}, {})
++    self.assertTrue(login['ok']);self.assertTrue(login['config']['unavailable'])
++    self.assertIn('Contents',login['config']['storage_message'])
++  with patch.object(self.store,'read',side_effect=urllib.error.URLError('offline')):
++   login=self.service.handle({'action':'admin_login','password':'210592'}, {})
++   self.assertTrue(login['ok']);self.assertIn('אינו זמין',login['config']['storage_message'])
+  def test_bank_and_requested_corrections(self):
+   self.assertEqual(len(self.service.pool),193)
+   self.assertEqual(self.service.by_id['a-001']['correct_choice_id'],'a-001-3')

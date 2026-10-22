@@ -27,6 +27,32 @@ const submit=selector=>d.querySelector(selector).dispatchEvent(new w.Event('subm
 const waitFor=async test=>{for(let n=0;n<100;n++){if(test())return;await new Promise(resolve=>setTimeout(resolve,20));}throw Error('Timed out waiting for state');};
 (async()=>{
  try{
+  if(process.env.DC_TEST_STORAGE_FAILURE==='1'){
+   const saved=w.localStorage.getItem('dc.basics.personal.v1');
+   click('[data-open-qa]');input('#qa-password','wrong');submit('#qa-login-form');
+   await waitFor(()=>d.querySelector('#qa-login-error').textContent.includes('שגויה'));
+   assert.equal(d.body.classList.contains('qa-mode'),false);
+   input('#qa-password','210592');submit('#qa-login-form');
+   await waitFor(()=>d.querySelector('.admin-storage-status'));
+   assert.equal(d.body.classList.contains('qa-mode'),true,'Valid admin can use QA during storage failure');
+   assert.ok(d.querySelector('.admin-storage-status').textContent.includes('storage_token'));
+   assert.equal(d.querySelectorAll('[data-password-form],.admin-empty-passwords').length,0,'Never misrepresent unavailable passwords as empty');
+   assert.equal(d.querySelector('[data-course-action="qa-theory"]').disabled,true);
+   change('#qa-course-switch','security');click('[data-extra-tab="mixed"]');
+   assert.ok(d.querySelector('#extra-answer'),'Practice QA works without storage');
+   assert.equal(d.querySelectorAll('.mixed-junction').length,0);
+   click('[data-course-action="admin-refresh"]');
+   await waitFor(()=>!d.querySelector('[data-course-action="admin-refresh"]').disabled);
+   assert.ok(d.querySelector('.admin-storage-status'));
+   child.stdin.write(JSON.stringify({action:'test_storage_recover'})+'\n');
+   click('[data-course-action="admin-refresh"]');
+   await waitFor(()=>d.querySelector('[data-password-form="0"]'));
+   assert.equal(d.querySelector('.admin-password-text bdi').textContent,'test-only','Refresh restores existing passwords after recovery');
+   click('[data-exit-qa]');assert.equal(w.localStorage.getItem('dc.basics.personal.v1'),saved);
+   assert.equal(errors.length,0,errors.join('\n'));
+   console.log('Frontend storage outage: valid login, practice QA, blocked management, actionable message and recovery passed');
+   return;
+  }
   assert.equal(d.querySelectorAll('[data-select-course]').length,3);
   for(const id of ['hvac','security','mobile'])assert.ok(d.querySelector(`[data-select-course="${id}"] [data-course-icon="${id}"]`),'Distinct course icon');
   assert.equal(d.querySelector('#profile-dialog').open,false,'Existing terms approval should be reused');
@@ -70,7 +96,10 @@ const waitFor=async test=>{for(let n=0;n<100;n++){if(test())return;await new Pro
   click('[data-select-course="security"]');
   assert.ok(d.querySelector('#course-title [data-course-icon="security"]'));
   assert.equal(w.testState.questions().ohm.length,3);
-  click('[data-extra-tab="mixed"]');click('[data-extra-action="solution"]');
+  click('[data-extra-tab="mixed"]');
+  assert.equal(d.querySelectorAll('.mixed-junction,.mixed-node-guide').length,0,'No node markings or guide in the question');
+  click('[data-open-mixed="0"]');assert.equal(d.querySelectorAll('#diagram-canvas .mixed-junction').length,0,'Question zoom has no node markings');click('[data-close-dialog="diagram-dialog"]');
+  click('[data-extra-action="solution"]');
   assert.equal(d.querySelectorAll('#course-panel svg').length,3,'Original and two reduction schematics');
   assert.ok(d.querySelector('#course-panel msub'));
   assert.ok(d.querySelector('.mixed-node-map').textContent.includes('↔'));
@@ -81,6 +110,8 @@ const waitFor=async test=>{for(let n=0;n<100;n++){if(test())return;await new Pro
   click('[data-diagram-zoom="in"]');assert.equal(d.querySelector('#diagram-zoom-label').textContent,'150%');
   click('[data-close-dialog="diagram-dialog"]');
   click('[data-open-mixed="2"]');assert.equal(d.querySelector('#diagram-canvas svg').dataset.stage,'2');click('[data-close-dialog="diagram-dialog"]');
+  click('[data-extra-action="solution"]');assert.equal(d.querySelectorAll('#course-panel .mixed-junction,#course-panel .mixed-node-guide').length,0,'Closing the solution removes node markings');
+  click('[data-open-mixed="0"]');assert.equal(d.querySelectorAll('#diagram-canvas .mixed-junction').length,0,'Reopening question zoom removes the previous solution markings');click('[data-close-dialog="diagram-dialog"]');
   click('[data-extra-tab="battery"]');assert.ok(d.querySelector('#extra-answer'));
   click('[data-extra-tab="formulas"]');assert.ok(d.querySelector('.course-formula-page'));assert.ok(d.querySelector('.course-formula-page').textContent.includes('אנרגיה בסוללה'));
   click('[data-course-action="home"]');click('[data-select-course="mobile"]');
@@ -129,10 +160,10 @@ const waitFor=async test=>{for(let n=0;n<100;n++){if(test())return;await new Pro
   click('[data-extra-tab="mixed"]');
   for(const option of [...d.querySelectorAll('#qa-extra-exercise option')]){
    change('#qa-extra-exercise',option.value);
+   if(!d.querySelector('.circuit-reductions'))click('[data-extra-action="solution"]');
    const original=d.querySelector('.mixed-schematic svg');
    assert.ok(original.querySelector('[data-node="A"]'));
    for(const node of original.querySelectorAll('.mixed-resistor'))assert.notEqual(node.dataset.from,node.dataset.to);
-   if(!d.querySelector('.circuit-reductions'))click('[data-extra-action="solution"]');
    const reductions=[...d.querySelectorAll('.circuit-reductions svg')];assert.equal(reductions.length,2);
    const last=reductions.at(-1).querySelector('.mixed-resistor');assert.equal(last.dataset.symbol,'R_T');
    assert.equal(last.dataset.from,'A');
