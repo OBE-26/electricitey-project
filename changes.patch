@@ -1,7 +1,16 @@
 diff --git a/README.md b/README.md
-index 4dff07d..16ee399 100644
+index 4dff07d..6d5e5ad 100644
 --- a/README.md
 +++ b/README.md
+@@ -8,7 +8,7 @@ streamlit run Electricity-circuit.py
+ לאחר אישור תנאי השימוש הראשון מוצגת בחירת קורס:
+ 
+ - **מיזוג וקירור:** התרגול הקיים; ברמות א׳ וב׳ של חוק אוהם, 9 מתוך 20 תרגילים דורשים מציאת התנגדות ממתח והספק. מבחן עיוני מוגן בסיסמה מגריל 20 שאלות מהמאגר המאוחד של 193 שאלות, מערבב אפשרויות ומציג בסיום דף ציון עם שם הלומד, וממנו כפתור נפרד לסקירת התשובות.
+-- **מיגון:** התרגול הקיים, שני סוגי מעגלים מעורבים לפי דף הדוגמאות, וסוללות עם 70% שאלות מטען ו־30% שאלות אנרגיה. בכל סבב 10 תרגילי מעגל מעורב: חמישה עם קבוצות מקבילות ונגדים בטור, וחמישה עם ענפי טור המחוברים במקביל. לכל נגד מחושבים הזרם, המתח וההספק, לצד ההתנגדות הכוללת והזרם מהמקור. הפתרון מציג נוסחה וסכמה אחרי כל שלב צמצום.
++- **מיגון:** התרגול הקיים, שני סוגי מעגלים מעורבים לפי דף הדוגמאות, וסוללות עם 70% שאלות מטען ו־30% שאלות אנרגיה. בכל סבב 10 תרגילי מעגל מעורב: חמישה עם קבוצות מקבילות ונגדים בטור, וחמישה עם ענפי טור המחוברים במקביל. שתיים מתוך עשר השאלות הן שתי קבוצות מקבילות עם נגד ביניהן ונגד נוסף בתחתית בטור. ברמה ב׳ אחת מהן משחזרת את דוגמת 45V עם נגדים 15, 10, 3, 6, 12 ו־5 אוהם. מקור המתח מוצג בתחתית כמו בדוגמה. לכל נגד מחושבים הזרם, המתח וההספק, לצד ההתנגדות הכוללת והזרם מהמקור. הפתרון מציג נוסחה וסכמה אחרי כל שלב צמצום.
+ - **סלולר:** רמות א׳ וב׳ בלבד ושני ענפים בכל תרגיל מקבילי. סוללות עם מטען באמפר־שעה, טעינה, פריקה והתנגדות פנימית. בשאלות ההתנגדות הפנימית מוצגת סכמה של סוללה עם נגד פנימי בטור לעומס המייצג את מעגלי הטלפון; ערכים שטרם חושבו מסומנים בסימן שאלה.
+ 
+ התקדמות התרגול נשמרת בנפרד לכל קורס בדפדפן. מבחנים שהושלמו מוצגים בגרף של אחוז תשובות נכונות לפי מספר מבחן. המבחן הנוכחי והבחירות נשמרים בדפדפן, וכניסה לאחר רענון דורשת סיסמה תקפה. שאלות שלא נענו נחשבות שגויות לאחר אישור הגשה.
 @@ -36,6 +36,8 @@ streamlit run Electricity-circuit.py
  
  מבחן QA אינו משנה את הציונים או את סבב השאלות האישי. ביציאה מ־QA חוזרים למצב הרגיל, וגישה רגילה למבחן שוב דורשת סיסמת תלמיד תקפה.
@@ -91,7 +100,7 @@ index e1fddac..ab26fba 100644
                      config = self.store.update(names=event.get("names", {}))
                      message = "שמות הקורסים נשמרו."
 diff --git a/course_practice.js b/course_practice.js
-index 062ba3e..512a47b 100644
+index 062ba3e..33d226e 100644
 --- a/course_practice.js
 +++ b/course_practice.js
 @@ -4,6 +4,7 @@ const CoursePractice = (() => {
@@ -102,7 +111,42 @@ index 062ba3e..512a47b 100644
    function random(seed) {
      let value=seed>>>0;
      return ()=>{value+=0x6D2B79F5;let t=value;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return ((t^t>>>14)>>>0)/4294967296;};
-@@ -105,18 +106,27 @@ const CoursePractice = (() => {
+@@ -19,12 +20,13 @@ const CoursePractice = (() => {
+     {id:'parallel-series',family:'parallel-series',title:'נגד במקביל לענף עם שני נגדים בטור',r:[6,2,4],groups:[[[0],[1,2]]]},
+     {id:'parallel-groups',family:'series-parallel',title:'שתי קבוצות מקבילות ונגדים בטור',r:[6,3,2,4,4,2],groups:[[[0],[1]],[[2]],[[3],[4]],[[5]]]},
+     {id:'two-series-branches',family:'parallel-series',title:'שני ענפים מקבילים עם שני נגדים בטור בכל ענף',r:[2,4,1,2],groups:[[[0,1],[2,3]]]},
+-    {id:'series-parallel-3',family:'series-parallel',title:'נגד בטור לשלושה נגדים במקביל',r:[5,20,40,40],groups:[[[0]],[[1],[2],[3]]]},
++    {id:'parallel-groups-worksheet',family:'series-parallel',title:'שתי קבוצות מקבילות עם נגד ביניהן ונגד בטור בתחתית',r:[6,3,2,4,4,2],worksheetR:[15,10,3,6,12,5],groups:[[[0],[1]],[[2]],[[3],[4]],[[5]]]},
+     {id:'parallel-series',family:'parallel-series',title:'נגד במקביל לענף עם שני נגדים בטור',r:[6,2,4],groups:[[[0],[1,2]]]}
+   ];
+   function mixed(rng, level, index) {
+     const variant=mixedVariants[index%mixedVariants.length],k=integer(rng,1,4);
+-    const r=variant.r.map(value=>level===1?integer(rng,2,60):value*k);
++    const worksheet=level===1&&!!variant.worksheetR;
++    const r=worksheet?variant.worksheetR.slice():variant.r.map(value=>level===1?integer(rng,2,60):value*k);
+     const resistanceUnit=level===2?(index%2?'MΩ':'kΩ'):'Ω';
+     const currentUnit=level===2?(index%2?'μA':'mA'):'A',powerUnit=level===2?(index%2?'μW':'mW'):'W';
+     const total=values=>values.reduce((sum,value)=>sum+value,0);
+@@ -48,8 +50,8 @@ const CoursePractice = (() => {
+     });
+     const rt=total(groups.map(g=>g.resistance));
+     // Structured values give integral answers (including per-resistor power) in A.
+-    const itBase=variant.id==='series-parallel-3'?4:variant.id==='series-parallel-4'?4:variant.id==='parallel-groups'?6:variant.id==='parallel-series'?2:3;
+-    const u=level===1?integer(rng,12,60):rt*itBase*integer(rng,1,2),it=u/rt;
++    const itBase=variant.id==='series-parallel-3'?4:variant.id==='series-parallel-4'?4:variant.id.startsWith('parallel-groups')?6:variant.id==='parallel-series'?2:3;
++    const u=worksheet?45:level===1?integer(rng,12,60):rt*itBase*integer(rng,1,2),it=u/rt;
+     const currents=Array(r.length),voltages=Array(r.length),powers=Array(r.length),steps=[],reductions=[];
+     const original=groups.map(g=>g.branches.map(branch=>branch.map(i=>({symbol:'R'+(i+1),value:r[i],members:[i],...resistorNodes[i]}))));
+     const diagrams=[original];
+@@ -98,25 +100,34 @@ const CoursePractice = (() => {
+     });
+     r.forEach((value,i)=>steps.push(step('U'+(i+1),'המתח על נגד R'+(i+1),'V',voltages[i],`U${i+1} = I${i+1} × R${i+1}`,`${fmt(currents[i])} × ${value}`)));
+     r.forEach((value,i)=>steps.push(step('P'+(i+1),'ההספק המתפתח על נגד R'+(i+1),powerUnit,powers[i],`P${i+1} = U${i+1} × I${i+1}`,`${fmt(voltages[i])} × ${fmt(currents[i])}`)));
+-    return {kind:'mixed',schemaVersion:2,variant:variant.id,family:variant.family,level,index,title:variant.title,
++    return {kind:'mixed',schemaVersion:3,variant:variant.id,family:variant.family,level,index,title:variant.title,
+       text:'חשבו את ההתנגדות הכללית, את הזרם מהמקור ואת הזרם, המתח וההספק בכל נגד.',
+       caption:variant.family==='series-parallel'?'מתחילים בצמצום הקבוצות המקבילות, ואז מחברים את הנגדים שבטור.':'מתחילים בצמצום הנגדים שבטור בתוך הענפים, ואז מצמצמים את המקביל.',
+       u,r,rt,it,groups,resistorNodes,currents,voltages,powers,resistanceUnit,currentUnit,powerUnit,steps,reductions,diagrams,
        givens:[['U',u,'V'],...r.map((value,i)=>['R'+(i+1),value,resistanceUnit])]};
    }
    function battery(rng, course, level, index) {
@@ -136,7 +180,7 @@ index 062ba3e..512a47b 100644
        if(variant===1){text=`בסוללת הגיבוי זמינות ${fmt(e)} ואט־שעה. מערכת מיגון צורכת הספק קבוע של ${fmt(p)} ואט. לכמה שעות תספיק הסוללה?`;steps=[step('t','משך הפעולה','h',hours,'t = E ÷ P',`${fmt(e)} ÷ ${fmt(p)}`)];givens=[['E',e,'Wh'],['P',p,'W']];}
        if(variant===2){text=`סוללת גיבוי במתח ${voltage} וולט אוגרת ${fmt(e)} ואט־שעה. מה המטען שלה באמפר־שעה?`;steps=[step('Q','מטען הסוללה','Ah',q,'Q = E ÷ U',`${fmt(e)} ÷ ${voltage}`)];givens=[['E',e,'Wh'],['U',voltage,'V']];}
      }else{
-@@ -125,17 +135,30 @@ const CoursePractice = (() => {
+@@ -125,17 +136,30 @@ const CoursePractice = (() => {
        if(variant===1){text=charging?`יש להשלים לסוללה מטען של ${fmt(q)} אמפר־שעה. זרם הטעינה קבוע ושווה ל־${fmt(current)} אמפר. כמה שעות נדרשות?`:`בסוללת ${device} נשאר מטען של ${fmt(q)} אמפר־שעה. צריכת הזרם קבועה ושווה ל־${fmt(current)} אמפר. לכמה שעות יספיק המטען?`;steps=[step('t',charging?'זמן הטעינה':'זמן הפריקה','h',hours,'t = Q ÷ I',`${fmt(q)} ÷ ${fmt(current)}`)];givens=[['Q',q,'Ah'],['I',current,'A']];}
        if(variant===2){text=`במהלך ${charging?'טעינה':'פריקה'} של סוללת ${device}, מטען של ${fmt(q)} אמפר־שעה הועבר במשך ${timeText}. מה היה הזרם הקבוע?`;steps=[step('I',charging?'זרם הטעינה':'זרם הפריקה','A',current,'I = Q ÷ t',`${fmt(q)} ÷ ${fmt(hours)}`)];givens=[['Q',q,'Ah'],['t',minutes?hours*60:hours,minutes?'min':'h']];}
      }
@@ -176,7 +220,7 @@ index 062ba3e..512a47b 100644
    }
    function batch(course,kind,level,seed){
      const rng=random(seed),result=Array.from({length:10},(_,index)=>kind==='mixed'?mixed(rng,level,index):battery(rng,course,level,index));
-@@ -144,7 +167,7 @@ const CoursePractice = (() => {
+@@ -144,7 +168,7 @@ const CoursePractice = (() => {
      for(let i=result.length-1;i>0;i--){const j=Math.floor(rng()*(i+1));[result[i],result[j]]=[result[j],result[i]];}
      return result.map(q=>({...q,cursor:0,draft:'',attempts:0,hint:false,solution:false,accepted:false,helped:false}));
    }
@@ -185,7 +229,7 @@ index 062ba3e..512a47b 100644
      const groups=q.diagrams[Math.max(0,Math.min(stage,q.diagrams.length-1))];
      const ink='var(--ink)',card='var(--card)';
      const wire=path=>`<path d="${path}" fill="none" stroke="${ink}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>`;
-@@ -152,7 +175,7 @@ const CoursePractice = (() => {
+@@ -152,7 +176,7 @@ const CoursePractice = (() => {
      const symbol=(x,y,value,anchor='middle')=>{const m=/^([A-Za-z]+)_?([A-Za-z]+|\d+)$/.exec(value);return m?`<text x="${x}" y="${y}" fill="${ink}" text-anchor="${anchor}" font-size="19" font-family="Arial,sans-serif" direction="ltr">${m[1]}<tspan dy="5" font-size="13">${m[2]}</tspan><tspan dy="-5"> </tspan></text>`:text(x,y,value,anchor);};
      const node=(x,y,resistor,vertical=false)=>`<g class="mixed-resistor" data-symbol="${resistor.symbol}" data-from="${resistor.from}" data-to="${resistor.to}"><rect x="${x-(vertical?12:38)}" y="${y-(vertical?30:12)}" width="${vertical?24:76}" height="${vertical?60:24}" fill="${card}" stroke="${ink}" stroke-width="2.5"/>${symbol(x+(vertical?29:0),y+(vertical?-4:-26),resistor.symbol,vertical?'start':'middle')}${text(x+(vertical?29:0),y+(vertical?22:43),fmt(resistor.value)+' '+q.resistanceUnit,vertical?'start':'middle')}</g>`;
      const dot=(x,y)=>`<circle cx="${x}" cy="${y}" r="4" fill="${ink}"/>`;
@@ -194,7 +238,30 @@ index 062ba3e..512a47b 100644
      const source=(x,top,bottom)=>{
        const mid=(top+bottom)/2;
        return wire(`M${x} ${top}V${mid-13}M${x} ${mid+13}V${bottom}M${x-23} ${mid-13}H${x+23}M${x-13} ${mid+13}H${x+13}`)+text(x-32,mid-21,'+')+text(x-32,mid+30,'−')+symbol(x-46,mid-14,'U','end')+text(x-46,mid+20,fmt(q.u)+' V','end');
-@@ -199,14 +222,15 @@ const CoursePractice = (() => {
+@@ -168,17 +192,18 @@ const CoursePractice = (() => {
+         content+=wire(`M${x} ${previous}V${bottom}`)+junction(x,top,branch[0].from)+junction(x,bottom,branch.at(-1).to,-18,26);
+         if(branch.length>1)content+=junction(x,235,branch[0].to,-20,6);
+       });
+-    }else if(q.variant==='parallel-groups'&&stage<q.diagrams.length-1){
++    }else if(q.variant.startsWith('parallel-groups')&&stage<q.diagrams.length-1){
+       // Same A-B / R3 / C-D / R6 order as worksheet exercise 15.
+-      width=920;height=425;const top=155,bottom=365;
+-      content=source(110,top,bottom)+wire('M110 155H190M350 155H425M501 155H565M725 155H820V365H668M592 365H110');
++      width=920;height=445;const top=155,bottom=365;
++      content=wire('M110 365V155H190M350 155H425M501 155H565M725 155H820V365H668M592 365H385M355 365H110M355 342V388M385 352V378')
++        +text(343,345,'+')+text(400,345,'−')+symbol(370,322,'U')+text(370,414,fmt(q.u)+' V');
+       const group=(network,left,right)=>{
+         let out='';const ys=network.length===1?[top]:[80,230];
+         network.forEach((branch,bi)=>{const x=(left+right)/2,y=ys[bi];out+=wire(`M${left} ${top}V${y}H${x-38}M${x+38} ${y}H${right}V${top}`)+node(x,y,branch[0]);});
+         return out+dot(left,top)+dot(right,top);
+       };
+       content+=group(groups[0],190,350)+node(463,top,groups[1][0][0])+group(groups[2],565,725)+node(630,bottom,groups[3][0][0]);
+-      content+=junction(190,top,groups[0][0][0].from)+junction(350,top,groups[0][0][0].to,15,-13)+junction(565,top,groups[2][0][0].from)+junction(725,top,groups[2][0][0].to,15,-13)+junction(160,bottom,groups[3][0][0].to,0,28);
++      content+=junction(190,top,groups[0][0][0].from)+junction(350,top,groups[0][0][0].to,15,-13)+junction(565,top,groups[2][0][0].from)+junction(725,top,groups[2][0][0].to,15,-13)+junction(450,bottom,groups[3][0][0].to,0,28);
+     }else if(stage===q.diagrams.length-1){
+       width=790;height=420;content=source(120,80,370)+wire('M120 80H367M443 80H670V370H120')+node(405,80,groups[0][0][0])+junction(190,80,groups[0][0][0].from)+junction(620,80,groups[0][0][0].to);
+     }else{
+@@ -199,14 +224,15 @@ const CoursePractice = (() => {
      const ink='var(--ink)',current='var(--phone-current,#b52e2e)',voltage='var(--phone-voltage,#116e65)';
      const symbolText=(x,y,base,sub,suffix='',color=ink)=>`<text x="${x}" y="${y}" fill="${color}" font-family="Arial,sans-serif" font-size="17" text-anchor="start" direction="ltr">${base}<tspan dy="5" font-size="12">${sub}</tspan><tspan dy="-5" font-size="17">${suffix}</tspan></text>`;
      const text=(x,y,value,color=ink,size=17)=>`<text x="${x}" y="${y}" fill="${color}" font-size="${size}" font-family="Arial,sans-serif" text-anchor="middle" direction="ltr">${value}</text>`;
@@ -212,7 +279,7 @@ index 062ba3e..512a47b 100644
        <rect x="205" y="77" width="70" height="26" fill="var(--card)" stroke="${ink}" stroke-width="2.5"/>
        ${symbolText(215,130,'R','s',` = ${rs}`)}
        <path d="M205 61H275M205 61l7 -4M205 61l7 4M275 61l-7 -4M275 61l-7 4" fill="none" stroke="${voltage}" stroke-width="2"/>
-@@ -215,7 +239,7 @@ const CoursePractice = (() => {
+@@ -215,7 +241,7 @@ const CoursePractice = (() => {
        ${text(365,72,`I = ${fmt(given.I)} A`,current,16)}
        <circle cx="390" cy="90" r="4" fill="${ink}"/><circle cx="390" cy="280" r="4" fill="${ink}"/>
        <path d="M391 112V258M391 112l-5 9M391 112l5 9M391 258l-5 -9M391 258l5 -9" fill="none" stroke="${voltage}" stroke-width="2"/>
@@ -222,7 +289,7 @@ index 062ba3e..512a47b 100644
        <path d="M490 60H550M495 302H545" stroke="${ink}" stroke-width="3"/>
        <rect x="500" y="145" width="30" height="70" fill="var(--card)" stroke="${ink}" stroke-width="2.5"/>
 diff --git a/courses.js b/courses.js
-index 325e911..f5e3999 100644
+index 325e911..929b72a 100644
 --- a/courses.js
 +++ b/courses.js
 @@ -66,7 +66,7 @@ const CourseApp = window.CourseApp = (() => {
@@ -230,7 +297,7 @@ index 325e911..f5e3999 100644
    function currentExtra(){
      const key=extra+':'+extraLevel;
 -    if(!extraState[key]||!Array.isArray(extraState[key].questions)||extraState[key].questions.length!==10||extra==='mixed'&&extraState[key].questions.some(q=>q.schemaVersion!==2)){
-+    if(!extraState[key]||!Array.isArray(extraState[key].questions)||extraState[key].questions.length!==10||extraState[key].questions.some(q=>q.schemaVersion!==(extra==='mixed'?2:3))){
++    if(!extraState[key]||!Array.isArray(extraState[key].questions)||extraState[key].questions.length!==10||extraState[key].questions.some(q=>q.schemaVersion!==3)){
        const seed=crypto.getRandomValues(new Uint32Array(1))[0];
        extraState[key]={seed,index:0,questions:CoursePractice.batch(selected,extra,extraLevel,seed)};
      }
@@ -341,7 +408,7 @@ index 3b04861..fe0655e 100644
   else:reply=service.handle(event,session)
   print(json.dumps({'request_id':event.get('id'),**reply},ensure_ascii=False),flush=True)
 diff --git a/tests/frontend.test.cjs b/tests/frontend.test.cjs
-index cfc2604..0a2250a 100644
+index cfc2604..dc3508f 100644
 --- a/tests/frontend.test.cjs
 +++ b/tests/frontend.test.cjs
 @@ -27,6 +27,32 @@ const submit=selector=>d.querySelector(selector).dispatchEvent(new w.Event('subm
@@ -377,7 +444,7 @@ index cfc2604..0a2250a 100644
    assert.equal(d.querySelectorAll('[data-select-course]').length,3);
    for(const id of ['hvac','security','mobile'])assert.ok(d.querySelector(`[data-select-course="${id}"] [data-course-icon="${id}"]`),'Distinct course icon');
    assert.equal(d.querySelector('#profile-dialog').open,false,'Existing terms approval should be reused');
-@@ -70,8 +96,15 @@ const waitFor=async test=>{for(let n=0;n<100;n++){if(test())return;await new Pro
+@@ -70,17 +96,26 @@ const waitFor=async test=>{for(let n=0;n<100;n++){if(test())return;await new Pro
    click('[data-select-course="security"]');
    assert.ok(d.querySelector('#course-title [data-course-icon="security"]'));
    assert.equal(w.testState.questions().ohm.length,3);
@@ -394,8 +461,11 @@ index cfc2604..0a2250a 100644
 +  click('.mixed-original-solution [data-open-mixed="0"]');assert.ok(d.querySelector('#diagram-canvas [data-node="A"]'),'Solution zoom retains node labels');click('[data-close-dialog="diagram-dialog"]');
    assert.ok(d.querySelector('#course-panel msub'));
    assert.ok(d.querySelector('.mixed-node-map').textContent.includes('↔'));
-   assert.equal(JSON.parse(w.localStorage.getItem('dc.basics.extra.security.v1'))['mixed:0'].questions[0].schemaVersion,2);
-@@ -81,6 +114,8 @@ const waitFor=async test=>{for(let n=0;n<100;n++){if(test())return;await new Pro
+-  assert.equal(JSON.parse(w.localStorage.getItem('dc.basics.extra.security.v1'))['mixed:0'].questions[0].schemaVersion,2);
++  assert.equal(JSON.parse(w.localStorage.getItem('dc.basics.extra.security.v1'))['mixed:0'].questions[0].schemaVersion,3);
+   assert.equal(JSON.parse(w.localStorage.getItem('dc.basics.extra.security.v1'))['battery:0'].keep,'existing');
+   click('[data-open-mixed="0"]');assert.equal(d.querySelector('#diagram-dialog').open,true);
+   assert.ok(d.querySelector('#diagram-canvas .mixed-circuit-svg'));
    click('[data-diagram-zoom="in"]');assert.equal(d.querySelector('#diagram-zoom-label').textContent,'150%');
    click('[data-close-dialog="diagram-dialog"]');
    click('[data-open-mixed="2"]');assert.equal(d.querySelector('#diagram-canvas svg').dataset.stage,'2');click('[data-close-dialog="diagram-dialog"]');
@@ -419,10 +489,30 @@ index cfc2604..0a2250a 100644
     const last=reductions.at(-1).querySelector('.mixed-resistor');assert.equal(last.dataset.symbol,'R_T');
     assert.equal(last.dataset.from,'A');
 diff --git a/tests/practice.test.cjs b/tests/practice.test.cjs
-index c313386..664e7d9 100644
+index c313386..7131d73 100644
 --- a/tests/practice.test.cjs
 +++ b/tests/practice.test.cjs
-@@ -69,7 +69,8 @@ for(let seed=1;seed<=60;seed++){
+@@ -49,7 +49,18 @@ for(let seed=1;seed<=60;seed++){
+   const mixed=practice.batch('security','mixed',level,seed);
+   assert.equal(mixed.filter(q=>q.family==='series-parallel').length,5);
+   assert.equal(mixed.filter(q=>q.family==='parallel-series').length,5);
+-  assert.equal(new Set(mixed.map(q=>q.variant)).size,6);
++  assert.equal(new Set(mixed.map(q=>q.variant)).size,7);
++  const grouped=mixed.filter(q=>q.variant.startsWith('parallel-groups'));
++  assert.equal(grouped.length,2,'Two worksheet-style circuits in every batch and level');
++  for(const q of grouped){
++   assert.equal(q.r.length,6);assert.deepEqual(q.groups.map(g=>g.branches.length),[2,1,2,1]);
++   assert.ok(practice.mixedSVG(q).includes('M355 342V388'),'Source is horizontal on the lower wire');
++   assert.equal(q.schemaVersion,3);
++  }
++  if(level===1){
++   const example=grouped.find(q=>q.variant==='parallel-groups-worksheet');
++   assert.deepEqual(example.r,[15,10,3,6,12,5]);close(example.u,45);close(example.rt,18);close(example.it,2.5);
++  }
+   for(const q of mixed){
+    assert.equal(q.diagrams.length,3);assert.equal(q.reductions.length,2);
+    const solve=edges=>solveNetwork(edges,'A',q.groups.at(-1).to,q.u);
+@@ -69,7 +80,8 @@ for(let seed=1;seed<=60;seed++){
     }
     q.diagrams.forEach((diagram,stage)=>{
      close(solve(diagram.flat(2)).resistance,q.rt,'Each reduction preserves terminal resistance');
@@ -432,7 +522,7 @@ index c313386..664e7d9 100644
      for(const node of new Set(diagram.flat(2).flatMap(e=>[e.from,e.to])))assert.ok(svg.includes(`data-node="${node}"`),'Display every surviving node '+node);
      for(const e of diagram.flat(2))assert.ok(svg.includes(`data-symbol="${e.symbol}" data-from="${e.from}" data-to="${e.to}"`));
     });
-@@ -85,6 +86,29 @@ for(let seed=1;seed<=60;seed++){
+@@ -85,6 +97,29 @@ for(let seed=1;seed<=60;seed++){
    const mobile=practice.batch('mobile','battery',level,seed);
    assert.equal(mobile.filter(q=>q.unitFamily==='Wh').length,0);
    assert.equal(mobile.filter(q=>q.unitFamily==='Rs').length,3);

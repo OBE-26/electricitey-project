@@ -66,7 +66,7 @@ const CourseApp = window.CourseApp = (() => {
   function saveExtra(){if(!qaActive)put(extKey(),extraState);}
   function currentExtra(){
     const key=extra+':'+extraLevel;
-    if(!extraState[key]||!Array.isArray(extraState[key].questions)||extraState[key].questions.length!==10||extraState[key].questions.some(q=>q.schemaVersion!==(extra==='mixed'?2:3))){
+    if(!extraState[key]||!Array.isArray(extraState[key].questions)||extraState[key].questions.length!==10||extraState[key].questions.some(q=>q.schemaVersion!==3)){
       const seed=crypto.getRandomValues(new Uint32Array(1))[0];
       extraState[key]={seed,index:0,questions:CoursePractice.batch(selected,extra,extraLevel,seed)};
     }

@@ -49,7 +49,18 @@ for(let seed=1;seed<=60;seed++){
   const mixed=practice.batch('security','mixed',level,seed);
   assert.equal(mixed.filter(q=>q.family==='series-parallel').length,5);
   assert.equal(mixed.filter(q=>q.family==='parallel-series').length,5);
-  assert.equal(new Set(mixed.map(q=>q.variant)).size,6);
+  assert.equal(new Set(mixed.map(q=>q.variant)).size,7);
+  const grouped=mixed.filter(q=>q.variant.startsWith('parallel-groups'));
+  assert.equal(grouped.length,2,'Two worksheet-style circuits in every batch and level');
+  for(const q of grouped){
+   assert.equal(q.r.length,6);assert.deepEqual(q.groups.map(g=>g.branches.length),[2,1,2,1]);
+   assert.ok(practice.mixedSVG(q).includes('M355 342V388'),'Source is horizontal on the lower wire');
+   assert.equal(q.schemaVersion,3);
+  }
+  if(level===1){
+   const example=grouped.find(q=>q.variant==='parallel-groups-worksheet');
+   assert.deepEqual(example.r,[15,10,3,6,12,5]);close(example.u,45);close(example.rt,18);close(example.it,2.5);
+  }
   for(const q of mixed){
    assert.equal(q.diagrams.length,3);assert.equal(q.reductions.length,2);
    const solve=edges=>solveNetwork(edges,'A',q.groups.at(-1).to,q.u);

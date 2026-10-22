@@ -107,7 +107,7 @@ const waitFor=async test=>{for(let n=0;n<100;n++){if(test())return;await new Pro
   click('.mixed-original-solution [data-open-mixed="0"]');assert.ok(d.querySelector('#diagram-canvas [data-node="A"]'),'Solution zoom retains node labels');click('[data-close-dialog="diagram-dialog"]');
   assert.ok(d.querySelector('#course-panel msub'));
   assert.ok(d.querySelector('.mixed-node-map').textContent.includes('↔'));
-  assert.equal(JSON.parse(w.localStorage.getItem('dc.basics.extra.security.v1'))['mixed:0'].questions[0].schemaVersion,2);
+  assert.equal(JSON.parse(w.localStorage.getItem('dc.basics.extra.security.v1'))['mixed:0'].questions[0].schemaVersion,3);
   assert.equal(JSON.parse(w.localStorage.getItem('dc.basics.extra.security.v1'))['battery:0'].keep,'existing');
   click('[data-open-mixed="0"]');assert.equal(d.querySelector('#diagram-dialog').open,true);
   assert.ok(d.querySelector('#diagram-canvas .mixed-circuit-svg'));

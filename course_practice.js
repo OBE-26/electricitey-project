@@ -20,12 +20,13 @@ const CoursePractice = (() => {
     {id:'parallel-series',family:'parallel-series',title:'נגד במקביל לענף עם שני נגדים בטור',r:[6,2,4],groups:[[[0],[1,2]]]},
     {id:'parallel-groups',family:'series-parallel',title:'שתי קבוצות מקבילות ונגדים בטור',r:[6,3,2,4,4,2],groups:[[[0],[1]],[[2]],[[3],[4]],[[5]]]},
     {id:'two-series-branches',family:'parallel-series',title:'שני ענפים מקבילים עם שני נגדים בטור בכל ענף',r:[2,4,1,2],groups:[[[0,1],[2,3]]]},
-    {id:'series-parallel-3',family:'series-parallel',title:'נגד בטור לשלושה נגדים במקביל',r:[5,20,40,40],groups:[[[0]],[[1],[2],[3]]]},
+    {id:'parallel-groups-worksheet',family:'series-parallel',title:'שתי קבוצות מקבילות עם נגד ביניהן ונגד בטור בתחתית',r:[6,3,2,4,4,2],worksheetR:[15,10,3,6,12,5],groups:[[[0],[1]],[[2]],[[3],[4]],[[5]]]},
     {id:'parallel-series',family:'parallel-series',title:'נגד במקביל לענף עם שני נגדים בטור',r:[6,2,4],groups:[[[0],[1,2]]]}
   ];
   function mixed(rng, level, index) {
     const variant=mixedVariants[index%mixedVariants.length],k=integer(rng,1,4);
-    const r=variant.r.map(value=>level===1?integer(rng,2,60):value*k);
+    const worksheet=level===1&&!!variant.worksheetR;
+    const r=worksheet?variant.worksheetR.slice():variant.r.map(value=>level===1?integer(rng,2,60):value*k);
     const resistanceUnit=level===2?(index%2?'MΩ':'kΩ'):'Ω';
     const currentUnit=level===2?(index%2?'μA':'mA'):'A',powerUnit=level===2?(index%2?'μW':'mW'):'W';
     const total=values=>values.reduce((sum,value)=>sum+value,0);
@@ -49,8 +50,8 @@ const CoursePractice = (() => {
     });
     const rt=total(groups.map(g=>g.resistance));
     // Structured values give integral answers (including per-resistor power) in A.
-    const itBase=variant.id==='series-parallel-3'?4:variant.id==='series-parallel-4'?4:variant.id==='parallel-groups'?6:variant.id==='parallel-series'?2:3;
-    const u=level===1?integer(rng,12,60):rt*itBase*integer(rng,1,2),it=u/rt;
+    const itBase=variant.id==='series-parallel-3'?4:variant.id==='series-parallel-4'?4:variant.id.startsWith('parallel-groups')?6:variant.id==='parallel-series'?2:3;
+    const u=worksheet?45:level===1?integer(rng,12,60):rt*itBase*integer(rng,1,2),it=u/rt;
     const currents=Array(r.length),voltages=Array(r.length),powers=Array(r.length),steps=[],reductions=[];
     const original=groups.map(g=>g.branches.map(branch=>branch.map(i=>({symbol:'R'+(i+1),value:r[i],members:[i],...resistorNodes[i]}))));
     const diagrams=[original];
@@ -99,7 +100,7 @@ const CoursePractice = (() => {
     });
     r.forEach((value,i)=>steps.push(step('U'+(i+1),'המתח על נגד R'+(i+1),'V',voltages[i],`U${i+1} = I${i+1} × R${i+1}`,`${fmt(currents[i])} × ${value}`)));
     r.forEach((value,i)=>steps.push(step('P'+(i+1),'ההספק המתפתח על נגד R'+(i+1),powerUnit,powers[i],`P${i+1} = U${i+1} × I${i+1}`,`${fmt(voltages[i])} × ${fmt(currents[i])}`)));
-    return {kind:'mixed',schemaVersion:2,variant:variant.id,family:variant.family,level,index,title:variant.title,
+    return {kind:'mixed',schemaVersion:3,variant:variant.id,family:variant.family,level,index,title:variant.title,
       text:'חשבו את ההתנגדות הכללית, את הזרם מהמקור ואת הזרם, המתח וההספק בכל נגד.',
       caption:variant.family==='series-parallel'?'מתחילים בצמצום הקבוצות המקבילות, ואז מחברים את הנגדים שבטור.':'מתחילים בצמצום הנגדים שבטור בתוך הענפים, ואז מצמצמים את המקביל.',
       u,r,rt,it,groups,resistorNodes,currents,voltages,powers,resistanceUnit,currentUnit,powerUnit,steps,reductions,diagrams,
@@ -191,17 +192,18 @@ const CoursePractice = (() => {
         content+=wire(`M${x} ${previous}V${bottom}`)+junction(x,top,branch[0].from)+junction(x,bottom,branch.at(-1).to,-18,26);
         if(branch.length>1)content+=junction(x,235,branch[0].to,-20,6);
       });
-    }else if(q.variant==='parallel-groups'&&stage<q.diagrams.length-1){
+    }else if(q.variant.startsWith('parallel-groups')&&stage<q.diagrams.length-1){
       // Same A-B / R3 / C-D / R6 order as worksheet exercise 15.
-      width=920;height=425;const top=155,bottom=365;
-      content=source(110,top,bottom)+wire('M110 155H190M350 155H425M501 155H565M725 155H820V365H668M592 365H110');
+      width=920;height=445;const top=155,bottom=365;
+      content=wire('M110 365V155H190M350 155H425M501 155H565M725 155H820V365H668M592 365H385M355 365H110M355 342V388M385 352V378')
+        +text(343,345,'+')+text(400,345,'−')+symbol(370,322,'U')+text(370,414,fmt(q.u)+' V');
       const group=(network,left,right)=>{
         let out='';const ys=network.length===1?[top]:[80,230];
         network.forEach((branch,bi)=>{const x=(left+right)/2,y=ys[bi];out+=wire(`M${left} ${top}V${y}H${x-38}M${x+38} ${y}H${right}V${top}`)+node(x,y,branch[0]);});
         return out+dot(left,top)+dot(right,top);
       };
       content+=group(groups[0],190,350)+node(463,top,groups[1][0][0])+group(groups[2],565,725)+node(630,bottom,groups[3][0][0]);
-      content+=junction(190,top,groups[0][0][0].from)+junction(350,top,groups[0][0][0].to,15,-13)+junction(565,top,groups[2][0][0].from)+junction(725,top,groups[2][0][0].to,15,-13)+junction(160,bottom,groups[3][0][0].to,0,28);
+      content+=junction(190,top,groups[0][0][0].from)+junction(350,top,groups[0][0][0].to,15,-13)+junction(565,top,groups[2][0][0].from)+junction(725,top,groups[2][0][0].to,15,-13)+junction(450,bottom,groups[3][0][0].to,0,28);
     }else if(stage===q.diagrams.length-1){
       width=790;height=420;content=source(120,80,370)+wire('M120 80H367M443 80H670V370H120')+node(405,80,groups[0][0][0])+junction(190,80,groups[0][0][0].from)+junction(620,80,groups[0][0][0].to);
     }else{
