@@ -15,6 +15,8 @@ const CourseApp = window.CourseApp = (() => {
   const nonce=()=>crypto.randomUUID?.()??`course-${Date.now()}-${Math.random().toString(36).slice(2)}`;
   const status=(message,error=false)=>message?`<div class="feedback ${error?'error':'success'}" role="status">${escapeHTML(message)}</div>`:'';
   const math=(formula)=>mathNotation(formula);
+  const formulaPreferenceKey='dc.basics.formulaViews.v1';
+  const formulaPreferences=get(formulaPreferenceKey,{});
   function courseIcon(id){
     const paths={
       hvac:'<rect x="5" y="6" width="38" height="20" rx="4"/><path d="M9 19h30M12 23h24M35 11h3M14 31v5c0 3-3 3-3 6M24 31v10M34 31v5c0 3 3 3 3 6"/>',
@@ -38,6 +40,8 @@ const CourseApp = window.CourseApp = (() => {
     if(value?.names)config={...config,...value,names:{...config.names,...value.names}};
     document.querySelectorAll('[data-course-name]').forEach(node=>node.textContent=config.names[node.dataset.courseName]??'');
     $('course-title').innerHTML=courseIcon(selected)+`<span>${escapeHTML(config.names[selected])}</span>`;
+    if($('tab-formulas'))$('tab-formulas').firstChild.textContent=courseFormulaTitle();
+    if($('formula-dialog').open)$('formula-title').textContent=courseFormulaTitle();
   }
   function syncProfile(){
     if(personal.profile)put(entryKey,{profile:personal.profile,preferences:personal.preferences});
@@ -73,7 +77,8 @@ const CourseApp = window.CourseApp = (() => {
     const state=extraState[key];state.index=Math.max(0,Math.min(9,state.index??0));
     return {state,q:state.questions[state.index]};
   }
-  function tabMarkup(){return (selected==='security'?['mixed','battery','formulas']:selected==='mobile'?['battery','formulas']:[]).map(kind=>`<button class="tab" type="button" role="tab" id="tab-${kind}" aria-controls="course-panel" data-extra-tab="${kind}" aria-selected="${extra===kind}" tabindex="${extra===kind?0:-1}">${kind==='formulas'?'דף נוסחאות':kind==='mixed'?'מעגל מעורב מורכב':'סוללות'}<span>${kind==='formulas'?'חשמל וסוללות':kind==='mixed'?'טור של קבוצות מקבילות · מקביל של ענפי טור':selected==='mobile'?'מטען · טעינה ופריקה · התנגדות פנימית':'מטען ואנרגיה · טעינה ופריקה'}</span></button>`).join('');}
+  function courseFormulaTitle(){return 'דף נוסחאות לקורס '+config.names[selected].replace(/^קורס\s+/,'');}
+  function tabMarkup(){return (selected==='security'?['mixed','battery','formulas']:selected==='mobile'?['battery','formulas']:['formulas']).map(kind=>`<button class="tab" type="button" role="tab" id="tab-${kind}" aria-controls="course-panel" data-extra-tab="${kind}" aria-selected="${extra===kind}" tabindex="${extra===kind?0:-1}">${kind==='formulas'?escapeHTML(courseFormulaTitle()):kind==='mixed'?'מעגל מעורב מורכב':'סוללות'}<span>${kind==='formulas'?(selected==='hvac'?'חשמל':'חשמל וסוללות'):kind==='mixed'?'טור של קבוצות מקבילות · מקביל של ענפי טור':selected==='mobile'?'מטען · טעינה ופריקה · התנגדות פנימית':'מטען ואנרגיה · טעינה ופריקה'}</span></button>`).join('');}
   function updateChrome(){
     const practice=screen==='practice';
     document.body.classList.toggle('course-home',screen==='home');
@@ -83,7 +88,12 @@ const CourseApp = window.CourseApp = (() => {
     $('course-panel').hidden=practice&&!extra;
     document.querySelector('.tabs').hidden=!practice;
     $('learning-main').hidden=!practice||!!extra;
-    $('course-optional-tabs').innerHTML=tabMarkup();
+    const navigation=document.querySelector('.tabs');
+    navigation.querySelectorAll('[data-extra-tab]').forEach(button=>button.remove());
+    const optional=$('course-optional-tabs');optional.innerHTML=tabMarkup();
+    [...optional.children].forEach(button=>navigation.append(button));
+    navigation.append($('tab-simulator'),$('tab-formulas'));
+    $('tab-ohm').firstChild.textContent='חוק אוהם';
     document.querySelectorAll('[role="tab"][data-tab]').forEach(node=>{if(extra){node.setAttribute('aria-selected','false');node.tabIndex=-1;}});
     applyConfig(config);
   }
@@ -97,12 +107,100 @@ const CourseApp = window.CourseApp = (() => {
     else if(screen==='theory-result')renderTheoryResult();
     else if(screen==='theory'||screen==='theory-review')renderTheory();
     else if(screen==='theory-progress')renderTheoryProgress();
-    else if(extra==='formulas')renderCourseFormulas();
     else if(extra)renderExtra();
+    if($('formula-dialog').open)renderFormulas();
     fitDialogs();resizeFrame();return true;
   }
   function statementRows(q){return q.givens.map(([key,value,unit])=>`<div class="given"><small>${math(key)}</small>${number(value,unit)}</div>`).join('');}
   function notationKey(){return `<div class="battery-key"><span>${math('U_t')} — מתח הסוללה ללא עומס</span><span>${math('ΔU')} — מפל המתח על ההתנגדות הפנימית</span><span>${math('U_L')} — מתח עומס</span><span>${math('R_s')} — התנגדות פנימית</span></div>`;}
+  function formulaQuestion(){return screen==='practice'&&extra&&extra!=='formulas'?currentExtra().q:null;}
+  function extraTriangleContext(){
+    const source=formulaQuestion();if(!source)return null;
+    const task=source.steps[source.cursor],known={};
+    const shownUnits={U:'V',I:'A',R:'Ω',P:'W',Q:'Ah',E:'Wh',t:'h',t_min:'min',t_remaining:'min'};
+    for(const [key,value,unit] of source.givens){const name=key==='t'&&unit==='min'?'t_min':key;known[name]=value;shownUnits[name]=unit;}
+    for(const item of source.steps.slice(0,source.cursor))known[item.key==='t_h'?'t':item.key==='t_minutes'?'t_min':item.key==='t_remainder'?'t_remaining':item.key]=item.value;
+    let target=task?.key,values={...known},listKeys,definitionIds;
+    if(source.kind==='mixed'){
+      shownUnits.I=source.currentUnit;shownUnits.R=source.resistanceUnit;shownUnits.P=source.powerUnit;
+      const match=/^([IUP])(\d+)$/.exec(target??'');
+      if(target==='I_T'){target='I';values={U:source.u,R:known.R_T};}
+      else if(match){
+        const index=Number(match[2])-1;target=match[1];
+        values=index<source.r.length?{R:source.r[index],U:known['U'+(index+1)],I:known['I'+(index+1)],P:known['P'+(index+1)]}:{I:known.I_T,R:known['R'+match[2]]};
+      }else if(target?.startsWith('R')){target='Req';values={};}
+      listKeys=['U','R','I','P'];
+    }else if(source.unitFamily==='Rs'){
+      definitionIds=['battery-internal'];listKeys=['U_t','U_L','ΔU','I','R_s'];
+      shownUnits['ΔU']=source.voltageUnit??'V';shownUnits.R_s=source.resistanceUnit??'Ω';
+    }else{
+      definitionIds=source.unitFamily==='Wh'?['battery-charge','battery-energy','battery-voltage-charge']:['battery-charge'];
+      if(target==='t_h')target='t';if(target==='t_minutes')target='t_min';if(target==='t_remainder')target='t_remaining';
+      shownUnits.t='h';listKeys=[...new Set([...Object.keys(known),...definitionIds.flatMap(id=>triangleDefinitions.find(item=>item.id===id).slots.map(slot=>slot.key))])];
+    }
+    if(values.I!==undefined)values.I2=values.I*values.I;if(values.U!==undefined)values.U2=values.U*values.U;
+    const q={...source,givens:Object.fromEntries(source.givens.map(([key,value])=>[key,value])),units:shownUnits};
+    return {q,source,task,target,values,listKeys,definitionIds,label:source.title,extra:true};
+  }
+  function saveFormulaWork(){if(formulaQuestion())saveExtra();}
+  function markFormulaHelp(){const q=formulaQuestion();if(!q)return false;markExtraHelp(q);return true;}
+  function syncFormulaDraft(value,source){
+    const q=formulaQuestion();if(!q)return false;if(q.accepted)return true;
+    q.draft=value;for(const input of document.querySelectorAll('[data-answer],#extra-answer'))if(input!==source)input.value=value;
+    saveExtra();return true;
+  }
+  function submitFormulaAnswer(value){
+    if(!formulaQuestion())return false;
+    $('extra-answer').value=value;checkExtra();return true;
+  }
+  function formulaFeedback(message,errors){
+    const q=formulaQuestion();if(!q)return false;
+    recordExtraAttempt(q,false);q.attempts=(q.attempts??0)+1;
+    const state=manualState();state.message='לא נכון. '+message;state.type='error';state.errors=errors;
+    extraMessage=state.message;extraError=true;render();return true;
+  }
+  function formulaFeedbackStatus(){return formulaQuestion()?{message:extraMessage,type:extraError?'error':'success'}:null;}
+  function formulaCalculatorAvailable(){
+    const q=formulaQuestion();if(!q)return null;
+    return !!q.steps[q.cursor]&&!q.accepted&&(!(calculatorReturnToFormulas&&formulaView==='manual')||manualResultSlotKey()!==null);
+  }
+  function formulaCircuitReference(){
+    const q=formulaQuestion();if(!q)return null;
+    const svg=q.kind==='mixed'?CoursePractice.mixedSVG(q,0,false):q.unitFamily==='Rs'?CoursePractice.phoneBatterySVG(q):'';
+    return `<aside class="manual-circuit-reference"><h3>נתוני השאלה הנוכחית</h3><p>${escapeHTML(q.text)}</p><div class="givens">${statementRows(q)}</div>${svg?`<figure class="diagram">${svg}</figure>`:''}</aside>`;
+  }
+  function formulaFallback(context){
+    if(!context?.extra||!context.task)return '';
+    const available=formulaDefinitions(context).some(def=>def.slots.some(slot=>slot.key===context.target)&&def.slots.filter(slot=>slot.key!==context.target).every(slot=>context.values[slot.key]!==undefined));
+    if(available)return '';
+    const {q,task}=context;
+    return `<section class="card"><p>בשלב הזה משתמשים בנוסחה הבאה:</p><div class="math">${math(task.formula)}</div><form data-triangle-form><label>${escapeHTML(task.label)} (${escapeHTML(task.unit)})<input class="numeric" data-answer inputmode="decimal" value="${escapeHTML(q.draft)}" ${q.accepted?'readonly':''}></label>${q.accepted?'<button class="btn" type="button" data-next-step>הבא ←</button>':'<button class="btn" type="submit">בדיקת תשובה</button>'}</form></section>`;
+  }
+  function renderExtraFormulaHelp(){
+    const context=extraTriangleContext();if(!context)return false;
+    $('formula-body').innerHTML=`${formulaCircuitReference()}<h3>${escapeHTML(context.task?.label??'התרגיל הושלם')}</h3>${status(extraMessage,extraError)}${formulaFallback(context)}<div class="formula-grid">${formulaDefinitions(context).map(def=>triangleCard(def,context)).join('')}</div>`;
+    return true;
+  }
+  function openFormulas(){openDialog('formula-dialog');$('formula-tab-'+(formulaView==='reference'?'reference':'manual')).focus();}
+  function preferredFormulaView(){return ['reference','help','manual'].includes(formulaPreferences[selected])?formulaPreferences[selected]:'reference';}
+  function renderFormulaReference(){ $('formula-body').innerHTML=courseFormulaHTML();return true; }
+  function decorateFormulas(){
+    $('formula-title').textContent=courseFormulaTitle();
+    const nav=document.querySelector('#formula-dialog .formula-tabs');nav.style.gridTemplateColumns='repeat(2,minmax(0,1fr))';
+    $('formula-tab-reference').textContent='נוסחאות הקורס';$('formula-tab-manual').textContent='משולשים ופתרון';$('formula-tab-help').hidden=true;
+    for(const button of nav.querySelectorAll('[data-formula-tab]')){const active=button.dataset.formulaTab===(formulaView==='reference'?'reference':'manual');button.setAttribute('aria-selected',active);button.tabIndex=active?0:-1;}
+    $('formula-body').setAttribute('aria-labelledby',formulaView==='reference'?'formula-tab-reference':'formula-tab-manual');
+    document.querySelector('#formula-dialog .formula-intro').hidden=true;
+    if(formulaView!=='reference'){
+      document.querySelector('#formula-body .formula-networks')?.remove();
+      const modes=document.createElement('div');modes.className='completion-actions formula-mode-controls';
+      modes.innerHTML=`<button class="btn ${formulaView==='help'?'':'secondary'}" data-formula-tab="help" aria-pressed="${formulaView==='help'}">נתוני השאלה</button><button class="btn ${formulaView==='manual'?'':'secondary'}" data-formula-tab="manual" aria-pressed="${formulaView==='manual'}">הצבה ידנית ורשימת נתונים</button>`;
+      $('formula-body').prepend(modes);
+      if(formulaView==='manual')$('formula-body').insertAdjacentHTML('beforeend',formulaFallback(extraTriangleContext()));
+    }
+    $('formula-body').insertAdjacentHTML('beforeend','<div class="completion-actions"><button class="btn secondary" data-close-dialog="formula-dialog">חזרה לתרגיל</button></div>');
+    formulaPreferences[selected]=formulaView;if(!qaActive)put(formulaPreferenceKey,formulaPreferences);
+  }
   function solutionRows(q,steps=q.steps){return steps.map(s=>`<div class="course-solution-step"><strong>${escapeHTML(s.label)}</strong><div class="math">${math(s.formula)}</div><div class="math">${math(s.substitution)} <span>=</span> ${number(s.value,s.unit)}</div></div>`).join('');}
   function nodeGuide(q){
     return `<div class="mixed-node-guide"><p><strong>סימון צמתים:</strong> מעבר לכל נגד מגיעים לצומת אחרת. לאורך מוליך רציף נשארת אותה אות. ענפים במקביל מחוברים לאותן שתי צמתים.</p><details><summary>מפת החיבורים לפי הצמתים</summary><div class="mixed-node-map">${q.resistorNodes.map((nodes,i)=>`<span>${math('R'+(i+1))}: <bdi>${nodes.from} ↔ ${nodes.to}</bdi></span>`).join('')}</div></details></div>`;
@@ -124,23 +222,27 @@ const CourseApp = window.CourseApp = (() => {
     const reduction=extra==='mixed'?`<section class="mixed-original-solution"><h3>המעגל המקורי עם סימון צמתים</h3><figure class="diagram">${mixedPreview(q,0,true)}</figure></section>${nodeGuide(q)}<div class="circuit-reductions"><h3>צמצום המעגל לפי הצמתים</h3>${q.reductions.map((item,i)=>`<section class="circuit-reduction"><h4>${i+1}. ${escapeHTML(item.title)}</h4>${solutionRows(q,item.steps)}<figure class="diagram">${mixedPreview(q,i+1,true)}</figure></section>`).join('')}<p class="small muted">אותיות הצמתים נשמרות. צומת פנימית שנבלעה בנגד שקול אינה מסומנת בסכמה המצומצמת.</p></div>`:'';
     const remainingSteps=extra==='mixed'?q.steps.slice(q.reductions.reduce((sum,item)=>sum+item.steps.length,0)):q.steps;
     const answer=done?`<div class="complete-badge">✓ התרגיל הושלם</div><h2>כל החישובים הושלמו</h2><button class="btn" data-extra-action="next">${state.index===9?'סבב חדש':'לתרגיל הבא ←'}</button>`:`<div class="task-kicker">שלב ${q.cursor+1} מתוך ${q.steps.length}</div><h2>${escapeHTML(s.label)}</h2><form id="extra-answer-form"><label for="extra-answer">התשובה ביחידות ${escapeHTML(s.unit)}</label><div class="answer-row"><div class="answer-wrap"><input class="numeric${q.accepted?' answer-correct':q.attempts?' answer-incorrect':''}" id="extra-answer" inputmode="decimal" autocomplete="off" maxlength="24" value="${escapeHTML(q.draft??'')}" ${q.accepted?'readonly':''}><span class="unit">${escapeHTML(s.unit)}</span></div><button class="btn" type="${q.accepted?'button':'submit'}" ${q.accepted?'data-extra-action="step"':''}>${q.accepted?'הבא ←':'בדיקת תשובה'}</button></div></form><p class="small muted">אפשר לעגל לשתי ספרות אחרי הנקודה.</p>`;
-    $('course-panel').innerHTML=`<div class="course-head"><h2>${extra==='mixed'?'מעגל מעורב מורכב':'חישובי סוללות'}</h2><div class="levels">${levelsHTML}</div></div>${qaPicker}<div class="progress-row"><span>תרגיל ${state.index+1} מתוך 10</span><span>רמה ${letters[extraLevel]}</span></div><div class="exercise-grid"><section class="card"><h3>${escapeHTML(q.title)}</h3>${q.text?`<p>${escapeHTML(q.text)}</p>`:''}<div class="givens">${statementRows(q)}</div>${picture}${q.unitFamily==='Rs'?notationKey():''}${q.kind==='battery'&&q.unitFamily!=='Rs'?`<p class="small muted">${escapeHTML(q.note)}</p>`:''}</section><section class="card">${answer}<div class="answer-tools"><button class="btn secondary tiny" data-extra-action="hint">רמז</button><button class="btn secondary tiny" data-extra-action="solution">${q.solution?'סגירת פתרון מלא':'פתרון מלא'}</button><button class="btn secondary tiny" data-open-calculator>מחשבון</button><button class="btn secondary tiny" data-extra-action="new">תרגילים חדשים</button></div>${status(extraMessage,extraError)}${q.hint&&s?`<div class="hint">השתמשו בנוסחה ${math(s.formula)}</div>`:''}${q.solution?`<div class="solution"><div class="dialog-head"><h3>פתרון מלא</h3><button class="close" data-extra-action="solution" aria-label="סגירת פתרון מלא">×</button></div>${reduction}${solutionRows(q,remainingSteps)}</div>`:''}${done?`<div class="completed-steps">${solutionRows(q)}</div>`:''}${(done||q.solution)&&q.unitFamily==='Rs'?`<p class="small muted">${escapeHTML(q.note)}</p>`:''}</section></div>`;
+    $('course-panel').innerHTML=`<div class="course-head"><h2>${extra==='mixed'?'מעגל מעורב מורכב':'חישובי סוללות'}</h2><div class="levels">${levelsHTML}</div></div>${qaPicker}<div class="progress-row"><span>תרגיל ${state.index+1} מתוך 10</span><span>רמה ${letters[extraLevel]}</span></div><div class="exercise-grid"><section class="card"><h3>${escapeHTML(q.title)}</h3>${q.text?`<p>${escapeHTML(q.text)}</p>`:''}<div class="givens">${statementRows(q)}</div>${picture}${q.unitFamily==='Rs'?notationKey():''}${q.kind==='battery'&&q.unitFamily!=='Rs'?`<p class="small muted">${escapeHTML(q.note)}</p>`:''}</section><section class="card">${answer}<div class="answer-tools"><button class="btn secondary tiny" data-extra-action="hint">רמז</button><button class="btn secondary tiny" data-extra-action="solution">${q.solution?'סגירת פתרון מלא':'פתרון מלא'}</button><button class="btn secondary tiny" data-open-calculator>מחשבון</button><button class="btn secondary tiny" data-extra-action="new">תרגילים חדשים</button></div>${status(extraMessage,extraError)}${q.hint&&s?`<div class="hint">השתמשו בנוסחה ${math(s.formula)}</div>`:''}${q.solution?`<div class="solution"><div class="dialog-head"><h3>פתרון מלא</h3><button class="close" data-extra-action="solution" aria-label="סגירת פתרון מלא">×</button></div>${reduction}${solutionRows(q,remainingSteps)}</div>`:''}${done?`<div class="completed-steps">${solutionRows(q)}</div>`:''}</section></div>`;
     saveExtra();
   }
   function markExtraHelp(q){
     if(qaActive||q.helped)return;q.helped=true;
     personal.totals.helped++;personal.topics[extra].helped++;savePersonal();
   }
-  function checkExtra(){
-    const {q}=currentExtra(),s=q.steps[q.cursor];if(!s||q.accepted)return;
-    q.draft=$('extra-answer').value;
-    const correct=DC.accepted(q.draft,s.value),attempt=q.attempts??0;
+  function recordExtraAttempt(q,correct){
+    const attempt=q.attempts??0;
     if(!qaActive&&profileReady()){
       for(const counters of [personal.totals,personal.topics[extra]]){if(!attempt)counters.attempted++;counters.attempts++;if(correct){counters.solved++;if(!attempt)counters.first++;}}
       const session=currentSession();if(!attempt){session.attempted++;if(correct)session.first++;}
       if(correct&&q.cursor===q.steps.length-1)personal.totals.exercises++;
       savePersonal();
     }
+  }
+  function checkExtra(){
+    const {q}=currentExtra(),s=q.steps[q.cursor];if(!s||q.accepted)return;
+    q.draft=$('extra-answer').value;
+    const correct=DC.accepted(q.draft,s.value),attempt=q.attempts??0;
+    recordExtraAttempt(q,correct);
     q.attempts=attempt+1;q.accepted=correct;extraMessage=correct?'נכון! אפשר להמשיך לשלב הבא.':'התשובה אינה נכונה. אפשר לנסות שוב.';extraError=!correct;
     render();$('extra-answer')?.focus();
   }
@@ -289,19 +391,12 @@ const CourseApp = window.CourseApp = (() => {
   }
   function saveAdmin(){return adminOperation('admin_names_save',{names:adminDraft.names});}
   function savePassword(index){return adminOperation('admin_password_save',{password:{...adminDraft.passwords[index]}},index);}
-  function renderCourseFormulas(){
+  function courseFormulaHTML(){
     const card=(title,formulas,note='')=>`<section class="formula-card"><h2>${escapeHTML(title)}</h2>${formulas.map(f=>`<div class="math">${math(f)}</div>`).join('')}${note?`<p class="small muted">${escapeHTML(note)}</p>`:''}</section>`;
     const ohm=['U = I × R','I = U ÷ R','R = U ÷ I','P = U × I','P = I² × R','P = U² ÷ R','R = U² ÷ P'];
     const parallel=['R_T = (R1 × R2) ÷ (R1 + R2)','R_T = R ÷ n','I1 = U ÷ R1','I2 = U ÷ R2','I_T = I1 + I2'];
-    if(selected==='security')parallel.splice(1,0,'R_T = 1 ÷ (1/R1 + 1/R2 + 1/R3)');
-    $('course-panel').innerHTML=`<section class="course-formula-page"><div class="course-head"><div><h1>דף נוסחאות</h1><p class="muted">${escapeHTML(config.names[selected])}</p></div><button class="btn secondary" data-open-calculator>מחשבון</button></div><div class="formula-grid">${card('חוק אוהם והספק',ohm)}${card('מעגל טורי',['R_T = R1 + R2 + R3','I = U ÷ R_T','U1 = I × R1','U = U1 + U2 + U3'],'אותו זרם בכל הרכיבים; מתח המקור שווה לסכום מפלי המתח.')}${card('מעגל מקבילי',parallel,'אותו מתח בכל הענפים. R/n מתאים לנגדים זהים בלבד.')}${card('מטען, טעינה ופריקה',['Q = I × t','I = Q ÷ t','t = Q ÷ I','t_h = t_min ÷ 60'],'Q באמפר־שעה, I באמפר ו־t בשעות. המודל מניח זרם קבוע וללא הפסדים.')}${selected==='security'?card('אנרגיה בסוללה',['E = P × t','E = U × Q','t = E ÷ P','Q = E ÷ U'],'E בוואט־שעה, P בוואט ו־t בשעות.'):card('התנגדות פנימית של סוללת טלפון',['U_t = U_L + ΔU','ΔU = U_t − U_L','ΔU = I × R_s','R_s = ΔU ÷ I','U_L = U_t − I × R_s'])}${selected==='security'?card('נגד בטור לקבוצה מקבילה',['R234 = 1 ÷ (1/R2 + 1/R3 + 1/R4)','R_T = R1 + R234','I_T = U ÷ R_T','U1 = I_T × R1','U234 = U − U1','I2 = U234 ÷ R2','P2 = U2 × I2'],'מצמצמים את המקביל, ואז את הטור. הנגדים R2, R3, R4 מחוברים לאותן שתי צמתים. צריכת ההספק הכוללת שווה לסכום ההספקים בכל הנגדים.')+card('ענפי טור המחוברים במקביל',['R23 = R2 + R3','R_T = (R1 × R23) ÷ (R1 + R23)','I_T = U ÷ R_T','I1 = U ÷ R1','I2 = U ÷ R23','I3 = I2','U2 = I2 × R2','U3 = I3 × R3'],'מצמצמים קודם את R2 ו־R3 שבאותו ענף בטור, ואז את המקביל. לאורך מוליך רציף נשמרת אותה אות צומת; מעבר לכל נגד מגיעים לצומת אחרת.'):''}</div>${selected==='mobile'?notationKey():''}</section>`;
-  }
-  function appendFormulas(){
-    $('course-formulas')?.remove();
-    if(!['mobile','security'].includes(selected))return;
-    const node=document.createElement('section');node.id='course-formulas';node.className='card';
-    node.innerHTML=`<h3>סוללות — מטען, טעינה ופריקה</h3>${['Q = I × t','I = Q ÷ t','t = Q ÷ I'].map(f=>`<div class="math">${math(f)}</div>`).join('')}<p class="small">מטען באמפר־שעה, זרם באמפר וזמן בשעות.</p>${selected==='security'?['E = P × t','E = U × Q'].map(f=>`<div class="math">${math(f)}</div>`).join(''):`${notationKey()}${['U_t = U_L + ΔU','ΔU = U_t − U_L','ΔU = I × R_s','R_s = ΔU ÷ I','U_L = U_t − ΔU'].map(f=>`<div class="math">${math(f)}</div>`).join('')}`}`;
-    $('formula-body').append(node);fitDialogs();
+    if(selected!=='mobile')parallel.splice(1,0,'R_T = 1 ÷ (1/R1 + 1/R2 + 1/R3)');
+    return `<section class="course-formula-page"><div class="completion-actions"><button class="btn secondary" data-open-calculator>מחשבון</button></div><div class="formula-grid">${card('חוק אוהם והספק',ohm)}${card('מעגל טורי',['R_T = R1 + R2 + R3','I = U ÷ R_T','U1 = I × R1','U = U1 + U2 + U3'],'אותו זרם בכל הרכיבים; מתח המקור שווה לסכום מפלי המתח.')}${card('מעגל מקבילי',parallel,'אותו מתח בכל הענפים. R/n מתאים לנגדים זהים בלבד.')}${selected!=='hvac'?`${card('מטען, טעינה ופריקה',['Q = I × t','I = Q ÷ t','t = Q ÷ I','t_h = t_min ÷ 60','t_min = t × 60'],'Q באמפר־שעה, I באמפר ו־t בשעות. המודל מניח זרם קבוע וללא הפסדים.')}${selected==='security'?card('אנרגיה בסוללה',['E = P × t','E = U × Q','t = E ÷ P','Q = E ÷ U'],'E בוואט־שעה, P בוואט ו־t בשעות.'):card('התנגדות פנימית של סוללת טלפון',['U_t = U_L + ΔU','ΔU = U_t − U_L','ΔU = I × R_s','R_s = ΔU ÷ I','U_L = U_t − I × R_s'])}`:''}${selected==='security'?card('נגד בטור לקבוצה מקבילה',['R234 = 1 ÷ (1/R2 + 1/R3 + 1/R4)','R_T = R1 + R234','I_T = U ÷ R_T','U1 = I_T × R1','U234 = U − U1','I2 = U234 ÷ R2','P2 = U2 × I2'],'מצמצמים את המקביל, ואז את הטור. הנגדים R2, R3, R4 מחוברים לאותן שתי צמתים. צריכת ההספק הכוללת שווה לסכום ההספקים בכל הנגדים.')+card('ענפי טור המחוברים במקביל',['R23 = R2 + R3','R_T = (R1 × R23) ÷ (R1 + R23)','I_T = U ÷ R_T','I1 = U ÷ R1','I2 = U ÷ R23','I3 = I2','U2 = I2 × R2','U3 = I3 × R3'],'מצמצמים קודם את R2 ו־R3 שבאותו ענף בטור, ואז את המקביל. לאורך מוליך רציף נשמרת אותה אות צומת; מעבר לכל נגד מגיעים לצומת אחרת.'):''}</div>${selected==='mobile'?notationKey():''}</section>`;
   }
   function initialize(){
     const style=document.createElement('style');style.textContent=`
@@ -322,6 +417,14 @@ const CourseApp = window.CourseApp = (() => {
     document.addEventListener('click',event=>{
       const b=event.target.closest('button');if(!b)return;
       if(b.hasAttribute('data-open-mixed')){event.preventDefault();event.stopImmediatePropagation();return openMixedDiagram(Number(b.dataset.openMixed),b.dataset.mixedNodes==='true');}
+      if(b.hasAttribute('data-open-formulas')||b.dataset.extraTab==='formulas'){
+        event.preventDefault();event.stopImmediatePropagation();openFormulas();return;
+      }
+      if(formulaQuestion()&&$('formula-dialog').open){
+        if(b.hasAttribute('data-next-step')){event.preventDefault();event.stopImmediatePropagation();$('formula-dialog').close();extraAction('step');return;}
+        if(b.hasAttribute('data-solution')){event.preventDefault();event.stopImmediatePropagation();extraAction('solution');return;}
+        if(b.hasAttribute('data-show-manual-circuit')){event.preventDefault();event.stopImmediatePropagation();document.querySelector('#formula-body .manual-circuit-reference')?.scrollIntoView({block:'start'});return;}
+      }
       const action=b.dataset.courseAction;
       const handled=b.dataset.selectCourse||action||b.dataset.extraTab||b.dataset.extraLevel!==undefined||b.dataset.extraAction||b.dataset.theoryAction||b.dataset.removePassword!==undefined||b.dataset.editPassword!==undefined;
       if(handled){event.preventDefault();event.stopImmediatePropagation();}
@@ -356,8 +459,7 @@ const CourseApp = window.CourseApp = (() => {
       if(b.hasAttribute('data-show-progress')&&screen.startsWith('theory')){event.stopImmediatePropagation();screen='theory-progress';render();return;}
       if(b.id==='new-course-confirm'){extraState={};saveExtra();}
       if(b.hasAttribute('data-new-course')&&extra&&extra!=='formulas'){event.stopImmediatePropagation();extraAction('new');return;}
-      if(b.id==='calc-use'&&extra&&extra!=='formulas'&&calculatorValue!==null){event.stopImmediatePropagation();const {q}=currentExtra();if(q.steps[q.cursor]){q.draft=DC.fmt(calculatorValue);saveExtra();$('calculator-dialog').close();render();}return;}
-      if(b.hasAttribute('data-open-formulas'))setTimeout(appendFormulas,0);
+      if(b.id==='calc-use'&&extra&&extra!=='formulas'&&calculatorValue!==null&&!(calculatorReturnToFormulas&&formulaView==='manual')){event.stopImmediatePropagation();const {q}=currentExtra();if(q.steps[q.cursor]){q.draft=DC.fmt(calculatorValue);saveExtra();$('calculator-dialog').close();render();}return;}
     },true);
     document.addEventListener('keydown',event=>{
       const button=event.target.closest('.tabs [role=tab]');
@@ -365,9 +467,10 @@ const CourseApp = window.CourseApp = (() => {
       event.preventDefault();event.stopImmediatePropagation();
       const buttons=[...document.querySelectorAll('.tabs [role=tab]')],i=buttons.indexOf(button);
       const next=buttons[event.key==='Home'?0:event.key==='End'?buttons.length-1:(i+(event.key==='ArrowLeft'?1:buttons.length-1))%buttons.length];
-      next.click();document.getElementById(next.id)?.focus();
+      next.click();if(next.id!=='tab-formulas')document.getElementById(next.id)?.focus();
     },true);
     document.addEventListener('submit',event=>{
+      if(event.target.hasAttribute('data-triangle-form')&&formulaQuestion()){event.preventDefault();event.stopImmediatePropagation();submitFormulaAnswer(event.target.querySelector('[data-answer]')?.value??formulaQuestion().draft);return;}
       if(event.target.id==='extra-answer-form'){event.preventDefault();event.stopImmediatePropagation();checkExtra();}
       if(event.target.id==='theory-login-form'){event.preventDefault();event.stopImmediatePropagation();theoryLogin();}
       if(event.target.id==='course-admin-form'){event.preventDefault();event.stopImmediatePropagation();saveAdmin();}
@@ -399,5 +502,5 @@ const CourseApp = window.CourseApp = (() => {
   function onExitQA(){if(!qaReturn)return;theoryGeneration++;examBusy=false;if(adminToken)request('admin_logout',{token:adminToken}).catch(()=>{});({selected,screen,extra,extraLevel,extraState,courseProfile,courseKey,personalKey,recentKey,theory,examToken,examMessage,examError,finishConfirm}=qaReturn);qaReturn=null;adminToken='';adminDraft=null;adminConfig=null;adminBusy=false;adminMessage='';deletePasswordId=null;}
   function standalone(){return screen!=='practice';}
   function topicVisible(kind){return !['mixed','battery'].includes(kind)||kind==='mixed'&&selected==='security'||kind==='battery'&&selected!=='hvac';}
-  return {standalone,topicVisible,initialize,renderOverride,showPractice,loginAdmin,renderAdmin,onEnterQA,onExitQA,syncProfile,appendFormulas};
+  return {standalone,topicVisible,initialize,renderOverride,showPractice,loginAdmin,renderAdmin,onEnterQA,onExitQA,syncProfile,preferredFormulaView,renderFormulaReference,decorateFormulas,formulaQuestion,triangleContext:extraTriangleContext,saveFormulaWork,markFormulaHelp,syncFormulaDraft,submitFormulaAnswer,formulaFeedback,formulaCalculatorAvailable,formulaFeedbackStatus,formulaCircuitReference,renderExtraFormulaHelp};
 })();

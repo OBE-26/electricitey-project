@@ -1052,6 +1052,10 @@ function unitNote(q=currentQuestion()) {
 }
 function slotUnit(slot,q=currentQuestion()) { return slot.key==='I2'?`${q.units?.I??'A'} × ${q.units?.I??'A'}`:slot.key==='U2'?'V × V':q.units?.[slot.key]??slot.unit; }
 const triangleDefinitions = [
+    {id:'battery-charge',title:'מטען, זרם וזמן',slots:[{key:'Q',symbol:'Q',unit:'Ah'},{key:'I',symbol:'I',unit:'A'},{key:'t',symbol:'t',unit:'h'}],formulas:['Q = I × t','I = Q ÷ t','t = Q ÷ I']},
+    {id:'battery-energy',title:'אנרגיה, הספק וזמן',slots:[{key:'E',symbol:'E',unit:'Wh'},{key:'P',symbol:'P',unit:'W'},{key:'t',symbol:'t',unit:'h'}],formulas:['E = P × t','P = E ÷ t','t = E ÷ P']},
+    {id:'battery-voltage-charge',title:'אנרגיה, מתח ומטען',slots:[{key:'E',symbol:'E',unit:'Wh'},{key:'U',symbol:'U',unit:'V'},{key:'Q',symbol:'Q',unit:'Ah'}],formulas:['E = U × Q','U = E ÷ Q','Q = E ÷ U']},
+    {id:'battery-internal',title:'מפל מתח והתנגדות פנימית',slots:[{key:'ΔU',symbol:'ΔU',unit:'V'},{key:'I',symbol:'I',unit:'A'},{key:'R_s',symbol:'Rₛ',unit:'Ω'}],formulas:['ΔU = I × R_s','I = ΔU ÷ R_s','R_s = ΔU ÷ I']},
     { id:'ohm', title:'חוק אום', slots:[{key:'U',symbol:'U',unit:'V'},{key:'I',symbol:'I',unit:'A'},{key:'R',symbol:'R',unit:'Ω'}], formulas:['U = I × R','I = U ÷ R','R = U ÷ I'] },
     { id:'power-ui', title:'הספק לפי מתח וזרם', slots:[{key:'P',symbol:'P',unit:'W'},{key:'U',symbol:'U',unit:'V'},{key:'I',symbol:'I',unit:'A'}], formulas:['P = U × I','U = P ÷ I','I = P ÷ U'] },
     { id:'power-ir', title:'הספק לפי זרם והתנגדות', slots:[{key:'P',symbol:'P',unit:'W'},{key:'I2',symbol:'I²',unit:'I × I'},{key:'R',symbol:'R',unit:'Ω'}], formulas:['P = I² × R','R = P ÷ I²'], note:'I² פירושו I כפול I. בתרגול משתמשים כאן בזרם ידוע; לא מוציאים שורש.' },
@@ -1790,6 +1794,7 @@ function checkAnswer(value, mode = 'answer') {
   render(true);
 }
 function syncDraft(value, source) {
+  if(window.CourseApp?.syncFormulaDraft(value,source))return;
   if(currentQuestion().accepted)return;
   currentQuestion().draft = value;
   document.querySelectorAll('[data-answer]').forEach(field => { if (field !== source) field.value = value; field.removeAttribute('aria-invalid');field.classList.remove('answer-incorrect'); });
@@ -1813,6 +1818,7 @@ function updateSimulator() {
 }
 
 function triangleContext() {
+  const specialized=window.CourseApp?.triangleContext();if(specialized)return specialized;
   const q = currentQuestion(), task = currentStep(), model = DC.physics(q.kind, q.voltage, q.resistances);
   const finished = new Set(q.steps.slice(0, q.cursor).map(step => step.key));
   let values = {}, target = task?.key, label;
@@ -1836,10 +1842,19 @@ function triangleContext() {
   if (values.U !== undefined) values.U2 = values.U * values.U;
   return { values, target, label, task, q };
 }
+function formulaQuestion() { return window.CourseApp?.formulaQuestion()??currentQuestion(); }
+function formulaListKeys() { return triangleContext().listKeys??['U','R','I','P']; }
+function formulaDefinitions(context=triangleContext()) {
+  const ids=context.definitionIds??['ohm','power-ui','power-ir','power-ur'];
+  return triangleDefinitions.filter(item=>ids.includes(item.id));
+}
+function saveFormulaWork() { saveCourse();window.CourseApp?.saveFormulaWork(); }
+function markFormulaHelp() { if(!window.CourseApp?.markFormulaHelp())markHelp(); }
+function finishFormulaRender() { window.CourseApp?.decorateFormulas();fitDialogs();resizeFrame(); }
 function manualState() {
-  const q = currentQuestion();
+  const q = formulaQuestion();
   q.manualWork ??= {};
-  return q.manualWork[q.cursor] ??= { list:{U:'',R:'',I:'',P:''}, selected:'', drafts:{}, message:'', type:'error', errors:[], listStatus:'' };
+  return q.manualWork[q.cursor] ??= { list:Object.fromEntries(formulaListKeys().map(key=>[key,''])), selected:'', drafts:{}, message:'', type:'error', errors:[], listStatus:'' };
 }
 function manualDraft(state = manualState()) {
   return state.drafts[state.selected] ??= { values:{} };
@@ -1851,7 +1866,7 @@ function manualResultSlotKey() {
 }
 function renderCalculatorTriangleReference() {
   const panel=$('calc-triangle-reference'),dialog=$('calculator-dialog');
-  const q=currentQuestion(),state=q.manualWork?.[q.cursor];
+  const q=formulaQuestion(),state=q.manualWork?.[q.cursor];
   const definition=calculatorReturnToFormulas&&formulaView==='manual'?triangleDefinitions.find(item=>item.id===state?.selected):null;
   panel.hidden=!definition;dialog.classList.toggle('with-triangle-reference',!!definition);
   if(!definition){panel.innerHTML='';return;}
@@ -1864,8 +1879,9 @@ function renderCalculatorTriangleReference() {
   panel.innerHTML=`<h3 id="calc-triangle-title"><svg class="calc-reference-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 2 21h20zM7 12h10M12 12v9"/></svg>הערכים שהזנת במשולש</h3><p class="muted">${escapeHTML(definition.title)}</p><dl class="calc-reference-values">${rows}</dl>`;
 }
 function canUseCalculatorResult() {
+  const specialized=window.CourseApp?.formulaCalculatorAvailable();if(specialized!==null&&specialized!==undefined)return specialized;
   if(window.CourseApp?.standalone())return false;
-  if(viewTab==='simulator'||!currentStep()||currentQuestion().accepted)return false;
+  if(viewTab==='simulator'||!currentStep()||formulaQuestion().accepted)return false;
   return !(calculatorReturnToFormulas&&formulaView==='manual')||manualResultSlotKey()!==null;
 }
 function hideManualKeypad() {
@@ -1889,7 +1905,7 @@ function paintManualKeypad() {
   $('manual-keypad-value').textContent=key+' = '+(input.value||'…');
 }
 function showManualKeypad(input) {
-  if(input.hasAttribute('data-manual-slot')||input.disabled||currentQuestion().accepted)return hideManualKeypad();
+  if(input.hasAttribute('data-manual-slot')||input.disabled||formulaQuestion().accepted)return hideManualKeypad();
   manualKeypadTarget=input;manualKeypadFieldId=input.id;
   $('manual-keypad').hidden=false;paintManualKeypad();
   requestAnimationFrame(()=>{
@@ -1913,7 +1929,7 @@ function writeKeypadValue(input,value,position) {
   if(manualTokenKind(value)==='invalid')input.setAttribute('aria-invalid','true');
   else input.removeAttribute('aria-invalid');
   try{input.setSelectionRange(position,position);}catch{}
-  saveCourse();paintManualKeypad();
+  saveFormulaWork();paintManualKeypad();
 }
 function pressManualKey(key) {
   const input=keypadInput();
@@ -1923,7 +1939,7 @@ function pressManualKey(key) {
   if(key==='enter') {
     const kind=manualTokenKind(input.value);
     if(kind==='invalid'||input.hasAttribute('data-manual-slot')&&!['blank','number'].includes(kind)){input.setAttribute('aria-invalid','true');return;}
-    saveCourse();
+    saveFormulaWork();
     const fields=[...document.querySelectorAll(input.hasAttribute('data-manual-list')?'[data-manual-list]':'[data-manual-slot]')];
     const next=fields[fields.indexOf(input)+1]??(input.hasAttribute('data-manual-list')?document.querySelector('[data-manual-slot]'):document.querySelector('[data-check-manual]'));
     if(next?.hasAttribute('data-check-manual'))hideManualKeypad();
@@ -1973,11 +1989,11 @@ function manualTokenKind(value) {
   return /^(?:\d+(?:[.,]\d*)?|[.,]\d+)$/.test(text) && Number.isFinite(Number(text.replace(',', '.'))) ? 'number' : 'invalid';
 }
 function formulaAnswerField() {
-  if(currentQuestion().accepted)return $('formula-body').querySelector('[data-next-step]');
+  if(formulaQuestion().accepted)return $('formula-body').querySelector('[data-next-step]');
   return formulaView === 'manual' ? $('manual-slot-'+manualResultSlotKey())??document.querySelector('[data-manual-slot]') : $('formula-body').querySelector('[data-answer]');
 }
 function manualEntrySlots(definition, state = manualState(), context = triangleContext()) {
-  const order=['U','R','I','P'];
+  const order=formulaListKeys();
   const source=slot=>{
     const key=slot.key.replace(/2$/,'');
     if(String(state.list[key]??'').trim())return state.list[key];
@@ -2003,7 +2019,7 @@ function focusManualEntry() {
   if(heading){heading.tabIndex=-1;heading.focus({preventScroll:true});}
 }
 function nextManualTriangleField(input) {
-  saveCourse();
+  saveFormulaWork();
   const fields=[...document.querySelectorAll('[data-manual-slot]')];
   const next=fields[fields.indexOf(input)+1]??document.querySelector('[data-check-manual]');
   next?.focus({preventScroll:true});
@@ -2011,11 +2027,12 @@ function nextManualTriangleField(input) {
 function manualSolverHTML() {
   const context = triangleContext(), state = manualState();
   const definition = triangleDefinitions.find(item => item.id === state.selected);
-  const circuitReference=`<aside class="manual-circuit-reference" aria-labelledby="manual-circuit-title"><h3 id="manual-circuit-title">המעגל של התרגיל</h3>${circuitSummaryHTML(context.q)}<figure class="diagram">${diagramPreview(context.q)}</figure></aside>`;
-  const choices = triangleDefinitions.map(item => `<button type="button" class="manual-choice" data-manual-triangle="${item.id}" aria-pressed="${item.id === state.selected}"${context.q.accepted?' disabled':''}><strong>${item.title}</strong>${trianglePreview(item)}${mathNotation(item.formulas[0])}</button>`).join('');
-  const list = ['U','R','I','P'].map(key => `<label class="manual-list-row" for="manual-list-${key}"><bdi>${key} =</bdi><input id="manual-list-${key}" data-manual-list="${key}" type="text" inputmode="none" lang="en" maxlength="24" aria-controls="manual-keypad"${window.matchMedia('(pointer:coarse)').matches ? ' readonly' : ''}${context.q.accepted?' disabled':''} autocomplete="off" autocapitalize="off" spellcheck="false" value="${escapeHTML(state.list[key])}" aria-label="${key} ברשימת הנתונים" aria-describedby="manual-token-help"${manualTokenKind(state.list[key]) === 'invalid' ? ' aria-invalid="true"' : ''}></label>`).join('');
-  const message = context.q.accepted?acceptedMessage(context.q):state.message || (feedbackType === 'success' ? feedback : '');
-  const status = `<div id="manual-message" class="feedback ${context.q.accepted?'success':state.message ? state.type : feedbackType}" role="status" aria-live="polite">${escapeHTML(message)}</div>`;
+  const circuitReference=window.CourseApp?.formulaCircuitReference()??`<aside class="manual-circuit-reference" aria-labelledby="manual-circuit-title"><h3 id="manual-circuit-title">המעגל של התרגיל</h3>${circuitSummaryHTML(context.q)}<figure class="diagram">${diagramPreview(context.q)}</figure></aside>`;
+  const choices = formulaDefinitions(context).map(item => `<button type="button" class="manual-choice" data-manual-triangle="${item.id}" aria-pressed="${item.id === state.selected}"${context.q.accepted?' disabled':''}><strong>${item.title}</strong>${trianglePreview(item)}${mathNotation(item.formulas[0])}</button>`).join('');
+  const list = formulaListKeys().map(key => `<label class="manual-list-row" for="manual-list-${key}"><bdi>${key} =</bdi><input id="manual-list-${key}" data-manual-list="${key}" type="text" inputmode="none" lang="en" maxlength="24" aria-controls="manual-keypad"${window.matchMedia('(pointer:coarse)').matches ? ' readonly' : ''}${context.q.accepted?' disabled':''} autocomplete="off" autocapitalize="off" spellcheck="false" value="${escapeHTML(state.list[key]??'')}" aria-label="${key} ברשימת הנתונים" aria-describedby="manual-token-help"${manualTokenKind(state.list[key]) === 'invalid' ? ' aria-invalid="true"' : ''}></label>`).join('');
+  const feedbackState=window.CourseApp?.formulaFeedbackStatus()??{message:feedback,type:feedbackType};
+  const message = context.q.accepted?acceptedMessage(context.q):state.message || (feedbackState.type === 'success' ? feedbackState.message : '');
+  const status = `<div id="manual-message" class="feedback ${context.q.accepted?'success':state.message ? state.type : feedbackState.type}" role="status" aria-live="polite">${escapeHTML(message)}</div>`;
   let work = context.q.accepted?`<div class="manual-form">${status}<button class="btn" type="button" data-next-step>הבא ←</button></div>`:`<div><div class="manual-placeholder">בחרו משולש מהרשימה כדי להציב בו נתונים.</div>${status}</div>`;
   if (definition) {
     const draft = manualDraft(state), locations = ['top','left','right'];
@@ -2027,24 +2044,25 @@ function manualSolverHTML() {
   return `<div class="manual-intro"><h3>פתירה בעזרת המשולש</h3><p class="small muted">${escapeHTML(context.label)}${context.task ? ` · מחשבים: ${escapeHTML(context.task.label)}` : ''}</p><p id="manual-instructions" class="small">בחרו משולש והציבו בו את שני הנתונים הידועים. חשבו בעצמכם והקלידו במשבצת של הנעלם את התוצאה המספרית. המעבר בשדות מתחיל בנתונים הידועים לפי סדר רשימת הנתונים. לחצו על בדוק כדי לבדוק את ההצבה ואת התוצאה ולהעביר אותה לתרגיל. לאחר תשובה נכונה לחצו על הבא.</p></div>${notice}<div class="manual-desktop-layout">${circuitReference}<div class="manual-editor">${unitNote(context.q)}<strong class="small" id="manual-choice-title">בחרו את המשולש המתאים</strong><div class="manual-choices" role="group" aria-labelledby="manual-choice-title">${choices}</div><div class="manual-workspace"><aside class="manual-list" aria-labelledby="manual-list-title"><p class="manual-paper-note">מומלץ לרשום את הנתונים בדף.</p><button class="btn manual-fill" type="button" data-manual-list-help${context.q.accepted?' disabled':''}>מילוי מתרגיל</button><h3 id="manual-list-title">רשימת נתונים<br><span class="muted">רשות</span></h3>${list}</aside><div class="manual-triangle-panel"><button class="btn secondary tiny manual-show-circuit" type="button" data-show-manual-circuit>הצג סכמה</button>${work}</div></div><p id="manual-token-help" class="small muted manual-note">הרשימה היא כלי עזר ואפשר להשאיר אותה ריקה. ${bdi('?')} = הנעלם שמחפשים; ${bdi('X')} = ערך שלא ידוע ולא התבקש לחשב. אפשר להקליד מספרים, כולל עשרוניים. כפתור מילוי מתרגיל ממלא רק את הרשימה; את ההצבה והחישוב עושים בעצמכם.</p><p id="manual-list-status" class="small muted manual-status" role="status" aria-live="polite">${escapeHTML(state.listStatus)}</p>${definition?.note ? `<p class="small muted">${escapeHTML(definition.note)}</p>` : ''}</div></div>`;
 }
 function fillManualList() {
-  if(currentQuestion().accepted)return;
-  markHelp();
+  if(formulaQuestion().accepted)return;
+  markFormulaHelp();
   const context = triangleContext(), state = manualState();
   const target = context.target === 'Req' ? 'R' : context.target;
-  for (const key of ['U','R','I','P']) {
+  for (const key of formulaListKeys()) {
     state.list[key] = key === target ? '?' : context.values[key] !== undefined ? DC.fmt(context.values[key]) : 'X';
     const input = $('manual-list-' + key);
     if (input) { input.value = state.list[key]; input.removeAttribute('aria-invalid'); }
   }
   state.listStatus = 'הרשימה מולאה. את הנתונים במשולש מציבים בעצמכם.';
   $('manual-list-status').textContent = state.listStatus;
-  syncManualEntryOrder();fitDialogs();saveCourse();
+  syncManualEntryOrder();fitDialogs();saveFormulaWork();
 }
 function manualFeedback(message, errors = []) {
-  if(currentQuestion().accepted)return;
+  if(window.CourseApp?.formulaFeedback(message,errors))return;
+  if(formulaQuestion().accepted)return;
   hideManualKeypad();
   recordAttempt(false,'manual');
-  currentQuestion().attempts++;
+  formulaQuestion().attempts++;
   const state = manualState(); state.message = 'לא נכון. '+message; state.type = 'error'; state.errors = errors;
   feedback=state.message;feedbackType='error';
   const notice = $('manual-message');
@@ -2056,7 +2074,7 @@ function manualFeedback(message, errors = []) {
     if (invalid) input.setAttribute('aria-invalid','true'); else input.removeAttribute('aria-invalid');
     input.classList.toggle('answer-incorrect',invalid);
   });
-  fitDialogs();saveCourse();
+  fitDialogs();saveFormulaWork();
 }
 function checkManualAnswer() {
   const context = triangleContext(), state = manualState();
@@ -2074,7 +2092,7 @@ function checkManualAnswer() {
   if (incorrect.length) return manualFeedback('בדקו את הנתונים שהצבתם במשולש. בשני המקומות הידועים צריך להקליד מספרים שמתאימים לנתוני התרגיל. בסימון ריבוע כופלים את הנתון בעצמו.', incorrect.map(slot => slot.key));
   if(manualTokenKind(answer)!=='number')return manualFeedback('הקלידו במשבצת של הנעלם את התוצאה המספרית שחישבתם.',[context.target]);
   if (!DC.accepted(answer, context.task.value)) return manualFeedback('ההצבה במשולש נכונה. בדקו שוב את החישוב ואת התוצאה שהקלדתם במשבצת של הנעלם.', [context.target]);
-  checkAnswer(answer,'manual');
+  if(!window.CourseApp?.submitFormulaAnswer(answer))checkAnswer(answer,'manual');
 }
 function triangleCard(definition, context = null) {
   const slots = definition.slots;
@@ -2082,7 +2100,7 @@ function triangleCard(definition, context = null) {
     && slots.filter(slot => slot.key !== context.target).every(slot => context.values[slot.key] !== undefined);
   const locations = ['top', 'left', 'right'];
   const geometry = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 225" preserveAspectRatio="none" aria-hidden="true"><path d="M130 10 L15 218 L245 218 Z" fill="#f3f6ee" stroke="#78958a" stroke-width="2.5"/><path d="M65 125 L195 125 M130 125 L130 218" stroke="#78958a" stroke-width="2"/></svg>';
-  const inputs = slots.map((slot, j) => `<div class="triangle-slot ${locations[j]}"><strong>${slot.symbol}</strong><small>${slotUnit(slot,context?.q??currentQuestion())}</small>${!context ? '' : enabled && slot.key === context.target
+  const inputs = slots.map((slot, j) => `<div class="triangle-slot ${locations[j]}"><strong>${slot.symbol}</strong><small>${slotUnit(slot,context?.q??formulaQuestion())}</small>${!context ? '' : enabled && slot.key === context.target
     ? `<input class="numeric${context.q.accepted?' answer-correct':context.q.attempts>0?' answer-incorrect':''}" data-answer type="text" inputmode="decimal" maxlength="24" autocomplete="off" value="${escapeHTML(context.q.draft)}"${context.q.accepted?' readonly':''} aria-label="${escapeHTML(context.task.label)} במשולש ${definition.title}">`
     : `<bdi>${context.values[slot.key] !== undefined ? DC.fmt(context.values[slot.key]) : '—'}</bdi>`}</div>`).join('');
   const triangle = `<div class="triangle">${geometry}${inputs}</div>`;
@@ -2090,28 +2108,29 @@ function triangleCard(definition, context = null) {
   return `<section class="formula-card"><h3>${definition.title}</h3>${content}<div class="formula-lines">${definition.formulas.map(mathNotation).join('<br>')}</div>${definition.note ? `<p class="triangle-help">${definition.note}</p>` : ''}</section>`;
 }
 function renderFormulas() {
-  hideManualKeypad();saveCourse();
+  hideManualKeypad();saveFormulaWork();
   const context = formulaView === 'help' ? triangleContext() : null;
   $('formula-dialog').classList.toggle('manual-desktop-view',formulaView==='manual');
-  if (context?.task) markHelp();
+  if (context?.task) markFormulaHelp();
   document.querySelector('#formula-dialog .formula-intro').hidden = formulaView === 'manual';
   document.querySelectorAll('.formula-tabs [data-formula-tab]').forEach(button => {
     const active = button.dataset.formulaTab === formulaView;
     button.setAttribute('aria-selected', active); button.tabIndex = active ? 0 : -1;
   });
   $('formula-body').setAttribute('aria-labelledby', 'formula-tab-' + formulaView);
+  if(formulaView==='reference'&&window.CourseApp?.renderFormulaReference()){finishFormulaRender();return;}
+  if(formulaView==='help'&&window.CourseApp?.renderExtraFormulaHelp()){finishFormulaRender();return;}
   if (formulaView === 'manual') {
     $('formula-body').innerHTML = manualSolverHTML();
-    fitDialogs(); resizeFrame(); return;
+    finishFormulaRender(); return;
   }
   const sheetHelp = context?.task && (context.q.hint || context.q.solution) ? `<div class="${context.q.solution ? 'solution' : 'hint'}" id="sheet-explained-solution">${context.q.solution ? solutionHeadingHTML()+explainedSolutionHTML(context.q,context.task)+'<p>הקלידו את התוצאה בשדה המענה המודגש כדי להמשיך.</p>' : `<strong>כיוון לפתרון</strong><p>${escapeHTML(context.task.hint)}</p><div class="math">${mathNotation(context.task.formula)}</div>`}</div>` : '';
-  const definitions = triangleDefinitions;
-  const alternative = context?.task && context.target === 'Req' ? `<form class="sheet-answer" data-triangle-form novalidate><label for="sheet-answer">${escapeHTML(context.task.label)} — השתמשו בנוסחת טור או מקביל שמופיעה בהמשך</label><div class="answer-row"><input id="sheet-answer" class="numeric${context.q.accepted?' answer-correct':context.q.attempts>0?' answer-incorrect':''}" data-answer inputmode="decimal" type="text" maxlength="24" value="${escapeHTML(context.q.draft)}"${context.q.accepted?' readonly':''} autocomplete="off" aria-label="התנגדות שקולה"><span>${bdi('Ω')}</span>${context.q.accepted?'<button class="btn tiny" type="button" data-next-step>הבא ←</button>':'<button class="btn tiny" type="submit">בדיקת תשובה</button>'}</div></form>` : '';
+  const definitions = formulaDefinitions(context??triangleContext());
+  const alternative = context?.task && context.target === 'Req' ? `<form class="sheet-answer" data-triangle-form novalidate><label for="sheet-answer">${escapeHTML(context.task.label)} — השתמשו בנוסחת טור או מקביל שמופיעה בהמשך</label><div class="answer-row"><input id="sheet-answer" class="numeric${context.q.accepted?' answer-correct':context.q.attempts>0?' answer-incorrect':''}" data-answer inputmode="decimal" type="text" maxlength="24" value="${escapeHTML(context.q.draft)}"${context.q.accepted?' readonly':''} autocomplete="off" aria-label="התנגדות שקולה"><span>${bdi(context.task.unit)}</span>${context.q.accepted?'<button class="btn tiny" type="button" data-next-step>הבא ←</button>':'<button class="btn tiny" type="submit">בדיקת תשובה</button>'}</div></form>` : '';
   const given = context ? Object.entries(context.q.givens).map(([key, value]) => `<div class="given">${bdi(`${key} = ${quantity(context.q,key,value)}`)}</div>`).join('') : '';
   const exerciseContext = context ? `<div class="formula-context"><strong>${escapeHTML(context.label)}</strong><div>${context.task ? `כעת מחשבים: ${escapeHTML(context.task.label)}. הנתונים במשולשים כוללים רק נתוני השאלה וצעדים שכבר השלמתם.` : 'אפשר לעבור על הנוסחאות ולהמשיך לתרגיל הבא.'}</div><div class="givens sheet-givens" aria-label="נתוני התרגיל">${given}</div><div class="answer-tools" style="margin:8px 0 0"><button class="btn secondary tiny" data-open-calculator>פתיחת המחשבון</button>${context.task&&!context.q.accepted?`<button class="text-btn small" data-solution aria-expanded="${context.q.solution}" aria-controls="sheet-explained-solution">פתרון מוסבר</button>`:''}<button class="btn soft tiny" data-close-dialog="formula-dialog">חזרה לתרגול</button></div></div>` : '';
-  $('formula-body').innerHTML = `${formulaView === 'reference' ? '<div class="manual-entry"><button class="btn" data-formula-tab="manual">פתירה בעזרת המשולש</button><span class="small muted">בוחרים משולש, מציבים נתונים ופותרים בעצמכם.</span></div>' : ''}${exerciseContext}${unitNote(context?.q??currentQuestion())}${context && feedback ? `<div class="feedback sheet-feedback ${feedbackType}" role="status" aria-live="polite">${escapeHTML(feedback)}</div>` : ''}${sheetHelp}${alternative}<div class="formula-grid">${definitions.map(def => triangleCard(def, context)).join('')}</div><div class="units-list"><span>${bdi('U')} — מתח, וולט ${bdi('V')}</span><span>${bdi('I')} — זרם, אמפר ${bdi('A')}</span><span>${bdi('R')} — התנגדות, אוהם ${bdi('Ω')}</span><span>${bdi('P')} — הספק, ואט ${bdi('W')}</span></div><div class="formula-networks"><section class="formula-card"><h3>מעגל טורי</h3><div class="math">${mathNotation('R_T = R1 + R2 + R3')}<br>${mathNotation('I = U ÷ R_T')}<br>${mathNotation('U1 = I × R1')}<br>${mathNotation('U = U1 + U2 + U3')}<br>${mathNotation('P1 = I² × R1')}</div><p class="small muted" style="margin-top:10px">${mathNotation('R_T')} מציין התנגדות שקולה. בשני רכיבים מחברים רק את R1 ואת R2. אותו זרם עובר בכל הרכיבים.</p></section><section class="formula-card"><h3>מעגל מקבילי</h3><div class="math parallel-formulas"><div class="network-formula">${mathNotation('R_T = (R1 × R2) ÷ (R1 + R2)')}</div><div class="network-formula">${mathNotation('R_T = 1 ÷ (1/R1 + 1/R2 + 1/R3)')}</div><div class="network-formula">${mathNotation('R_T = R ÷ n')}</div><div class="network-formula">${mathNotation('I1 = U ÷ R1')}</div><div class="network-formula">${mathNotation('I_total = I1 + I2 + I3')}</div><div class="network-formula">${mathNotation('P1 = U × I1')}</div></div><p class="small muted" style="margin-top:10px">${mathNotation('R_T')} מציין התנגדות שקולה. הנוסחה R/n מתאימה רק לנגדים זהים. n הוא מספר הענפים. בכל הענפים אותו מתח.</p></section></div>`;
-  window.CourseApp?.appendFormulas();
-  fitDialogs(); resizeFrame();
+  $('formula-body').innerHTML = `${formulaView === 'reference' ? '<div class="manual-entry"><button class="btn" data-formula-tab="manual">פתירה בעזרת המשולש</button><span class="small muted">בוחרים משולש, מציבים נתונים ופותרים בעצמכם.</span></div>' : ''}${exerciseContext}${unitNote(context?.q??formulaQuestion())}${context && feedback ? `<div class="feedback sheet-feedback ${feedbackType}" role="status" aria-live="polite">${escapeHTML(feedback)}</div>` : ''}${sheetHelp}${alternative}<div class="formula-grid">${definitions.map(def => triangleCard(def, context)).join('')}</div><div class="units-list"><span>${bdi('U')} — מתח, וולט ${bdi('V')}</span><span>${bdi('I')} — זרם, אמפר ${bdi('A')}</span><span>${bdi('R')} — התנגדות, אוהם ${bdi(context.task.unit)}</span><span>${bdi('P')} — הספק, ואט ${bdi('W')}</span></div><div class="formula-networks"><section class="formula-card"><h3>מעגל טורי</h3><div class="math">${mathNotation('R_T = R1 + R2 + R3')}<br>${mathNotation('I = U ÷ R_T')}<br>${mathNotation('U1 = I × R1')}<br>${mathNotation('U = U1 + U2 + U3')}<br>${mathNotation('P1 = I² × R1')}</div><p class="small muted" style="margin-top:10px">${mathNotation('R_T')} מציין התנגדות שקולה. בשני רכיבים מחברים רק את R1 ואת R2. אותו זרם עובר בכל הרכיבים.</p></section><section class="formula-card"><h3>מעגל מקבילי</h3><div class="math parallel-formulas"><div class="network-formula">${mathNotation('R_T = (R1 × R2) ÷ (R1 + R2)')}</div><div class="network-formula">${mathNotation('R_T = 1 ÷ (1/R1 + 1/R2 + 1/R3)')}</div><div class="network-formula">${mathNotation('R_T = R ÷ n')}</div><div class="network-formula">${mathNotation('I1 = U ÷ R1')}</div><div class="network-formula">${mathNotation('I_total = I1 + I2 + I3')}</div><div class="network-formula">${mathNotation('P1 = U × I1')}</div></div><p class="small muted" style="margin-top:10px">${mathNotation('R_T')} מציין התנגדות שקולה. הנוסחה R/n מתאימה רק לנגדים זהים. n הוא מספר הענפים. בכל הענפים אותו מתח.</p></section></div>`;
+  finishFormulaRender();
 }
 
 function openDialog(id, { preserveFormulaView = false } = {}) {
@@ -2119,7 +2138,7 @@ function openDialog(id, { preserveFormulaView = false } = {}) {
   if (!profileReady() && id !== 'profile-dialog') { openProfile(); return; }
   calculatorReturnToFormulas = id === 'calculator-dialog' && $('formula-dialog').open;
   if(id==='calculator-dialog'){prepareCalculator();renderCalculatorTriangleReference();}
-  if (id === 'formula-dialog' && !preserveFormulaView) formulaView = 'reference';
+  if (id === 'formula-dialog' && !preserveFormulaView) formulaView = window.CourseApp?.preferredFormulaView()??'reference';
   document.querySelectorAll('dialog[open]').forEach(dialog => { if (dialog.id !== id) dialog.close(); });
   if (id === 'formula-dialog') renderFormulas();
   if (!$(id).open) $(id).showModal();
@@ -2402,7 +2421,7 @@ document.addEventListener('click', event => {
     if(formulaView==='manual')focusManualEntry();return;
   }
   if (button.dataset.manualTriangle) {
-    if(currentQuestion().accepted)return;
+    if(formulaQuestion().accepted)return;
     const state = manualState(); state.selected = button.dataset.manualTriangle; state.message = ''; state.errors = [];
     renderFormulas();focusManualEntry();return;
   }
@@ -2535,7 +2554,7 @@ document.addEventListener('keydown', event => {
   const formulaTab = event.target.closest('.formula-tab[data-formula-tab]');
   if (formulaTab && ['ArrowLeft','ArrowRight','Home','End'].includes(event.key)) {
     event.preventDefault();
-    const views = ['reference','help','manual'], index = views.indexOf(formulaView);
+    const views = ['reference','manual'], index = views.indexOf(formulaView==='help'?'manual':formulaView);
     formulaView = views[event.key === 'Home' ? 0 : event.key === 'End' ? views.length - 1 : (index + (event.key === 'ArrowLeft' ? 1 : views.length - 1)) % views.length];
     renderFormulas(); $('formula-tab-' + formulaView).focus(); $('formula-dialog').scrollTop = 0; return;
   }

@@ -153,13 +153,13 @@ const CoursePractice = (() => {
     const ut=whole?pick(rng,[3800,4000,4200]):pick(rng,[3.8,4,4.2]);
     const rs=whole?integral.rs:pick(rng,[.04,.06,.08,.12,.16]);
     const current=whole?integral.current:pick(rng,[1.5,2,2.5]);
-    const du=rs*current,ul=ut-du,limit=.12;
+    const du=rs*current,ul=ut-du;
     const voltageUnit=whole?'mV':'V',resistanceUnit=whole?'mΩ':'Ω',rsOhms=whole?rs/1000:rs;
     return {kind:'battery',schemaVersion:3,whole,level,index,unitFamily:'Rs',title:'התנגדות פנימית של סוללה',voltageUnit,resistanceUnit,
       text:`מתח הסוללה ללא עומס הוא ${fmt(ut)} ${whole?'מיליוולט':'וולט'}. כשהסוללה מספקת זרם של ${fmt(current)} אמפר, מתח העומס שלה הוא ${fmt(ul)} ${whole?'מיליוולט':'וולט'}. חשבו את מפל המתח הפנימי ואת ההתנגדות הפנימית${whole?' במיליאוהם':''}.`,
       givens:[['U_t',ut,voltageUnit],['U_L',ul,voltageUnit],['I',current,'A']],
       steps:[step('ΔU','מפל המתח על ההתנגדות הפנימית',voltageUnit,du,'ΔU = U_t − U_L',`${fmt(ut)} − ${fmt(ul)}`),step('R_s','ההתנגדות הפנימית',resistanceUnit,rs,'R_s = ΔU ÷ I',`${fmt(du)} ÷ ${fmt(current)}`)],
-      note:`לצורך התרגיל בלבד, נתון יצרן: התנגדות פנימית מרבית ${fmt(whole?limit*1000:limit)} ${resistanceUnit}. ${rsOhms<=limit?'התוצאה עומדת בגבול הנתון.':'התוצאה חורגת מהגבול הנתון ונדרשת בדיקה לפי הוראות היצרן.'} התנגדות פנימית לבדה אינה קובעת אחוז בריאות סוללה.`,limit,rs,rsOhms};
+      note:'',rs,rsOhms};
   }
   function batch(course,kind,level,seed){
     const rng=random(seed),result=Array.from({length:10},(_,index)=>kind==='mixed'?mixed(rng,level,index):battery(rng,course,level,index));

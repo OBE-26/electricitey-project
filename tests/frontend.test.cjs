@@ -23,6 +23,7 @@ dispatch();
 const click=selector=>{const node=d.querySelector(selector);assert.ok(node,'Missing '+selector);node.click();};
 const input=(selector,value)=>{const node=d.querySelector(selector);assert.ok(node,'Missing '+selector);node.value=value;node.dispatchEvent(new w.Event('input',{bubbles:true}));};
 const change=(selector,value)=>{const node=d.querySelector(selector);assert.ok(node,'Missing '+selector);node.value=value;node.dispatchEvent(new w.Event('change',{bubbles:true}));};
+const tabOrder=()=>[...d.querySelectorAll('.tabs [role=tab]')].map(node=>node.dataset.tab??node.dataset.extraTab);
 const submit=selector=>d.querySelector(selector).dispatchEvent(new w.Event('submit',{bubbles:true,cancelable:true}));
 const waitFor=async test=>{for(let n=0;n<100;n++){if(test())return;await new Promise(resolve=>setTimeout(resolve,20));}throw Error('Timed out waiting for state');};
 (async()=>{
@@ -96,6 +97,14 @@ const waitFor=async test=>{for(let n=0;n<100;n++){if(test())return;await new Pro
   click('[data-select-course="security"]');
   assert.ok(d.querySelector('#course-title [data-course-icon="security"]'));
   assert.equal(w.testState.questions().ohm.length,3);
+  assert.deepEqual(tabOrder(),['ohm','series','parallel','mixed','battery','simulator','formulas'],'Security navigation follows learning order');
+  assert.equal(d.querySelector('#tab-ohm').firstChild.textContent,'חוק אוהם');
+  assert.equal(d.querySelector('#tab-formulas').firstChild.textContent,'דף נוסחאות לקורס מיגון');
+  d.querySelector('#tab-ohm').dispatchEvent(new w.KeyboardEvent('keydown',{key:'End',bubbles:true}));
+  assert.ok(d.querySelector('.course-formula-page'),'End opens final course formula tab');
+  assert.equal(d.activeElement.id,'formula-tab-reference');
+  assert.equal(d.querySelector('#formula-title').textContent,'דף נוסחאות לקורס מיגון');
+  click('#formula-dialog [data-close-dialog="formula-dialog"]');click('[data-tab="ohm"]');
   click('[data-extra-tab="mixed"]');
   assert.equal(d.querySelectorAll('.mixed-junction,.mixed-node-guide').length,0,'No node markings or guide in the question');
   click('[data-open-mixed="0"]');assert.equal(d.querySelectorAll('#diagram-canvas .mixed-junction').length,0,'Question zoom has no node markings');click('[data-close-dialog="diagram-dialog"]');
@@ -118,14 +127,22 @@ const waitFor=async test=>{for(let n=0;n<100;n++){if(test())return;await new Pro
   click('[data-open-mixed="0"]');assert.equal(d.querySelectorAll('#diagram-canvas .mixed-junction').length,0,'Reopening question zoom removes the previous solution markings');click('[data-close-dialog="diagram-dialog"]');
   click('[data-extra-tab="battery"]');assert.ok(d.querySelector('#extra-answer'));
   click('[data-extra-tab="formulas"]');assert.ok(d.querySelector('.course-formula-page'));assert.ok(d.querySelector('.course-formula-page').textContent.includes('אנרגיה בסוללה'));
+  if(d.querySelector('#formula-dialog').open)click('#formula-dialog [data-close-dialog="formula-dialog"]');
   click('[data-course-action="home"]');click('[data-select-course="mobile"]');
   assert.equal(w.testState.questions().ohm.length,2);
+  assert.deepEqual(tabOrder(),['ohm','series','parallel','battery','simulator','formulas']);
+  assert.equal(d.querySelector('#tab-formulas').firstChild.textContent,'דף נוסחאות לקורס סלולר');
   assert.equal(d.querySelectorAll('#workspace [data-level]').length,2);
   click('[data-tab="parallel"]');assert.equal(w.testState.question().resistances.length,2);
   click('[data-extra-tab="battery"]');assert.equal(d.querySelectorAll('[data-extra-level]').length,2);
   click('[data-extra-tab="formulas"]');assert.ok(d.querySelector('.course-formula-page').textContent.includes('התנגדות פנימית'));assert.ok(!d.querySelector('.course-formula-page').textContent.includes('אנרגיה בסוללה'));
+  if(d.querySelector('#formula-dialog').open)click('#formula-dialog [data-close-dialog="formula-dialog"]');
   click('[data-course-action="home"]');click('[data-select-course="hvac"]');click('[data-course-action="practice"]');
   assert.equal(w.testState.questions().ohm[0].length,20);
+  assert.deepEqual(tabOrder(),['ohm','series','parallel','simulator','formulas']);
+  click('[data-extra-tab="formulas"]');click('#formula-tab-reference');assert.equal(d.querySelector('#formula-title').textContent,'דף נוסחאות לקורס מיזוג וקירור');
+  assert.ok(!d.querySelector('.course-formula-page').textContent.includes('סוללת טלפון'),'HVAC formula page excludes battery-only sections');
+  click('#formula-dialog [data-close-dialog="formula-dialog"]');click('[data-tab="ohm"]');
   assert.equal(w.testState.questions().ohm[0].filter(q=>q.powerResistance).length,9);
   // Formula regression: subscripts, delta, powers and fractions use MathML.
   for(const f of ['R = U² ÷ P','U_t = U_L + ΔU','R_s = ΔU ÷ I'])assert.ok(w.testState.math(f).includes('<math'),f);
@@ -176,11 +193,15 @@ const waitFor=async test=>{for(let n=0;n<100;n++){if(test())return;await new Pro
   }
   click('[data-extra-tab="formulas"]');assert.ok(d.querySelector('.course-formula-page'));
   assert.ok(d.querySelector('.course-formula-page').textContent.includes('ענפי טור המחוברים במקביל'));
+  if(d.querySelector('#formula-dialog').open)click('#formula-dialog [data-close-dialog="formula-dialog"]');
   change('#qa-course-switch','mobile');
   click('[data-extra-tab="battery"]');
   const phoneOption=[...d.querySelectorAll('#qa-extra-exercise option')].find(node=>node.textContent.includes('התנגדות פנימית'));
   assert.ok(phoneOption);change('#qa-extra-exercise',phoneOption.value);
   assert.ok(d.querySelector('.phone-battery-svg'),'Phone circuit schematic');
+  click('[data-extra-action="solution"]');
+  assert.ok(!/נתון יצרן|התוצאה עומדת בגבול|אחוז בריאות|הוראות היצרן/.test(d.querySelector('#course-panel').textContent),'No manufacturer or diagnosis note in a full battery solution');
+  assert.equal(d.querySelector('#tab-formulas').firstChild.textContent,'דף נוסחאות לקורס סלולר לבדיקה','Course title tracks admin renaming');
   assert.ok(d.querySelector('.phone-battery-svg').textContent.includes('מעגלי הטלפון'));
   change('#qa-course-switch','hvac');
   click('[data-course-action="theory"]');

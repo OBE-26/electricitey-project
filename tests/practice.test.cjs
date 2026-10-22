@@ -121,7 +121,7 @@ for(let seed=1;seed<=60;seed++){
    }
   }
   for(const q of [...security,...mobile])assert.ok(q.steps.every(s=>Number.isFinite(s.value)&&s.value>0));
-  for(const q of mobile.filter(q=>q.unitFamily==='Rs')){const svg=practice.phoneBatterySVG(q);assert.ok(svg.includes('phone-battery-svg'));assert.ok(svg.includes('מעגלי הטלפון'));assert.ok(svg.includes(' = ?'));assert.ok(svg.includes('dy="5"'));}
+  for(const q of mobile.filter(q=>q.unitFamily==='Rs')){assert.equal(q.note,'','No manufacturer or diagnosis note');const svg=practice.phoneBatterySVG(q);assert.ok(svg.includes('phone-battery-svg'));assert.ok(svg.includes('מעגלי הטלפון'));assert.ok(svg.includes(' = ?'));assert.ok(svg.includes('dy="5"'));}
  }
 }
 console.log('Practice generators: 60 seeds, all courses and levels passed');
