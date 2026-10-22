@@ -26,6 +26,7 @@ class ThemeTest(unittest.TestCase):
    ('night QA body','#e3ecf3','#101820'),('night QA accent','#a9c9e5','#101820'),
    ('night contrast body','#ffffff','#000000'),
    ('day phone current','#b52e2e','#fffbf2'),('day phone voltage','#116e65','#fffbf2'),
+   ('day QA delete','#a4262c','#f6faff'),('night QA delete','#ff9f9f','#101820'),
    ('night phone current','#ff6565','#121212'),('night phone voltage','#65e680','#121212')]
   for label,fg,bg in pairs:
    with self.subTest(label=label):self.assertGreaterEqual(contrast(fg,bg),4.5)

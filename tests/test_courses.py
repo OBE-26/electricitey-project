@@ -116,4 +116,71 @@ class CoursesTest(unittest.TestCase):
   self.assertTrue(login['ok'])
   saved=self.service.handle({'action':'admin_save','token':login['token'],'names':dict(self.store.public()['names']),'passwords':[]},self.session)
   self.assertTrue(saved['ok'])
+ def test_admin_can_manage_existing_password_without_replacing_other_settings(self):
+  first=self.store.save(dict(self.store.public()['names']),[
+   {'label':'first','password':'old-code','expires_on':'','active':True},
+   {'label':'second','password':'other-code','expires_on':'','active':True}])
+  admin=self.service.handle({'action':'admin_login','password':'210592'},self.session)
+  token=admin['token'];row=admin['config']['passwords'][0]
+  duplicate=self.service.handle({'action':'admin_password_save','token':token,'password':{**row,'password':'other-code'}},self.session)
+  self.assertFalse(duplicate['ok'],'Editing an earlier row must not duplicate a later code')
+  original_hash=self.store.read()['passwords'][0]['hash']
+  result=self.service.handle({'action':'admin_password_save','token':token,'password':{**row,'label':'renamed','expires_on':'2099-12-31'}},self.session)
+  self.assertTrue(result['ok']);self.assertEqual(len(result['config']['passwords']),2)
+  self.assertEqual(self.store.read()['passwords'][0]['hash'],original_hash,'Empty replacement preserves the existing code')
+  result=self.service.handle({'action':'admin_password_save','token':token,'password':{**row,'password':'new-code','expires_on':'','active':True}},self.session)
+  self.assertTrue(result['ok'])
+  self.assertFalse(self.service.handle({'action':'exam_login','password':'old-code'}, {})['ok'])
+  self.assertTrue(self.service.handle({'action':'exam_login','password':'new-code'}, {})['ok'])
+  self.assertTrue(self.service.handle({'action':'exam_login','password':'other-code'}, {})['ok'])
+  names={**first['names'],'mobile':'new mobile name'}
+  self.assertTrue(self.service.handle({'action':'admin_names_save','token':token,'names':names},self.session)['ok'])
+  for active,status in [(False,'disabled'),(True,'active')]:
+   result=self.service.handle({'action':'admin_password_save','token':token,'password':{**row,'active':active}},self.session)
+   self.assertTrue(result['ok']);self.assertEqual(result['config']['passwords'][0]['status'],status)
+   self.assertEqual(result['config']['names'],names)
+  expired=self.service.handle({'action':'admin_password_save','token':token,'password':{**row,'expires_on':'2000-01-01'}},self.session)
+  self.assertEqual(expired['config']['passwords'][0]['status'],'expired')
+  other_store=ConfigStore(self.store.path)
+  other_store.update(password={'label':'third','password':'third-code','expires_on':'','active':True})
+  fresh=self.service.handle({'action':'admin_refresh','token':token},self.session)
+  self.assertEqual(len(fresh['config']['passwords']),3)
+  deleted=self.service.handle({'action':'admin_password_delete','token':token,'password_id':row['id']},self.session)
+  self.assertEqual(len(deleted['config']['passwords']),2)
+  self.assertFalse(self.service.handle({'action':'admin_password_save','token':token,'password':row},self.session)['ok'])
+  for item in deleted['config']['passwords']:
+   self.assertFalse({'hash','salt'}&set(item),'Password hashes never enter the admin browser response')
+   self.assertIn('password_text',item)
+  self.assertNotIn('passwords',self.store.public(),'The list is admin-only')
+ def test_legacy_hash_only_password_can_be_reentered_for_admin_display(self):
+  self.store.save(dict(self.store.public()['names']),[{'label':'legacy','password':'legacy-code','expires_on':'','active':True}])
+  data=self.store.read();data['passwords'][0].pop('display_password');self.store._write_local(data)
+  self.store._cached=None
+  row=self.store.public(admin=True)['passwords'][0]
+  self.assertIsNone(row['password_text'])
+  self.assertTrue(self.service.handle({'action':'exam_login','password':'legacy-code'}, {})['ok'])
+  self.store.update(password={**row,'password':'legacy-code'})
+  self.assertEqual(self.store.public(admin=True)['passwords'][0]['password_text'],'legacy-code')
+  self.assertNotIn('legacy-code',json.dumps(self.store.public()))
+ def test_expired_code_automatically_blocks_login_and_an_existing_exam(self):
+  token=self.login()
+  exam=self.service.handle({'action':'exam_new','token':token},self.session)
+  row=self.store.public(admin=True)['passwords'][0]
+  self.store.update(password={**row,'expires_on':'2000-01-01'})
+  self.assertEqual(self.store.public(admin=True)['passwords'][0]['status'],'expired')
+  self.assertFalse(self.service.handle({'action':'exam_login','password':'sample-pass'}, {})['ok'])
+  for action in ('exam_resume','exam_submit'):
+   self.assertTrue(self.service.handle({'action':action,'token':token,'exam':exam['exam']},self.session)['unauthorized'])
+ def test_password_management_routes_require_admin(self):
+  for action in ('admin_refresh','admin_names_save','admin_password_save','admin_password_delete'):
+   self.assertTrue(self.service.handle({'action':action},self.session)['unauthorized'])
+ def test_admin_theory_entry_with_zero_student_passwords(self):
+  self.assertEqual(self.store.public(admin=True)['passwords'],[])
+  login=self.service.handle({'action':'admin_login','password':'210592'},self.session)
+  self.assertTrue(login['capabilities']['qa_theory'])
+  exam=self.service.handle({'action':'admin_exam_new','token':login['token']},self.session)
+  self.assertTrue(exam['ok']);self.assertTrue(exam['qa']);self.assertEqual(len(exam['questions']),20)
+  self.assertTrue(self.service.handle({'action':'admin_exam_resume','token':login['token'],'exam':exam['exam']},self.session)['ok'])
+  self.assertTrue(self.service.handle({'action':'exam_new','token':login['token']},self.session)['unauthorized'])
+  self.assertTrue(self.service.handle({'action':'admin_exam_new'},self.session)['unauthorized'])
 if __name__=='__main__':unittest.main()

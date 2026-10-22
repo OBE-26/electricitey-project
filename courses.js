@@ -2,6 +2,7 @@
 const CourseApp = window.CourseApp = (() => {
   let screen='home',extra=null,selected='hvac',config={names:{hvac:'קורס מיזוג וקירור',security:'קורס מיגון',mobile:'קורס סלולר'}};
   let theoryGeneration=0;
+  let adminMessage='',adminError=false,adminBusy=false,adminExpanded=true,deletePasswordId=null;
   let adminToken='',examToken='',adminConfig=null,adminDraft=null,qaReturn=null,pending=null,ready=false;
   let extraLevel=0,extraState={},extraMessage='',extraError=false,examMessage='',examError=false,examBusy=false,finishConfirm=false;
   const rootPersonal='dc.basics.personal.v1',entryKey='dc.basics.entry.v1',examKey='dc.basics.theory.v1';
@@ -25,10 +26,11 @@ const CourseApp = window.CourseApp = (() => {
   const number=(value,unit)=>`<span class="course-quantity">${math(DC.fmt(value))}<span class="math-unit">${escapeHTML(unit)}</span></span>`;
   function request(action,data={}){
     if(!ready)return Promise.reject(Error('החיבור לאתר עדיין נטען. נסו שוב בעוד רגע.'));
-    if(pending)return Promise.reject(Error('ממתינים לסיום הפעולה הקודמת.'));
+    if(pending)return pending.done.then(()=>request(action,data));
     return new Promise((resolve,reject)=>{
-      const id=nonce(),timer=setTimeout(()=>{if(pending?.id===id){pending=null;reject(Error('הפעולה מתעכבת. אפשר לנסות שוב.'));}},40000);
-      pending={id,resolve,reject,timer};
+      let complete;const done=new Promise(finish=>{complete=finish;});
+      const id=nonce(),timer=setTimeout(()=>{if(pending?.id===id){pending=null;complete();reject(Error('הפעולה מתעכבת. אפשר לנסות שוב.'));}},40000);
+      pending={id,resolve,reject,timer,done,complete};
       sendStreamlitMessage('streamlit:setComponentValue',{value:{type:'course',id,action,...data},dataType:'json'});
     });
   }
@@ -185,7 +187,7 @@ const CourseApp = window.CourseApp = (() => {
     if(action==='new'&&theory.current&&!theory.current.result&&Object.keys(theory.current.answers??{}).length&&!theory.current.replaceConfirm){theory.current.replaceConfirm=true;examMessage='כדי להחליף את המבחן שלא הסתיים, לחצו שוב על ״שאלות חדשות״.';examBusy=false;render();return;}
     render();
     try{
-      const reply=await request('exam_'+action,{token:qaActive?adminToken:examToken,qa:qaActive,...action==='new'?{seen:theory.seen,previous:theory.previous}:{exam:theory.current?.exam,answers:theory.current?.answers??{}}});
+      const reply=await request((qaActive?'admin_exam_':'exam_')+action,{token:qaActive?adminToken:examToken,qa:qaActive,...action==='new'?{seen:theory.seen,previous:theory.previous}:{exam:theory.current?.exam,answers:theory.current?.answers??{}}});
       if(generation!==theoryGeneration||qaRequest!==qaActive)return;
       if(!reply.ok){if(reply.unauthorized)examToken='';throw Error(reply.message);}
       if(action==='new'){
@@ -216,22 +218,73 @@ const CourseApp = window.CourseApp = (() => {
   }
   async function loginAdmin(){
     const input=$('qa-password'),error=$('qa-login-error'),button=$('qa-login-form').querySelector('button');button.disabled=true;
-    try{const reply=await request('admin_login',{password:input.value});if(!reply.ok)throw Error(reply.message);adminToken=reply.token;adminConfig=reply.config;adminDraft=JSON.parse(JSON.stringify(adminConfig));applyConfig(reply.config);return true;}
+    try{
+      const reply=await request('admin_login',{password:input.value});if(!reply.ok)throw Error(reply.message);
+      if(!reply.capabilities?.qa_theory||!reply.capabilities?.password_management)throw Error('השרת עדיין מפעיל גרסה קודמת. יש להעלות את כל קובצי העדכון ולהפעיל מחדש את האתר ב־Streamlit.');
+      adminToken=reply.token;adminConfig=reply.config;adminDraft=JSON.parse(JSON.stringify(adminConfig));adminMessage='';adminError=false;adminExpanded=true;applyConfig(reply.config);return true;
+    }
     catch(problem){error.textContent=problem.message;input.setAttribute('aria-invalid','true');fitDialogs();return false;}
     finally{button.disabled=false;}
+  }
+  function openQATheory(){
+    if(!qaActive||examBusy||adminBusy)return;
+    if(selected!=='hvac')switchCourse('hvac');
+    screen='theory';extra=null;adminExpanded=false;examMessage='';render();
+    if(!theory.current)theoryRequest('new');
+    $('course-panel').scrollIntoView({block:'start'});
+  }
+  function passwordList(){
+    if(!adminConfig.passwords.length)return '';
+    return `<div class="admin-password-table-wrap"><table class="admin-password-table"><thead><tr><th>שם הסיסמה</th><th>הסיסמה</th><th>בתוקף עד</th><th>מצב</th><th><span class="sr-only">הסרה</span></th></tr></thead><tbody>${adminConfig.passwords.map(row=>{
+      const index=adminDraft.passwords.findIndex(item=>item.id===row.id),expiry=row.expires_on?row.expires_on.split('-').reverse().join('/'):'ללא הגבלה';
+      return `<tr data-saved-password="${escapeHTML(row.id)}"><td><strong>${escapeHTML(row.label)}</strong><br><button type="button" class="text-btn" data-edit-password="${index}">עריכה</button></td><td class="admin-password-text">${row.password_text?`<bdi>${escapeHTML(row.password_text)}</bdi>`:'<span class="small muted">סיסמה מהגרסה הקודמת: יש להזין אותה פעם אחת מחדש כדי להציגה.</span>'}</td><td><bdi>${escapeHTML(expiry)}</bdi></td><td>${{active:'פעילה',expired:'פג תוקפה',disabled:'מבוטלת'}[row.status]??'שמורה'}</td><td><button type="button" class="admin-delete-password" data-remove-password="${index}" aria-label="הסרת הסיסמה ${escapeHTML(row.label)}" ${adminBusy?'disabled':''}><span aria-hidden="true">×</span></button></td></tr>`;
+    }).join('')}</tbody></table></div>`;
+  }
+  function confirmPasswordRemoval(index){
+    const row=adminDraft.passwords[index];if(!row?.id)return;
+    deletePasswordId=row.id;
+    const saved=adminConfig.passwords.find(item=>item.id===row.id);
+    $('password-delete-question').textContent=`האם אתה בטוח שאתה רוצה להסיר את הסיסמה ״${saved?.label||row.label}״?`;
+    openDialog('password-delete-dialog');
   }
   function renderAdmin(){
     if(!qaActive||!adminConfig)return;
     $('course-admin')?.remove();
     const value=adminDraft??adminConfig,container=document.createElement('section');container.id='course-admin';container.className='qa-banner';
-    container.innerHTML=`<div class="qa-course-switch"><label for="qa-course-switch">מעבר מהיר בין קורסים<select id="qa-course-switch">${Object.entries(config.names).map(([id,name])=>`<option value="${id}" ${selected===id?'selected':''}>${escapeHTML(name)}</option>`).join('')}</select></label>${selected==='hvac'?'<button class="btn" data-course-action="theory">מבחן עיוני ללא סיסמה נוספת</button>':''}</div><h2>ניהול קורסים וגישה למבחן העיוני</h2><form id="course-admin-form"><div class="qa-selectors">${Object.keys(config.names).map(id=>`<label>שם כפתור הקורס<input data-admin-name="${id}" value="${escapeHTML(value.names[id])}" maxlength="60" required></label>`).join('')}</div><h3>סיסמאות למבחן העיוני במיזוג וקירור</h3><p class="small">תוקף הסיסמה כולל את כל התאריך שנבחר, לפי שעון ישראל. תאריך ריק משאיר את הסיסמה ללא תאריך תפוגה.</p><div id="admin-passwords">${value.passwords.map((row,i)=>`<div class="admin-password-row"><label>שם הסיסמה<input data-admin-row="${i}" data-field="label" value="${escapeHTML(row.label)}" maxlength="60" required></label><label>${row.id?'החלפת סיסמה (רשות)':'סיסמה חדשה'}<input type="password" autocomplete="new-password" data-admin-row="${i}" data-field="password" minlength="4" maxlength="128" value="${escapeHTML(row.password??'')}" ${row.id?'':'required'}></label><label>בתוקף עד<input type="date" data-admin-row="${i}" data-field="expires_on" value="${escapeHTML(row.expires_on)}"></label><label class="admin-active"><input type="checkbox" data-admin-row="${i}" data-field="active" ${row.active?'checked':''}> פעילה</label><button class="btn secondary tiny" type="button" data-remove-password="${i}">הסרה</button></div>`).join('')}</div><div class="completion-actions"><button class="btn secondary" type="button" data-course-action="add-password">הוספת סיסמה</button><button class="btn" type="submit">שמירת שמות וסיסמאות</button></div><div id="admin-status" role="status"></div>${!value.durable?'<p class="small muted">השינויים משותפים לכל המשתמשים בשרת הנוכחי. לשמירה גם לאחר התקנה מחדש יש להגדיר אחסון קבוע לפי README.</p>':''}</form>`;
+    const savedCount=adminConfig.passwords.length,disabled=adminBusy?'disabled':'';
+    const passwordRows=value.passwords.map((row,i)=>{
+      const saved=adminConfig.passwords.find(item=>item.id===row.id);
+      const state=saved?({active:'פעילה',expired:'פג תוקפה',disabled:'מבוטלת'}[saved.status]??'שמורה'):'חדשה — טרם נשמרה';
+      const expiry=saved?.expires_on?saved.expires_on.split('-').reverse().join('/'):'ללא תאריך תפוגה';
+      return `<details class="admin-password-editor" data-password-editor="${i}" ${row.id?'':'open'}><summary>${row.id?'עריכת '+escapeHTML(saved?.label||row.label):'הגדרת סיסמה חדשה'}</summary><form class="admin-password-card" data-password-form="${i}"><div class="admin-password-heading"><h4>${escapeHTML(saved?.label||'סיסמה חדשה')}</h4><span class="admin-password-state">${escapeHTML(state)}${saved?' · '+escapeHTML(expiry):''}</span></div><fieldset class="admin-password-fields" ${disabled}><legend class="sr-only">עריכת פרטי הסיסמה</legend><label>שם לזיהוי הסיסמה<input data-admin-row="${i}" data-field="label" value="${escapeHTML(row.label)}" maxlength="60" placeholder="למשל: כיתה א — נובמבר" required></label><label>${row.id?'החלפת הסיסמה':'סיסמה לתלמידים'}<input type="password" autocomplete="new-password" data-admin-row="${i}" data-field="password" minlength="4" maxlength="128" value="${escapeHTML(row.password??'')}" placeholder="${row.id?'ריק = שמירת הסיסמה הקיימת':'לפחות 4 תווים'}" ${row.id?'':'required'}></label><label>בתוקף עד<input type="date" data-admin-row="${i}" data-field="expires_on" value="${escapeHTML(row.expires_on)}"></label><label class="admin-active"><input type="checkbox" data-admin-row="${i}" data-field="active" ${row.active?'checked':''}> הסיסמה פעילה</label></fieldset><div class="completion-actions"><button class="btn" type="submit" ${disabled}>${row.id?'שמירת שינויים בסיסמה זו':'שמירת הסיסמה החדשה'}</button>${row.id?'':`<button class="btn secondary tiny" type="button" data-remove-password="${i}" ${disabled}>ביטול הוספה</button>`}</div></form></details>`;
+    }).join('');
+    container.innerHTML=`<div class="qa-course-switch"><label for="qa-course-switch">מעבר מהיר בין קורסים<select id="qa-course-switch" ${disabled}>${Object.entries(config.names).map(([id,name])=>`<option value="${id}" ${selected===id?'selected':''}>${escapeHTML(name)}</option>`).join('')}</select></label><button type="button" class="btn" data-course-action="qa-theory" ${adminBusy||examBusy?'disabled':''}>שאלות עיוניות במיזוג — כניסת מנהל</button><button type="button" class="btn secondary" data-course-action="admin-settings">ניהול סיסמאות</button></div><p class="small">כניסת המנהל לשאלות העיוניות אינה דורשת סיסמת תלמיד, גם כשאין סיסמאות פעילות.</p><div id="admin-status" role="status" class="${adminMessage?'feedback '+(adminError?'error':'success'):''}">${escapeHTML(adminMessage)}</div><details id="qa-admin-settings" ${adminExpanded?'open':''}><summary>ניהול סיסמאות ושמות קורסים · ${savedCount} סיסמאות שמורות</summary><h3>סיסמאות קיימות למבחן העיוני במיזוג וקירור</h3><p class="small">ברשימה מוצגים שם הסיסמה, הסיסמה עצמה והתוקף שלה. כדי לשנות פרטים לחצו על ״עריכה״ ואז על ״שמירת שינויים בסיסמה זו״. שדה החלפה ריק שומר על הסיסמה הקיימת. האיקס האדום שמשמאל מסיר סיסמה רק לאחר אישור.</p><p class="small">תאריך התוקף כולל את כל היום שנבחר, לפי שעון ישראל. תאריך ריק משאיר את הסיסמה ללא תאריך תפוגה.</p>${savedCount?'':'<p class="admin-empty-passwords">אין כרגע סיסמאות שמורות. אפשר להוסיף סיסמה ראשונה לתלמידים.</p>'}${passwordList()}<div id="admin-passwords">${passwordRows}</div><div class="completion-actions"><button class="btn" type="button" data-course-action="add-password" ${disabled}>הוספת סיסמה</button><button class="btn secondary" type="button" data-course-action="admin-refresh" ${disabled}>רענון הרשימה מהשמירה</button></div><p class="small muted">רענון טוען את מה ששמור בשרת ומבטל עריכות שטרם נשמרו.</p><h3>שמות כפתורי הקורסים</h3><form id="course-admin-form"><fieldset class="qa-selectors" ${disabled}>${Object.keys(config.names).map(id=>`<label>שם כפתור הקורס<input data-admin-name="${id}" value="${escapeHTML(value.names[id])}" maxlength="60" required></label>`).join('')}</fieldset><button class="btn" type="submit" ${disabled}>שמירת שמות הקורסים</button></form><p class="small admin-storage-status">${value.durable?'שמירה קבועה מחוברת: הסיסמאות ושמות הקורסים נטענים מהמאגר הפרטי.':'שמירה בשרת הנוכחי בלבד: הפעלה מחדש או עדכון האתר עלולים למחוק את ההגדרות. לחצו למטה על ״הסבר על שמירה קבועה״ כדי לחבר שמירה קבועה.'}</p><details class="admin-storage-help"><summary>הסבר על שמירה קבועה</summary><p>זו הגדרה חד־פעמית ב־Streamlit, כדי שהסיסמאות לא ייעלמו אחרי עדכון האתר. לאחריה כל ניהול הסיסמאות נעשה כאן ב־QA.</p><ol><li>ב־GitHub צרו מאגר פרטי, או השתמשו במאגר הפרטי של ההערות.</li><li>צרו טוקן גישה למאגר הזה עם הרשאת Contents: Read and write.</li><li>ב־share.streamlit.io: שלוש נקודות ליד האתר ← Settings ← Secrets. הוסיפו סעיף course_admin עם שם המאגר הפרטי ועם הטוקן. את הפרטים המדויקים והדוגמה להעתקה תמצאו ב־README תחת ״הגדרה חד־פעמית לשמירת סיסמאות״.</li><li>שמרו ב־Streamlit, היכנסו ל־QA ובדקו שמופיע ״שמירה קבועה מחוברת״.</li></ol><p>את טוקן הגישה מדביקים רק ב־Secrets. אין להעלות אותו למאגר הציבורי או לשלוח אותו בצ׳אט.</p></details></details>`;
     $('qa-panel').append(container);
   }
-  async function saveAdmin(){
-    const message=$('admin-status'),button=$('course-admin-form').querySelector('[type="submit"]');button.disabled=true;message.textContent='שומרים…';
-    try{const reply=await request('admin_save',{token:adminToken,names:adminDraft.names,passwords:adminDraft.passwords});if(!reply.ok)throw Error(reply.message);adminConfig=reply.config;adminDraft=JSON.parse(JSON.stringify(adminConfig));applyConfig(reply.config);renderAdmin();$('admin-status').className='feedback success';$('admin-status').textContent=reply.message;}
-    catch(error){message.className='feedback error';message.textContent=error.message;button.disabled=false;}resizeFrame();
+  async function adminOperation(action,data={},rowIndex=null){
+    if(adminBusy)return;
+    const token=adminToken;adminBusy=true;adminMessage='שומרים…';adminError=false;renderAdmin();resizeFrame();
+    try{
+      const reply=await request(action,{token,...data});
+      if(!qaActive||token!==adminToken)return;
+      if(!reply.ok)throw Error(reply.message);
+      const draft=adminDraft;
+      adminConfig=reply.config;
+      if(action==='admin_refresh')adminDraft=JSON.parse(JSON.stringify(adminConfig));
+      else{
+        const changedId=rowIndex===null?null:draft.passwords[rowIndex]?.id;
+        const pendingRows=draft.passwords.filter((row,i)=>!row.id&&i!==rowIndex);
+        adminDraft={...JSON.parse(JSON.stringify(adminConfig)),names:action==='admin_names_save'?{...adminConfig.names}:{...draft.names},passwords:adminConfig.passwords.map(row=>{
+          const edited=draft.passwords.find(item=>item.id===row.id);
+          return edited&&row.id!==changedId?{...row,...edited}:row;
+        }).concat(pendingRows)};
+      }
+      deletePasswordId=null;applyConfig(reply.config);adminMessage=reply.message;
+    }catch(error){if(qaActive&&token===adminToken){adminMessage=error.message;adminError=true;}}
+    finally{adminBusy=false;if(qaActive&&token===adminToken){renderAdmin();resizeFrame();}}
   }
+  function saveAdmin(){return adminOperation('admin_names_save',{names:adminDraft.names});}
+  function savePassword(index){return adminOperation('admin_password_save',{password:{...adminDraft.passwords[index]}},index);}
   function renderCourseFormulas(){
     const card=(title,formulas,note='')=>`<section class="formula-card"><h2>${escapeHTML(title)}</h2>${formulas.map(f=>`<div class="math">${math(f)}</div>`).join('')}${note?`<p class="small muted">${escapeHTML(note)}</p>`:''}</section>`;
     const ohm=['U = I × R','I = U ÷ R','R = U ÷ I','P = U × I','P = I² × R','P = U² ÷ R','R = U² ÷ P'];
@@ -251,28 +304,40 @@ const CourseApp = window.CourseApp = (() => {
       .course-panel{margin:24px 0;min-width:0}.course-choices{display:grid;gap:20px;width:min(460px,100%);margin:60px auto}.course-choice{min-height:90px;font-size:calc(23px * var(--text-scale));box-shadow:var(--shadow);display:flex;align-items:center;justify-content:center;gap:18px}.course-icon{width:42px;height:42px;flex:0 0 auto;display:inline-block;color:inherit}#course-title{display:flex;align-items:center;gap:12px}#course-title .course-icon{width:34px;height:34px}.mixed-node-guide{padding:12px;border:1px solid var(--line);border-radius:10px;font-size:calc(14px * var(--text-scale));margin-top:12px}.mixed-node-guide p{margin:0 0 10px}.mixed-node-guide summary{cursor:pointer;font-weight:700}.mixed-node-map{display:flex;flex-wrap:wrap;gap:10px 20px;padding-top:12px}.mixed-node-map>span{display:inline-flex;gap:7px;align-items:center}.circuit-reduction{padding:10px 0;border-bottom:1px solid var(--line)}.mixed-circuit-svg .mixed-junction text{font-weight:700}
       .course-home .topbar,.course-home .hero,.course-home .quickbar-space,.course-home .footer-row>div:first-child,.course-home .footer-links button:not([data-open-qa]):not([data-open-terms]):not([data-open-accessibility]){display:none}.course-home .course-panel{min-height:55vh;display:grid;align-content:center}.course-home .course-choices{width:min(460px,80vw)}
       .course-menu .hero,.course-menu .topbar,.course-menu .quickbar-space,.course-theory .hero{display:none}.course-navigation{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:16px 0}.course-navigation h2{margin:0}.course-panel .mathml{display:inline-block;vertical-align:middle}.course-quantity{display:inline-flex;gap:7px;direction:ltr;align-items:center;font-size:calc(20px * var(--text-scale))}.math-unit{font-size:.8em}.course-solution-step{padding:12px 0;border-bottom:1px solid var(--line)}.course-solution-step .math{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.battery-key{display:grid;gap:8px;padding:12px 0}.battery-key .mathml{display:inline-block}.circuit-reductions svg{width:100%;max-width:520px}.circuit-reductions p{margin-top:15px}.course-panel h1{font-size:calc(30px * var(--text-scale))}
-      #course-optional-tabs{display:contents}.tabs{grid-template-columns:repeat(auto-fit,minmax(175px,1fr))}.question-dots{flex-wrap:wrap}.theory-grid{display:grid;gap:16px}.theory-question fieldset{border:0;margin:0;padding:0}.theory-choice{display:flex;gap:10px;padding:14px;margin:9px 0;border:1px solid var(--line);border-radius:10px;cursor:pointer;background:var(--card)}.theory-choice input{flex:none;align-self:flex-start;margin-top:7px;accent-color:var(--green)}.theory-choice:has(input:checked){border-color:var(--green);box-shadow:inset 0 0 0 1px var(--green)}.theory-choice.theory-correct{background:#e2f1e9;border-color:#26734c;color:#126044}.theory-choice.theory-wrong{background:#fff0ed;border-color:#a43d34;color:#933b32}.dark-mode .theory-choice.theory-correct{background:#173e30;color:#a4edc7;border-color:#518562}.dark-mode .theory-choice.theory-wrong{background:#48272c;color:#ffd2ca;border-color:#9c615b}.theory-summary{margin-bottom:22px;text-align:center}.theory-score{font-size:36px;font-weight:bold;color:var(--green);margin:0}.theory-submit{margin:24px 0;padding:20px;background:var(--card);border:1px solid var(--line);border-radius:15px}.theory-login{max-width:570px;margin:35px auto}.theory-login form{display:grid;gap:12px}.course-panel input[type=password],#course-admin input:not([type=checkbox]){width:100%;min-height:44px;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink)}.theory-figure{margin:14px 0;max-width:100%;background:#fff;padding:8px;border-radius:8px}.theory-figure img{display:block;max-width:100%;height:auto;margin:auto}.theory-choice.theory-correct:has(input:checked),.theory-choice.theory-wrong:has(input:checked){box-shadow:none}.dark-mode .theory-choice.theory-correct:has(input:checked){border-color:#518562}.dark-mode .theory-choice.theory-wrong:has(input:checked){border-color:#9c615b}.dark-mode .theory-figure{background:#000}.dark-mode .theory-figure img{filter:invert(1)}.admin-password-row{display:grid;grid-template-columns:1fr 1fr 1fr auto auto;gap:12px;align-items:end;border-bottom:1px solid var(--line);padding:16px 0}.admin-active{white-space:nowrap;align-self:center}.theory-chart-wrap{overflow-x:auto}.theory-chart{display:block;width:100%;min-width:540px;height:auto;direction:ltr}.course-table{overflow-x:auto}.course-table table{border-collapse:collapse;width:100%}.course-table th,.course-table td{text-align:right;padding:9px;border-bottom:1px solid var(--line)}
+      #course-optional-tabs{display:contents}.tabs{grid-template-columns:repeat(auto-fit,minmax(175px,1fr))}.question-dots{flex-wrap:wrap}.theory-grid{display:grid;gap:16px}.theory-question fieldset{border:0;margin:0;padding:0}.theory-choice{display:flex;gap:10px;padding:14px;margin:9px 0;border:1px solid var(--line);border-radius:10px;cursor:pointer;background:var(--card)}.theory-choice input{flex:none;align-self:flex-start;margin-top:7px;accent-color:var(--green)}.theory-choice:has(input:checked){border-color:var(--green);box-shadow:inset 0 0 0 1px var(--green)}.theory-choice.theory-correct{background:#e2f1e9;border-color:#26734c;color:#126044}.theory-choice.theory-wrong{background:#fff0ed;border-color:#a43d34;color:#933b32}.dark-mode .theory-choice.theory-correct{background:#173e30;color:#a4edc7;border-color:#518562}.dark-mode .theory-choice.theory-wrong{background:#48272c;color:#ffd2ca;border-color:#9c615b}.theory-summary{margin-bottom:22px;text-align:center}.theory-score{font-size:36px;font-weight:bold;color:var(--green);margin:0}.theory-submit{margin:24px 0;padding:20px;background:var(--card);border:1px solid var(--line);border-radius:15px}.theory-login{max-width:570px;margin:35px auto}.theory-login form{display:grid;gap:12px}.course-panel input[type=password],#course-admin input:not([type=checkbox]){width:100%;min-height:44px;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink)}.theory-figure{margin:14px 0;max-width:100%;background:#fff;padding:8px;border-radius:8px}.theory-figure img{display:block;max-width:100%;height:auto;margin:auto}.theory-choice.theory-correct:has(input:checked),.theory-choice.theory-wrong:has(input:checked){box-shadow:none}.dark-mode .theory-choice.theory-correct:has(input:checked){border-color:#518562}.dark-mode .theory-choice.theory-wrong:has(input:checked){border-color:#9c615b}.dark-mode .theory-figure{background:#000}.dark-mode .theory-figure img{filter:invert(1)}.admin-password-card{border:1px solid var(--line);background:var(--card);border-radius:12px;padding:15px;margin:14px 0}.admin-password-fields{display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) auto;gap:12px;align-items:end;padding:0;border:0;margin:12px 0}.admin-password-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.admin-password-heading h4{margin:0}.admin-password-state{font-size:calc(14px * var(--text-scale));font-weight:700}.admin-password-fields label{display:grid;gap:6px}.admin-password-fields .admin-active{display:flex;align-items:center;gap:7px;min-height:44px}#qa-admin-settings>summary,.admin-storage-help>summary{cursor:pointer;min-height:44px;align-content:center;font-weight:700}#course-admin fieldset.qa-selectors{padding:0;border:0}.admin-storage-status{border-top:1px solid var(--line);padding-top:16px}.admin-active{white-space:nowrap;align-self:center}.theory-chart-wrap{overflow-x:auto}.theory-chart{display:block;width:100%;min-width:540px;height:auto;direction:ltr}.course-table{overflow-x:auto}.course-table table{border-collapse:collapse;width:100%}.course-table th,.course-table td{text-align:right;padding:9px;border-bottom:1px solid var(--line)}
       .theory-result-page{max-width:720px;margin:36px auto;padding:32px}.theory-result-page .completion-actions{justify-content:center}.theory-result-page .theory-score{font-size:calc(64px * var(--text-scale))}.qa-course-switch{display:flex;gap:14px;align-items:end;flex-wrap:wrap;margin-bottom:22px}.qa-course-switch label{display:grid;gap:6px}.qa-course-switch select{min-height:46px;padding:8px;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:8px}.qa-extra-picker{display:grid;gap:5px;margin:12px 0}.qa-extra-picker select{padding:8px;min-height:44px;max-width:100%;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:8px}.phone-schematic{--phone-current:#b52e2e;--phone-voltage:#116e65}.dark-mode .phone-schematic{--phone-current:#ff6565;--phone-voltage:#65e680}.course-formula-page .math{margin:10px 0;overflow-x:auto}.course-formula-page .formula-card{margin-bottom:12px}
-      @media(max-width:650px){.course-navigation{flex-wrap:wrap}.course-navigation h2{font-size:20px}.course-head{flex-wrap:wrap}.course-panel .exercise-grid{grid-template-columns:1fr}.admin-password-row{grid-template-columns:1fr 1fr}.course-choice{min-height:80px}.theory-choice{padding:12px}.course-panel{margin-top:14px}.tabs{grid-template-columns:repeat(2,minmax(0,1fr))}}
+      .admin-password-table-wrap{overflow-x:auto;margin:16px 0}.admin-password-table{width:100%;border-collapse:collapse;direction:rtl}.admin-password-table th,.admin-password-table td{padding:10px;text-align:right;border-bottom:1px solid var(--line);vertical-align:middle}.admin-password-table th{font-size:calc(14px * var(--text-scale))}.admin-password-text bdi{font-family:monospace;overflow-wrap:anywhere;font-size:calc(17px * var(--text-scale));user-select:all}.admin-password-table td:last-child{width:54px;text-align:left}.admin-delete-password{display:inline-flex;align-items:center;justify-content:center;min-width:44px;min-height:44px;border:1px solid #a4262c;border-radius:8px;background:transparent;color:#a4262c;font-size:30px;line-height:1}.admin-delete-password:hover{background:var(--soft)}.dark-mode .admin-delete-password{color:#ff9f9f;border-color:#ff9f9f}.admin-password-editor>summary{min-height:44px;align-content:center;cursor:pointer;font-weight:700}#password-delete-dialog{max-width:520px}#password-delete-question{font-size:calc(19px * var(--text-scale))}
+      @media(max-width:650px){.course-navigation{flex-wrap:wrap}.course-navigation h2{font-size:20px}.course-head{flex-wrap:wrap}.course-panel .exercise-grid{grid-template-columns:1fr}.admin-password-fields{grid-template-columns:1fr 1fr}.course-choice{min-height:80px}.theory-choice{padding:12px}.course-panel{margin-top:14px}.tabs{grid-template-columns:repeat(2,minmax(0,1fr))}}
     `;document.head.append(style);
     const nav=document.createElement('nav');nav.id='course-navigation';nav.className='course-navigation';nav.setAttribute('aria-label','ניווט קורסים');nav.innerHTML='<div class="completion-actions"><button class="btn secondary tiny" data-course-action="home">כל הקורסים</button><button class="btn secondary tiny" data-course-action="course-menu" id="course-back-menu">חזרה לקורס</button></div><h2 id="course-title"></h2>';
     document.querySelector('.topbar').before(nav);
     const panel=document.createElement('main');panel.id='course-panel';panel.className='course-panel';$('learning-main').before(panel);
     const optional=document.createElement('span');optional.id='course-optional-tabs';document.querySelector('.tabs').append(optional);
+    const deleteDialog=document.createElement('dialog');deleteDialog.id='password-delete-dialog';deleteDialog.setAttribute('aria-labelledby','password-delete-title');deleteDialog.innerHTML='<h2 id="password-delete-title">הסרת סיסמה</h2><p id="password-delete-question"></p><div class="completion-actions"><button type="button" class="btn" data-course-action="confirm-password-delete">כן</button><button type="button" class="btn secondary" data-course-action="cancel-password-delete">לא</button></div>';document.body.append(deleteDialog);
     const entry=get(entryKey,null);if(entry?.profile){personal.profile=entry.profile;if(entry.preferences)personal.preferences=entry.preferences;}else syncProfile();
     document.addEventListener('click',event=>{
       const b=event.target.closest('button');if(!b)return;
       if(b.hasAttribute('data-open-mixed')){event.preventDefault();event.stopImmediatePropagation();return openMixedDiagram(Number(b.dataset.openMixed));}
       const action=b.dataset.courseAction;
-      const handled=b.dataset.selectCourse||action||b.dataset.extraTab||b.dataset.extraLevel!==undefined||b.dataset.extraAction||b.dataset.theoryAction||b.dataset.removePassword!==undefined;
+      const handled=b.dataset.selectCourse||action||b.dataset.extraTab||b.dataset.extraLevel!==undefined||b.dataset.extraAction||b.dataset.theoryAction||b.dataset.removePassword!==undefined||b.dataset.editPassword!==undefined;
       if(handled){event.preventDefault();event.stopImmediatePropagation();}
       if(b.dataset.selectCourse)return switchCourse(b.dataset.selectCourse);
       if(action==='home')return backHome();
       if(action==='practice'){screen='practice';extra=null;return render();}
       if(action==='course-menu'){screen=selected==='hvac'?'menu':'practice';extra=null;return render();}
-      if(action==='theory'){screen='theory';examMessage='';render();if(qaActive&&!theory.current)return theoryRequest('new');return;}
-      if(action==='add-password'){adminDraft.passwords.push({label:'',expires_on:'',active:true,password:''});renderAdmin();resizeFrame();return;}
-      if(b.dataset.removePassword!==undefined){adminDraft.passwords.splice(Number(b.dataset.removePassword),1);renderAdmin();resizeFrame();return;}
+      if(action==='qa-theory')return openQATheory();
+      if(action==='theory'){if(qaActive)return openQATheory();screen='theory';extra=null;examMessage='';render();return;}
+      if(action==='admin-settings'){adminExpanded=true;renderAdmin();$('qa-admin-settings').scrollIntoView({block:'start'});resizeFrame();return;}
+      if(action==='admin-refresh')return adminOperation('admin_refresh');
+      if(action==='cancel-password-delete'){deletePasswordId=null;$('password-delete-dialog').close();return;}
+      if(action==='add-password'){adminExpanded=true;adminDraft.passwords.push({label:'',expires_on:'',active:true,password:''});renderAdmin();resizeFrame();$('admin-passwords').lastElementChild?.scrollIntoView({block:'center'});return;}
+      if(b.dataset.removePassword!==undefined){
+        if(adminBusy)return;const index=Number(b.dataset.removePassword),row=adminDraft.passwords[index];
+        if(row?.id){confirmPasswordRemoval(index);return;}else adminDraft.passwords.splice(index,1);
+        renderAdmin();resizeFrame();return;
+      }
+      if(b.dataset.editPassword!==undefined){const editor=document.querySelector(`[data-password-editor="${Number(b.dataset.editPassword)}"]`);if(editor){editor.open=true;editor.scrollIntoView({block:'center'});resizeFrame();}return;}
+      if(action==='confirm-password-delete'){const index=adminDraft.passwords.findIndex(row=>row.id===deletePasswordId);$('password-delete-dialog').close();if(index>=0)return adminOperation('admin_password_delete',{password_id:deletePasswordId},index);return;}
       if(b.dataset.extraTab){screen='practice';extra=b.dataset.extraTab;extraLevel=0;extraMessage='';return render();}
       if(b.dataset.extraLevel!==undefined){extraLevel=Number(b.dataset.extraLevel);extraMessage='';return render();}
       if(b.dataset.extraAction)return extraAction(b.dataset.extraAction);
@@ -302,6 +367,7 @@ const CourseApp = window.CourseApp = (() => {
       if(event.target.id==='extra-answer-form'){event.preventDefault();event.stopImmediatePropagation();checkExtra();}
       if(event.target.id==='theory-login-form'){event.preventDefault();event.stopImmediatePropagation();theoryLogin();}
       if(event.target.id==='course-admin-form'){event.preventDefault();event.stopImmediatePropagation();saveAdmin();}
+      if(event.target.dataset.passwordForm!==undefined){event.preventDefault();event.stopImmediatePropagation();savePassword(Number(event.target.dataset.passwordForm));}
     },true);
     document.addEventListener('input',event=>{
       const node=event.target;
@@ -311,20 +377,22 @@ const CourseApp = window.CourseApp = (() => {
     });
     document.addEventListener('change',event=>{
       const node=event.target;
+      if(node.dataset.adminRow!==undefined)adminDraft.passwords[Number(node.dataset.adminRow)][node.dataset.field]=node.type==='checkbox'?node.checked:node.value;
       if(node.id==='qa-extra-exercise'&&qaActive&&extra&&extra!=='formulas'){const index=Number(node.value);if(Number.isInteger(index)&&index>=0&&index<10){currentExtra().state.index=index;extraMessage='';render();}return;}
       if(node.id==='qa-course-switch'&&qaActive){switchCourse(node.value);return;}
       if(node.dataset.theoryAnswer&&theory.current&&!theory.current.result){theory.current.answers??={};theory.current.answers[node.dataset.theoryAnswer]=node.value;finishConfirm=false;saveTheory();if($('theory-answered'))$('theory-answered').textContent=`נענו ${Object.keys(theory.current.answers).length} מתוך 20 שאלות`;}
     });
+    document.addEventListener('toggle',event=>{if(event.target.id==='qa-admin-settings'){adminExpanded=event.target.open;resizeFrame();}},true);
     window.addEventListener('message',event=>{
       if(event.source!==window.parent||event.data?.type!=='streamlit:render')return;
       ready=true;const args=event.data.args??{};applyConfig(args.course_config);
       const reply=args.course_response;
-      if(reply&&reply.request_id===pending?.id){const p=pending;pending=null;clearTimeout(p.timer);p.resolve(reply);}
+      if(reply&&reply.request_id===pending?.id){const p=pending;pending=null;clearTimeout(p.timer);p.complete();p.resolve(reply);}
     });
     setInterval(()=>{if(screen.startsWith('theory')&&(qaActive||examToken)&&theory.current&&!examBusy&&!pending)theoryRequest('resume');},60000);
   }
   function onEnterQA(){theoryGeneration++;qaReturn={selected,screen,extra,extraLevel,extraState:JSON.parse(JSON.stringify(extraState)),courseProfile,courseKey,personalKey,recentKey,theory,examToken,examMessage,examError,finishConfirm};examBusy=false;examMessage='';examError=false;finishConfirm=false;theory={seen:[],previous:[],history:[],current:null};examToken='';}
-  function onExitQA(){if(!qaReturn)return;theoryGeneration++;examBusy=false;if(adminToken&&!pending)request('admin_logout',{token:adminToken}).catch(()=>{});({selected,screen,extra,extraLevel,extraState,courseProfile,courseKey,personalKey,recentKey,theory,examToken,examMessage,examError,finishConfirm}=qaReturn);qaReturn=null;adminToken='';adminDraft=null;}
+  function onExitQA(){if(!qaReturn)return;theoryGeneration++;examBusy=false;if(adminToken)request('admin_logout',{token:adminToken}).catch(()=>{});({selected,screen,extra,extraLevel,extraState,courseProfile,courseKey,personalKey,recentKey,theory,examToken,examMessage,examError,finishConfirm}=qaReturn);qaReturn=null;adminToken='';adminDraft=null;adminConfig=null;adminBusy=false;adminMessage='';deletePasswordId=null;}
   function standalone(){return screen!=='practice';}
   function topicVisible(kind){return !['mixed','battery'].includes(kind)||kind==='mixed'&&selected==='security'||kind==='battery'&&selected!=='hvac';}
   return {standalone,topicVisible,initialize,renderOverride,showPractice,loginAdmin,renderAdmin,onEnterQA,onExitQA,syncProfile,appendFormulas};
