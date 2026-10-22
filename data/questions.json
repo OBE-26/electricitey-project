@@ -2132,7 +2132,7 @@
             {
               "id": "b-009-4",
               "label": "ד",
-              "text": "לא ייגרם שום שינוי בפעולת התנור ובמעגל המזין אותו."
+              "text": "לא ייגרם שום שינוי בפעולת התנור ובמעגל המזין אותו, אך קיימת סכנת התחשמלות."
             }
           ],
           "correct_choice_id": "b-009-4",
@@ -2142,7 +2142,14 @@
             "choice_label": "ד",
             "status": "confirmed",
             "source_original_number": 9
-          }
+          },
+          "additional_sources": [
+            {
+              "file": "final-exams_q-kma.pdf",
+              "page": 7,
+              "question": 31
+            }
+          ]
         },
         {
           "id": "b-010",
@@ -5477,13 +5484,14 @@
               "text": "כל התשובות נכונות."
             }
           ],
-          "correct_choice_id": "c-057-1",
+          "correct_choice_id": "c-057-4",
           "original_number": 57,
           "answer_key": {
             "authority": "user",
-            "choice_label": "א",
+            "choice_label": "ד",
             "status": "confirmed",
-            "source_original_number": 57
+            "source_original_number": 57,
+            "revision_note": "User correction: all answers are correct."
           }
         },
         {
@@ -6287,12 +6295,12 @@
             {
               "id": "c-087-1",
               "label": "א",
-              "text": "מבוצעת בשנים האחרונות בלבד."
+              "text": "מבצעים בכל מתקן חשמלי."
             },
             {
               "id": "c-087-2",
               "label": "ב",
-              "text": "אינה מבוצעת בשנים האחרונות."
+              "text": "מבצעים במתקנים שלא ניתן לבצע בהם איפוס."
             },
             {
               "id": "c-087-3",
@@ -6302,7 +6310,7 @@
             {
               "id": "c-087-4",
               "label": "ד",
-              "text": "שום תשובה אינה נכונה."
+              "text": "אף תשובה אינה נכונה."
             }
           ],
           "correct_choice_id": "c-087-2",
@@ -6311,8 +6319,16 @@
             "authority": "user",
             "choice_label": "ב",
             "status": "confirmed",
-            "source_original_number": 87
-          }
+            "source_original_number": 87,
+            "revision_note": "Choices refreshed from final-exams_q-kma.pdf question 40, key confirmed by user."
+          },
+          "additional_sources": [
+            {
+              "file": "final-exams_q-kma.pdf",
+              "page": 8,
+              "question": 40
+            }
+          ]
         },
         {
           "id": "c-088",
@@ -6893,6 +6909,122 @@
       ],
       "original_question_count": 108,
       "question_count": 92
+    },
+    {
+      "id": "exam-supplement",
+      "title": "שאלות השלמה",
+      "questions": [
+        {
+          "id": "supp-photo-034",
+          "number": 1,
+          "original_number": 34,
+          "text": "על גבי מפסק מגן לזרם פחת רשום IΔn. נתון זה מציין את:",
+          "choices": [
+            {
+              "id": "supp-photo-034-1",
+              "label": "א",
+              "text": "ערך הזרם הנקוב של המפסק, כלומר, כושר ההולכה שלו."
+            },
+            {
+              "id": "supp-photo-034-2",
+              "label": "ב",
+              "text": "ערך הזרם הנקוב, המפעיל את המפסק בעת תקלה ובזמן זרימת זרם דלף לאדמה."
+            },
+            {
+              "id": "supp-photo-034-3",
+              "label": "ג",
+              "text": "ערך זרם הקצר שהמפסק מסוגל לנתק."
+            },
+            {
+              "id": "supp-photo-034-4",
+              "label": "ד",
+              "text": "ערך הזרם הזורם בקוטב שאליו מחובר מוליך האפס."
+            }
+          ],
+          "correct_choice_id": "supp-photo-034-2",
+          "answer_key": {
+            "authority": "user",
+            "choice_label": "ב",
+            "status": "confirmed",
+            "source_original_number": 34
+          },
+          "source_file": "1000567024.jpg"
+        },
+        {
+          "id": "supp-pdf-035",
+          "number": 2,
+          "original_number": 35,
+          "text": "שטח החתך המזערי של מוליך הארקה, המותקן בכבל אחד עם מוליכי המעגל, הוא:",
+          "choices": [
+            {
+              "id": "supp-pdf-035-1",
+              "label": "א",
+              "text": "2.5 ממ״ר."
+            },
+            {
+              "id": "supp-pdf-035-2",
+              "label": "ב",
+              "text": "קטן ב־20% משטח החתך של מוליכי המופעים."
+            },
+            {
+              "id": "supp-pdf-035-3",
+              "label": "ג",
+              "text": "כמו שטח חתך של מוליכי המופעים אולם לא פחות מ־1.5 ממ״ר."
+            },
+            {
+              "id": "supp-pdf-035-4",
+              "label": "ד",
+              "text": "כמו שטח חתך של מוליכי המופעים אולם לא יותר מ־6 ממ״ר."
+            }
+          ],
+          "correct_choice_id": "supp-pdf-035-3",
+          "answer_key": {
+            "authority": "user",
+            "choice_label": "ג",
+            "status": "confirmed",
+            "source_original_number": 35
+          },
+          "source_file": "final-exams_q-kma.pdf",
+          "source_page": 7
+        },
+        {
+          "id": "supp-pdf-036",
+          "number": 3,
+          "original_number": 36,
+          "text": "שיטת ההגנה המועדפת בפני התחשמלות במתקן חשמל היא:",
+          "choices": [
+            {
+              "id": "supp-pdf-036-1",
+              "label": "א",
+              "text": "הארקת הגנה."
+            },
+            {
+              "id": "supp-pdf-036-2",
+              "label": "ב",
+              "text": "הארקת שיטה."
+            },
+            {
+              "id": "supp-pdf-036-3",
+              "label": "ג",
+              "text": "שיטת האיפוס."
+            },
+            {
+              "id": "supp-pdf-036-4",
+              "label": "ד",
+              "text": "מתח נמוך מאד."
+            }
+          ],
+          "correct_choice_id": "supp-pdf-036-3",
+          "answer_key": {
+            "authority": "user",
+            "choice_label": "ג",
+            "status": "confirmed",
+            "source_original_number": 36
+          },
+          "source_file": "final-exams_q-kma.pdf",
+          "source_page": 8
+        }
+      ]
     }
   ],
   "updated_at": "2026-10-22",
@@ -6913,6 +7045,6 @@
     "id": "stable identifier retained after deletion and renumbering"
   },
   "ready_for_grading": true,
-  "total_question_count": 190,
-  "revision_note": "User corrections applied using the display numbers of the preceding 191-question edition; exam C question 10 deleted and remaining questions renumbered."
+  "total_question_count": 193,
+  "revision_note": "193 active questions; 3 supplementary questions added, PDF40 choices refreshed, and board-location answer updated by user."
 }

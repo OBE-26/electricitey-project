@@ -248,6 +248,11 @@ class CourseService:
                 if not self._authorized(event, session, admin=True):
                     return {"ok": False, "unauthorized": True, "message": "נדרשת כניסה מחדש למצב בדיקות."}
                 return {"ok": True, "config": self.store.save(event.get("names", {}), event.get("passwords", [])), "message": "שמות הקורסים והסיסמאות נשמרו לכל המשתמשים."}
+            if action == "admin_logout":
+                if not self._authorized(event, session, admin=True):
+                    return {"ok": False, "unauthorized": True, "message": "נדרשת כניסה מחדש למצב בדיקות."}
+                session.pop("course_admin", None)
+                return {"ok": True}
             if action == "exam_login":
                 self._rate_limit(session, "course_exam_attempts")
                 password = event.get("password", "")
@@ -260,20 +265,23 @@ class CourseService:
                 session["course_theory"] = {"token": token, "code_id": code["id"], "hash": code["hash"]}
                 return {"ok": True, "token": token, "count": len(self.pool)}
             if action in {"exam_new", "exam_resume", "exam_submit"}:
-                if not self._authorized(event, session):
+                qa = event.get("qa") is True
+                if not self._authorized(event, session, admin=qa):
                     return {"ok": False, "unauthorized": True, "message": "נדרשת סיסמה תקפה כדי להמשיך למבחן."}
                 if action == "exam_new":
                     seen = [s for s in event.get("seen", []) if isinstance(s, str)][-len(self.pool):]
                     previous = [s for s in event.get("previous", []) if isinstance(s, str)][:20]
                     selected = select_questions(self.pool, seen, previous)
                     orders = {q["id"]: secrets.SystemRandom().sample([c["id"] for c in q["choices"]], len(q["choices"])) for q in selected}
-                    exam = {"version": self.version, "id": secrets.token_hex(12), "ids": [q["id"] for q in selected], "orders": orders}
+                    exam = {"version": self.version, "id": secrets.token_hex(12), "ids": [q["id"] for q in selected], "orders": orders, "qa": qa}
                     signed = self._sign(exam)
                 else:
                     signed = str(event.get("exam", ""))
                     exam = self._verify(signed)
+                    if exam.get("qa", False) != qa:
+                        raise ValueError("מבחן בדיקה זמין רק במצב QA. יש להגריל מבחן חדש.")
                 questions = [self._question(self.by_id[identifier], exam["orders"][identifier]) for identifier in exam["ids"]]
-                result = {"ok": True, "exam": signed, "id": exam["id"], "questions": questions}
+                result = {"ok": True, "exam": signed, "id": exam["id"], "questions": questions, "qa": qa}
                 if action == "exam_submit":
                     answers = event.get("answers", {})
                     if not isinstance(answers, dict) or set(answers) - set(exam["ids"]):

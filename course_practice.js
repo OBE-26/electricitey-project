@@ -8,22 +8,101 @@ const CoursePractice = (() => {
     let value=seed>>>0;
     return ()=>{value+=0x6D2B79F5;let t=value;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return ((t^t>>>14)>>>0)/4294967296;};
   }
+  // Both families from the supplied worksheet: series of parallel groups,
+  // and parallel branches containing series resistors. Indices preserve R1..Rn.
+  const mixedVariants = [
+    {id:'series-parallel-2',family:'series-parallel',title:'נגד בטור לשני נגדים במקביל',r:[2,6,3],groups:[[[0]],[[1],[2]]]},
+    {id:'parallel-series',family:'parallel-series',title:'נגד במקביל לענף עם שני נגדים בטור',r:[6,2,4],groups:[[[0],[1,2]]]},
+    {id:'series-parallel-3',family:'series-parallel',title:'נגד בטור לשלושה נגדים במקביל',r:[5,20,40,40],groups:[[[0]],[[1],[2],[3]]]},
+    {id:'two-series-branches',family:'parallel-series',title:'שני ענפים מקבילים עם שני נגדים בטור בכל ענף',r:[2,4,1,2],groups:[[[0,1],[2,3]]]},
+    {id:'series-parallel-4',family:'series-parallel',title:'נגד בטור לארבעה נגדים במקביל',r:[2,12,12,12,12],groups:[[[0]],[[1],[2],[3],[4]]]},
+    {id:'parallel-series',family:'parallel-series',title:'נגד במקביל לענף עם שני נגדים בטור',r:[6,2,4],groups:[[[0],[1,2]]]},
+    {id:'parallel-groups',family:'series-parallel',title:'שתי קבוצות מקבילות ונגדים בטור',r:[6,3,2,4,4,2],groups:[[[0],[1]],[[2]],[[3],[4]],[[5]]]},
+    {id:'two-series-branches',family:'parallel-series',title:'שני ענפים מקבילים עם שני נגדים בטור בכל ענף',r:[2,4,1,2],groups:[[[0,1],[2,3]]]},
+    {id:'series-parallel-3',family:'series-parallel',title:'נגד בטור לשלושה נגדים במקביל',r:[5,20,40,40],groups:[[[0]],[[1],[2],[3]]]},
+    {id:'parallel-series',family:'parallel-series',title:'נגד במקביל לענף עם שני נגדים בטור',r:[6,2,4],groups:[[[0],[1,2]]]}
+  ];
   function mixed(rng, level, index) {
-    const k=integer(rng,2,16),r=level===1?[integer(rng,4,15),integer(rng,16,28),integer(rng,29,42)]:[2*k,3*k,6*k];
-    const r4=integer(rng,3,20),rp=1/r.reduce((sum,value)=>sum+1/value,0),rt=rp+r4;
-    const u=level===1?integer(rng,12,60):rt*pick(rng,[6,12]);
-    const it=u/rt,up=it*rp,u4=it*r4,branch=r.map(value=>up/value);
-    const resistanceUnit=level===2?(index%2?'MΩ':'kΩ'):'Ω',currentUnit=level===2?(index%2?'μA':'mA'):'A';
-    const steps=[
-      step('R_p','התנגדות שלושת הענפים במקביל',resistanceUnit,rp,'R_p = 1 ÷ (1/R1 + 1/R2 + 1/R3)',`1 ÷ (1/${r[0]} + 1/${r[1]} + 1/${r[2]})`),
-      step('R_T','ההתנגדות השקולה של כל המעגל',resistanceUnit,rt,'R_T = R_p + R4',`${fmt(rp)} + ${r4}`),
-      step('I_T','הזרם הכולל מהמקור',currentUnit,it,'I_T = U ÷ R_T',`${fmt(u)} ÷ ${fmt(rt)}`),
-      step('U4','מפל המתח על הנגד שבטור','V',u4,'U4 = I_T × R4',`${fmt(it)} × ${r4}`),
-      step('U_p','המתח על קבוצת הענפים המקבילים','V',up,'U_p = U − U4',`${fmt(u)} − ${fmt(u4)}`),
-      ...r.map((value,j)=>step('I'+(j+1),'הזרם בענף '+(j+1),currentUnit,branch[j],`I${j+1} = U_p ÷ R${j+1}`,`${fmt(up)} ÷ ${value}`))
-    ];
-    return {kind:'mixed',level,index,title:'שלושה ענפים במקביל ונגד בטור למקור',u,r,r4,rp,rt,it,up,u4,branch,resistanceUnit,currentUnit,steps,
-      givens:[['U',u,'V'],...r.map((v,i)=>['R'+(i+1),v,resistanceUnit]),['R4',r4,resistanceUnit]]};
+    const variant=mixedVariants[index%mixedVariants.length],k=integer(rng,1,4);
+    const r=variant.r.map(value=>level===1?integer(rng,2,60):value*k);
+    const resistanceUnit=level===2?(index%2?'MΩ':'kΩ'):'Ω';
+    const currentUnit=level===2?(index%2?'μA':'mA'):'A',powerUnit=level===2?(index%2?'μW':'mW'):'W';
+    const total=values=>values.reduce((sum,value)=>sum+value,0);
+    const symbol=members=>'R'+members.map(i=>i+1).join('');
+    const groups=variant.groups.map(branches=>{
+      const sums=branches.map(branch=>total(branch.map(i=>r[i])));
+      return {branches,sums,resistance:1/total(sums.map(value=>1/value)),symbol:symbol(branches.flat())};
+    });
+    let nextNode=1,startNode='A';const resistorNodes=Array(r.length);
+    const allocateNode=()=>String.fromCharCode(65+nextNode++);
+    groups.forEach(g=>{
+      let endNode;
+      g.branches.forEach(branch=>{
+        let from=startNode;
+        branch.forEach((i,ri)=>{
+          const to=ri<branch.length-1?allocateNode():(endNode??=allocateNode());
+          resistorNodes[i]={from,to};from=to;
+        });
+      });
+      g.from=startNode;g.to=endNode;startNode=endNode;
+    });
+    const rt=total(groups.map(g=>g.resistance));
+    // Structured values give integral answers (including per-resistor power) in A.
+    const itBase=variant.id==='series-parallel-3'?4:variant.id==='series-parallel-4'?4:variant.id==='parallel-groups'?6:variant.id==='parallel-series'?2:3;
+    const u=level===1?integer(rng,12,60):rt*itBase*integer(rng,1,2),it=u/rt;
+    const currents=Array(r.length),voltages=Array(r.length),powers=Array(r.length),steps=[],reductions=[];
+    const original=groups.map(g=>g.branches.map(branch=>branch.map(i=>({symbol:'R'+(i+1),value:r[i],members:[i],...resistorNodes[i]}))));
+    const diagrams=[original];
+    const nodes=original.map(group=>group.map(branch=>branch.map(node=>({...node}))));
+    const resistanceStep=(key,label,value,formula,substitution)=>{const s=step(key,label,resistanceUnit,value,formula,substitution);steps.push(s);return s;};
+    const seriesSteps=[];
+    groups.forEach((g,gi)=>g.branches.forEach((branch,bi)=>{
+      if(branch.length<2)return;
+      const key=symbol(branch),parts=branch.map(i=>'R'+(i+1));
+      seriesSteps.push(resistanceStep(key,'צמצום הנגדים '+parts.join(', ')+' שבטור באותו ענף',g.sums[bi],`${key} = ${parts.join(' + ')}`,branch.map(i=>r[i]).join(' + ')));
+      nodes[gi][bi]=[{symbol:key,value:g.sums[bi],members:branch,from:resistorNodes[branch[0]].from,to:resistorNodes[branch.at(-1)].to}];
+    }));
+    if(seriesSteps.length){
+      reductions.push({title:'מצמצמים תחילה את הנגדים שבטור בתוך כל ענף',steps:seriesSteps});
+      diagrams.push(JSON.parse(JSON.stringify(nodes)));
+    }
+    const parallelSteps=[];
+    groups.forEach((g,gi)=>{
+      if(g.branches.length===1)return;
+      const parts=nodes[gi].map(branch=>branch[0].symbol),key=groups.length===1?'R_T':g.symbol;
+      parallelSteps.push(resistanceStep(key,'ההתנגדות השקולה של '+parts.join(', ')+' במקביל',g.resistance,`${key} = 1 ÷ (${parts.map(part=>'1/'+part).join(' + ')})`,`1 ÷ (${g.sums.map(value=>'1/'+fmt(value)).join(' + ')})`));
+      nodes[gi]=[[{symbol:key,value:g.resistance,members:g.branches.flat(),from:g.from,to:g.to}]];
+    });
+    reductions.push({title:'מצמצמים את הענפים המקבילים לנגד שקול',steps:parallelSteps});
+    diagrams.push(JSON.parse(JSON.stringify(nodes)));
+    if(groups.length>1){
+      const totalStep=resistanceStep('R_T','ההתנגדות השקולה של כל המעגל',rt,`R_T = ${nodes.map(g=>g[0][0].symbol).join(' + ')}`,groups.map(g=>fmt(g.resistance)).join(' + '));
+      reductions.push({title:'מחברים את הנגדים שנותרו בטור',steps:[totalStep]});
+      diagrams.push([[[{symbol:'R_T',value:rt,members:r.map((_,i)=>i),from:'A',to:startNode}]]]);
+    }
+    steps.push(step('I_T','הזרם הכולל ממקור המתח',currentUnit,it,'I_T = U ÷ R_T',`${fmt(u)} ÷ ${fmt(rt)}`));
+    groups.forEach(g=>{
+      const groupU=it*g.resistance;
+      const voltageSymbol=groups.length===1?'U':g.branches.length===1&&g.branches[0].length===1?'U'+(g.branches[0][0]+1):'U'+g.branches.flat().map(i=>i+1).join('');
+      if(groups.length>1&&g.branches.length>1)steps.push(step(voltageSymbol,'המתח על '+g.symbol,'V',groupU,`${voltageSymbol} = I_T × ${g.symbol}`,`${fmt(it)} × ${fmt(g.resistance)}`));
+      g.branches.forEach((branch,bi)=>{
+        const current=groupU/g.sums[bi],first=branch[0];
+        for(const i of branch){
+          const currentSymbol='I'+(i+1),resistanceSymbol='R'+(i+1);
+          const formula=g.branches.length===1?`${currentSymbol} = I_T`:i===first?`${currentSymbol} = ${voltageSymbol} ÷ ${symbol(branch)}`:`${currentSymbol} = I${first+1}`;
+          const substitution=g.branches.length===1||i!==first?fmt(current):`${fmt(groupU)} ÷ ${fmt(g.sums[bi])}`;
+          currents[i]=current;voltages[i]=current*r[i];powers[i]=voltages[i]*current;
+          steps.push(step(currentSymbol,'הזרם בנגד '+resistanceSymbol,currentUnit,current,formula,substitution));
+        }
+      });
+    });
+    r.forEach((value,i)=>steps.push(step('U'+(i+1),'המתח על נגד R'+(i+1),'V',voltages[i],`U${i+1} = I${i+1} × R${i+1}`,`${fmt(currents[i])} × ${value}`)));
+    r.forEach((value,i)=>steps.push(step('P'+(i+1),'ההספק המתפתח על נגד R'+(i+1),powerUnit,powers[i],`P${i+1} = U${i+1} × I${i+1}`,`${fmt(voltages[i])} × ${fmt(currents[i])}`)));
+    return {kind:'mixed',schemaVersion:2,variant:variant.id,family:variant.family,level,index,title:variant.title,
+      text:'חשבו את ההתנגדות הכללית, את הזרם מהמקור ואת הזרם, המתח וההספק בכל נגד.',
+      caption:variant.family==='series-parallel'?'מתחילים בצמצום הקבוצות המקבילות, ואז מחברים את הנגדים שבטור.':'מתחילים בצמצום הנגדים שבטור בתוך הענפים, ואז מצמצמים את המקביל.',
+      u,r,rt,it,groups,resistorNodes,currents,voltages,powers,resistanceUnit,currentUnit,powerUnit,steps,reductions,diagrams,
+      givens:[['U',u,'V'],...r.map((value,i)=>['R'+(i+1),value,resistanceUnit])]};
   }
   function battery(rng, course, level, index) {
     if(course==='mobile'&&index>=7)return internalResistance(rng,level,index);
@@ -66,15 +145,84 @@ const CoursePractice = (() => {
     return result.map(q=>({...q,cursor:0,draft:'',attempts:0,hint:false,solution:false,accepted:false,helped:false}));
   }
   function mixedSVG(q,stage=0){
-    const color='var(--ink)',wire=`fill="none" stroke="${color}" stroke-width="2.5"`,text=(x,y,value)=>`<text x="${x}" y="${y}" fill="${color}" text-anchor="middle" font-size="16" direction="ltr">${value}</text>`;
-    const r=(x,y,label,value)=>`<rect x="${x-40}" y="${y-13}" width="80" height="26" fill="var(--card)" stroke="${color}" stroke-width="2"/>${text(x,y-23,label)}${text(x,y+43,fmt(value)+' '+q.resistanceUnit)}`;
-    let content=`<path d="M55 125V45H510V255H55V165" ${wire}/><circle cx="55" cy="145" r="20" fill="var(--card)" stroke="${color}" stroke-width="2"/>${text(55,151,'+ −')}${text(55,199,fmt(q.u)+' V')}`;
-    if(stage===0){content=`<path d="M55 125V45H180M390 45H510V255H55V165M180 45V195M390 45V195" ${wire}/><circle cx="55" cy="145" r="20" fill="var(--card)" stroke="${color}" stroke-width="2"/>${text(55,151,'+ −')}${text(55,199,fmt(q.u)+' V')}`;
-      [45,120,195].forEach((y,i)=>{content+=`<path d="M180 ${y}H245M325 ${y}H390" ${wire}/>`+r(285,y,'R'+(i+1),q.r[i]);});content+=r(445,255,'R4',q.r4);
-    }else if(stage===1){content+=r(285,45,'Rₚ',q.rp)+r(285,255,'R4',q.r4);}
-    else content+=r(285,45,'Rₜ',q.rt);
-    return `<svg viewBox="0 0 560 320" role="img" aria-label="${stage===0?'המעגל המקורי: שלושה ענפים במקביל ונגד בטור':stage===1?'החלפת קבוצת המקביל בנגד שקול':'צמצום כל המעגל לנגד שקול אחד'}">${content}</svg>`;
+    const groups=q.diagrams[Math.max(0,Math.min(stage,q.diagrams.length-1))];
+    const ink='var(--ink)',card='var(--card)';
+    const wire=path=>`<path d="${path}" fill="none" stroke="${ink}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>`;
+    const text=(x,y,value,anchor='middle')=>`<text x="${x}" y="${y}" fill="${ink}" text-anchor="${anchor}" font-size="18" font-family="Arial,sans-serif" direction="ltr">${value}</text>`;
+    const symbol=(x,y,value,anchor='middle')=>{const m=/^([A-Za-z]+)_?([A-Za-z]+|\d+)$/.exec(value);return m?`<text x="${x}" y="${y}" fill="${ink}" text-anchor="${anchor}" font-size="19" font-family="Arial,sans-serif" direction="ltr">${m[1]}<tspan dy="5" font-size="13">${m[2]}</tspan><tspan dy="-5"> </tspan></text>`:text(x,y,value,anchor);};
+    const node=(x,y,resistor,vertical=false)=>`<g class="mixed-resistor" data-symbol="${resistor.symbol}" data-from="${resistor.from}" data-to="${resistor.to}"><rect x="${x-(vertical?12:38)}" y="${y-(vertical?30:12)}" width="${vertical?24:76}" height="${vertical?60:24}" fill="${card}" stroke="${ink}" stroke-width="2.5"/>${symbol(x+(vertical?29:0),y+(vertical?-4:-26),resistor.symbol,vertical?'start':'middle')}${text(x+(vertical?29:0),y+(vertical?22:43),fmt(resistor.value)+' '+q.resistanceUnit,vertical?'start':'middle')}</g>`;
+    const dot=(x,y)=>`<circle cx="${x}" cy="${y}" r="4" fill="${ink}"/>`;
+    const junction=(x,y,label,dx=-18,dy=-13)=>`<g class="mixed-junction" data-node="${label}">${dot(x,y)}${text(x+dx,y+dy,label)}</g>`;
+    const source=(x,top,bottom)=>{
+      const mid=(top+bottom)/2;
+      return wire(`M${x} ${top}V${mid-13}M${x} ${mid+13}V${bottom}M${x-23} ${mid-13}H${x+23}M${x-13} ${mid+13}H${x+13}`)+text(x-32,mid-21,'+')+text(x-32,mid+30,'−')+symbol(x-46,mid-14,'U','end')+text(x-46,mid+20,fmt(q.u)+' V','end');
+    };
+    let content='',width=800,height=440;
+    if(q.family==='parallel-series'){
+      const top=65,bottom=405,branches=groups[0],xs=branches.length===1?[445]:[330,610];
+      width=790;height=445;
+      content=source(120,top,bottom)+wire(`M120 ${top}H${xs.at(-1)}M120 ${bottom}H${xs.at(-1)}`);
+      branches.forEach((branch,bi)=>{
+        const x=xs[bi],ys=branch.length===1?[235]:[155,315];let previous=top;
+        branch.forEach((resistor,ri)=>{content+=wire(`M${x} ${previous}V${ys[ri]-30}`)+node(x,ys[ri],resistor,true);previous=ys[ri]+30;});
+        content+=wire(`M${x} ${previous}V${bottom}`)+junction(x,top,branch[0].from)+junction(x,bottom,branch.at(-1).to,-18,26);
+        if(branch.length>1)content+=junction(x,235,branch[0].to,-20,6);
+      });
+    }else if(q.variant==='parallel-groups'&&stage<q.diagrams.length-1){
+      // Same A-B / R3 / C-D / R6 order as worksheet exercise 15.
+      width=920;height=425;const top=155,bottom=365;
+      content=source(110,top,bottom)+wire('M110 155H190M350 155H425M501 155H565M725 155H820V365H668M592 365H110');
+      const group=(network,left,right)=>{
+        let out='';const ys=network.length===1?[top]:[80,230];
+        network.forEach((branch,bi)=>{const x=(left+right)/2,y=ys[bi];out+=wire(`M${left} ${top}V${y}H${x-38}M${x+38} ${y}H${right}V${top}`)+node(x,y,branch[0]);});
+        return out+dot(left,top)+dot(right,top);
+      };
+      content+=group(groups[0],190,350)+node(463,top,groups[1][0][0])+group(groups[2],565,725)+node(630,bottom,groups[3][0][0]);
+      content+=junction(190,top,groups[0][0][0].from)+junction(350,top,groups[0][0][0].to,15,-13)+junction(565,top,groups[2][0][0].from)+junction(725,top,groups[2][0][0].to,15,-13)+junction(160,bottom,groups[3][0][0].to,0,28);
+    }else if(stage===q.diagrams.length-1){
+      width=790;height=420;content=source(120,80,370)+wire('M120 80H367M443 80H670V370H120')+node(405,80,groups[0][0][0])+junction(190,80,groups[0][0][0].from)+junction(620,80,groups[0][0][0].to);
+    }else{
+      const count=q.groups[1].branches.length,top=80,bottom=370,start=400,gap=155;
+      const end=start+(count-1)*gap; width=end+160;height=420;
+      const branches=groups[1],xs=branches.length===1?[(start+end)/2]:branches.map((_,i)=>start+i*gap);
+      content=source(120,top,bottom)+wire(`M120 ${top}H227M303 ${top}H${xs.at(-1)}M120 ${bottom}H${xs.at(-1)}`)+node(265,top,groups[0][0][0]);
+      branches.forEach((branch,i)=>{const x=xs[i];content+=wire(`M${x} ${top}V195M${x} 255V${bottom}`)+node(x,225,branch[0],true)+junction(x,top,branch[0].from)+junction(x,bottom,branch[0].to,-18,28);});
+      content+=junction(180,top,groups[0][0][0].from);
+    }
+    const label=stage===0?'המעגל המקורי — '+q.title:'צמצום '+stage+': '+q.reductions[stage-1].title;
+    return `<svg class="mixed-circuit-svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="${label}" data-family="${q.family}" data-stage="${stage}">${content}</svg>`;
   }
-  return {random,mixed,battery,internalResistance,batch,mixedSVG};
+  function phoneBatterySVG(q){
+    const given=Object.fromEntries(q.givens.map(([key,value])=>[key,value]));
+    const showDrop=q.solution||q.cursor>0||q.cursor===0&&q.accepted;
+    const showResistance=q.solution||q.cursor>1||q.cursor===1&&q.accepted;
+    const ink='var(--ink)',current='var(--phone-current,#b52e2e)',voltage='var(--phone-voltage,#116e65)';
+    const symbolText=(x,y,base,sub,suffix='',color=ink)=>`<text x="${x}" y="${y}" fill="${color}" font-family="Arial,sans-serif" font-size="17" text-anchor="start" direction="ltr">${base}<tspan dy="5" font-size="12">${sub}</tspan><tspan dy="-5" font-size="17">${suffix}</tspan></text>`;
+    const text=(x,y,value,color=ink,size=17)=>`<text x="${x}" y="${y}" fill="${color}" font-size="${size}" font-family="Arial,sans-serif" text-anchor="middle" direction="ltr">${value}</text>`;
+    const rs=showResistance?`${fmt(q.rs)} Ω`:'?',drop=showDrop?`${fmt(given.U_t-given.U_L)} V`:'?';
+    return `<svg class="phone-battery-svg" viewBox="0 0 640 345" role="img" aria-label="מודל סוללת טלפון: מתח ללא עומס, התנגדות פנימית בטור, ועומס המייצג את מעגלי הטלפון">
+      <rect x="30" y="65" width="270" height="242" rx="17" fill="none" stroke="var(--line)" stroke-dasharray="6 5"/>
+      ${text(177,30,'סוללה',ink,19)}
+      <path d="M100 144V90H205M275 90H515V145M515 215V280H100V196" fill="none" stroke="${ink}" stroke-width="2.5"/>
+      <circle cx="100" cy="170" r="26" fill="var(--card)" stroke="${ink}" stroke-width="2.5"/>
+      ${text(100,164,'+',ink,22)}${text(100,187,'−',ink,22)}
+      ${symbolText(144,178,'U','t',` = ${fmt(given.U_t)} V`)}
+      <rect x="205" y="77" width="70" height="26" fill="var(--card)" stroke="${ink}" stroke-width="2.5"/>
+      ${symbolText(215,130,'R','s',` = ${rs}`)}
+      <path d="M205 61H275M205 61l7 -4M205 61l7 4M275 61l-7 -4M275 61l-7 4" fill="none" stroke="${voltage}" stroke-width="2"/>
+      ${text(240,52,`ΔU = ${drop}`,voltage,16)}
+      <path d="M345 90H373l-9 -5M373 90l-9 5" fill="none" stroke="${current}" stroke-width="3"/>
+      ${text(365,72,`I = ${fmt(given.I)} A`,current,16)}
+      <circle cx="390" cy="90" r="4" fill="${ink}"/><circle cx="390" cy="280" r="4" fill="${ink}"/>
+      <path d="M391 112V258M391 112l-5 9M391 112l5 9M391 258l-5 -9M391 258l5 -9" fill="none" stroke="${voltage}" stroke-width="2"/>
+      ${symbolText(343,187,'U','L','',voltage)}${text(354,211,`${fmt(given.U_L)} V`,voltage,16)}
+      <rect x="437" y="45" width="168" height="272" rx="24" fill="none" stroke="${ink}" stroke-width="2.5"/>
+      <path d="M490 60H550M495 302H545" stroke="${ink}" stroke-width="3"/>
+      <rect x="500" y="145" width="30" height="70" fill="var(--card)" stroke="${ink}" stroke-width="2.5"/>
+      ${symbolText(550,184,'R','L')}${text(521,248,'מעגלי הטלפון',ink,18)}
+      ${text(177,334,'מקור אידאלי והתנגדות פנימית',ink,15)}
+    </svg>`;
+  }
+  return {random,mixed,battery,internalResistance,batch,mixedSVG,phoneBatterySVG};
 })();
 if(typeof module!=='undefined')module.exports=CoursePractice;

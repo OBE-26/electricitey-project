@@ -24,7 +24,9 @@ class ThemeTest(unittest.TestCase):
    ('night button','#f2e6d0','#4b381d'),('night accent','#d7b575','#121212'),
    ('night success','#a4edc7','#173e30'),('night error','#ffd2ca','#48272c'),
    ('night QA body','#e3ecf3','#101820'),('night QA accent','#a9c9e5','#101820'),
-   ('night contrast body','#ffffff','#000000')]
+   ('night contrast body','#ffffff','#000000'),
+   ('day phone current','#b52e2e','#fffbf2'),('day phone voltage','#116e65','#fffbf2'),
+   ('night phone current','#ff6565','#121212'),('night phone voltage','#65e680','#121212')]
   for label,fg,bg in pairs:
    with self.subTest(label=label):self.assertGreaterEqual(contrast(fg,bg),4.5)
  def test_theory_figures_are_monochrome_and_support_night(self):

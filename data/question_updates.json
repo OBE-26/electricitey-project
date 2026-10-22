@@ -1,0 +1,96 @@
+{
+  "source_pdf": "final-exams_q-kma.pdf",
+  "source_pages": [
+    7,
+    8
+  ],
+  "source_image": "1000567024.jpg",
+  "total_active_questions": 193,
+  "added_question_ids": [
+    "supp-photo-034",
+    "supp-pdf-035",
+    "supp-pdf-036"
+  ],
+  "pdf_questions": [
+    {
+      "source_question": 31,
+      "question_id": "b-009",
+      "correct_choice_label": "ד",
+      "action": "already_present"
+    },
+    {
+      "source_question": 32,
+      "question_id": "c-094",
+      "correct_choice_label": "ג",
+      "action": "already_present"
+    },
+    {
+      "source_question": 33,
+      "question_id": "b-011",
+      "correct_choice_label": "ב",
+      "action": "already_present"
+    },
+    {
+      "source_question": 34,
+      "question_id": "c-022",
+      "correct_choice_label": "ב",
+      "action": "already_present"
+    },
+    {
+      "source_question": 35,
+      "question_id": "supp-pdf-035",
+      "correct_choice_label": "ג",
+      "action": "added",
+      "note": "The existing conduit question c-083 is retained separately from this cable question."
+    },
+    {
+      "source_question": 36,
+      "question_id": "supp-pdf-036",
+      "correct_choice_label": "ג",
+      "action": "added"
+    },
+    {
+      "source_question": 37,
+      "question_id": "c-011",
+      "correct_choice_label": "ג",
+      "action": "already_present"
+    },
+    {
+      "source_question": 38,
+      "question_id": "a-029",
+      "correct_choice_label": "ג",
+      "action": "already_present"
+    },
+    {
+      "source_question": 39,
+      "question_id": "a-030",
+      "correct_choice_label": "ב",
+      "action": "already_present"
+    },
+    {
+      "source_question": 40,
+      "question_id": "c-087",
+      "correct_choice_label": "ב",
+      "action": "updated_choices"
+    }
+  ],
+  "corrections": [
+    {
+      "question_id": "c-057",
+      "action": "answer_updated",
+      "correct_choice_id": "c-057-4"
+    },
+    {
+      "question_id": "c-087",
+      "action": "choices_updated_from_pdf",
+      "source_question": 40,
+      "correct_choice_id": "c-087-2"
+    },
+    {
+      "question_id": "b-009",
+      "action": "completed_correct_choice_from_pdf",
+      "source_question": 31,
+      "correct_choice_id": "b-009-4"
+    }
+  ]
+}

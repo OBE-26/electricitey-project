@@ -16,11 +16,38 @@ class CoursesTest(unittest.TestCase):
   self.session={}
  def tearDown(self):self.temp.cleanup()
  def test_bank_and_requested_corrections(self):
-  self.assertEqual(len(self.service.pool),190)
+  self.assertEqual(len(self.service.pool),193)
   self.assertEqual(self.service.by_id['a-001']['correct_choice_id'],'a-001-3')
   self.assertNotIn('c-010',self.service.by_id)
   self.assertEqual(self.service.by_id['c-016']['correct_choice_id'],'c-016-4')
-  self.assertEqual(self.service.by_id['c-057']['correct_choice_id'],'c-057-1')
+  self.assertEqual(self.service.by_id['c-057']['correct_choice_id'],'c-057-4')
+ def test_new_source_keys_and_no_duplicate_imports(self):
+  audit=json.loads((ROOT/'data/question_updates.json').read_text())
+  self.assertEqual(len(audit['added_question_ids']),3)
+  self.assertEqual(self.service.by_id['supp-photo-034']['correct_choice_id'],'supp-photo-034-2')
+  self.assertEqual(len(audit['pdf_questions']),10)
+  for row in audit['pdf_questions']:
+   q=self.service.by_id[row['question_id']]
+   label=next(c['label'] for c in q['choices'] if c['id']==q['correct_choice_id'])
+   self.assertEqual(label,row['correct_choice_label'])
+  q=self.service.by_id['c-087']
+  self.assertIn('לא ניתן לבצע בהם איפוס',q['choices'][1]['text'])
+  self.assertIn('מוביל',self.service.by_id['c-083']['text'])
+  self.assertIn('כבל',self.service.by_id['supp-pdf-035']['text'])
+ def test_qa_theory_requires_admin_and_cannot_resume_as_normal_exam(self):
+  self.assertTrue(self.service.handle({'action':'exam_new','qa':True},self.session)['unauthorized'])
+  normal=self.login()
+  self.assertTrue(self.service.handle({'action':'exam_new','qa':True,'token':normal},self.session)['unauthorized'])
+  admin=self.service.handle({'action':'admin_login','password':'210592'},self.session)['token']
+  exam=self.service.handle({'action':'exam_new','qa':True,'token':admin},self.session)
+  self.assertTrue(exam['ok']);self.assertTrue(exam['qa'])
+  self.assertFalse(self.service.handle({'action':'exam_resume','token':normal,'exam':exam['exam']},self.session)['ok'])
+  answers={q['id']:self.service.by_id[q['id']]['correct_choice_id'] for q in exam['questions']}
+  result=self.service.handle({'action':'exam_submit','qa':True,'token':admin,'exam':exam['exam'],'answers':answers},self.session)
+  self.assertEqual(result['correct'],20)
+  self.assertTrue(result['qa'])
+  self.assertTrue(self.service.handle({'action':'admin_logout','token':admin},self.session)['ok'])
+  self.assertTrue(self.service.handle({'action':'exam_new','qa':True,'token':admin},self.session)['unauthorized'])
  def test_rotation_exhausts_fresh_items_and_avoids_previous(self):
   seen=[];previous=[];first=[]
   for index in range(30):

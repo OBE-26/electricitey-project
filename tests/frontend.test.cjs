@@ -22,23 +22,38 @@ w.eval(scripts.join('\n')+'\nwindow.testState={question:()=>currentQuestion(),qu
 dispatch();
 const click=selector=>{const node=d.querySelector(selector);assert.ok(node,'Missing '+selector);node.click();};
 const input=(selector,value)=>{const node=d.querySelector(selector);assert.ok(node,'Missing '+selector);node.value=value;node.dispatchEvent(new w.Event('input',{bubbles:true}));};
+const change=(selector,value)=>{const node=d.querySelector(selector);assert.ok(node,'Missing '+selector);node.value=value;node.dispatchEvent(new w.Event('change',{bubbles:true}));};
 const submit=selector=>d.querySelector(selector).dispatchEvent(new w.Event('submit',{bubbles:true,cancelable:true}));
 const waitFor=async test=>{for(let n=0;n<100;n++){if(test())return;await new Promise(resolve=>setTimeout(resolve,20));}throw Error('Timed out waiting for state');};
 (async()=>{
  try{
   assert.equal(d.querySelectorAll('[data-select-course]').length,3);
+  for(const id of ['hvac','security','mobile'])assert.ok(d.querySelector(`[data-select-course="${id}"] [data-course-icon="${id}"]`),'Distinct course icon');
   assert.equal(d.querySelector('#profile-dialog').open,false,'Existing terms approval should be reused');
+  // An older saved mixed-circuit batch must regenerate; other topics survive.
+  w.localStorage.setItem('dc.basics.extra.security.v1',JSON.stringify({'mixed:0':{questions:Array.from({length:10},()=>({kind:'mixed'}))},'battery:0':{keep:'existing'}}));
   click('[data-select-course="security"]');
+  assert.ok(d.querySelector('#course-title [data-course-icon="security"]'));
   assert.equal(w.testState.questions().ohm.length,3);
   click('[data-extra-tab="mixed"]');click('[data-extra-action="solution"]');
   assert.equal(d.querySelectorAll('#course-panel svg').length,3,'Original and two reduction schematics');
   assert.ok(d.querySelector('#course-panel msub'));
+  assert.ok(d.querySelector('.mixed-node-map').textContent.includes('↔'));
+  assert.equal(JSON.parse(w.localStorage.getItem('dc.basics.extra.security.v1'))['mixed:0'].questions[0].schemaVersion,2);
+  assert.equal(JSON.parse(w.localStorage.getItem('dc.basics.extra.security.v1'))['battery:0'].keep,'existing');
+  click('[data-open-mixed="0"]');assert.equal(d.querySelector('#diagram-dialog').open,true);
+  assert.ok(d.querySelector('#diagram-canvas .mixed-circuit-svg'));
+  click('[data-diagram-zoom="in"]');assert.equal(d.querySelector('#diagram-zoom-label').textContent,'150%');
+  click('[data-close-dialog="diagram-dialog"]');
+  click('[data-open-mixed="2"]');assert.equal(d.querySelector('#diagram-canvas svg').dataset.stage,'2');click('[data-close-dialog="diagram-dialog"]');
   click('[data-extra-tab="battery"]');assert.ok(d.querySelector('#extra-answer'));
+  click('[data-extra-tab="formulas"]');assert.ok(d.querySelector('.course-formula-page'));assert.ok(d.querySelector('.course-formula-page').textContent.includes('אנרגיה בסוללה'));
   click('[data-course-action="home"]');click('[data-select-course="mobile"]');
   assert.equal(w.testState.questions().ohm.length,2);
   assert.equal(d.querySelectorAll('#workspace [data-level]').length,2);
   click('[data-tab="parallel"]');assert.equal(w.testState.question().resistances.length,2);
   click('[data-extra-tab="battery"]');assert.equal(d.querySelectorAll('[data-extra-level]').length,2);
+  click('[data-extra-tab="formulas"]');assert.ok(d.querySelector('.course-formula-page').textContent.includes('התנגדות פנימית'));assert.ok(!d.querySelector('.course-formula-page').textContent.includes('אנרגיה בסוללה'));
   click('[data-course-action="home"]');click('[data-select-course="hvac"]');click('[data-course-action="practice"]');
   assert.equal(w.testState.questions().ohm[0].length,20);
   assert.equal(w.testState.questions().ohm[0].filter(q=>q.powerResistance).length,9);
@@ -58,6 +73,9 @@ const waitFor=async test=>{for(let n=0;n<100;n++){if(test())return;await new Pro
   assert.ok(d.querySelector('.theory-submit').textContent.includes('נותרו שאלות'));
   click('[data-theory-action="submit"]');
   await waitFor(()=>d.querySelector('.theory-summary'));
+  assert.ok(d.querySelector('.theory-result-page').textContent.includes('בדיקת קוד'));
+  assert.equal(d.querySelectorAll('.theory-question').length,0,'Dedicated score page before review');
+  click('[data-theory-action="review"]');
   assert.equal(d.querySelectorAll('.theory-correct').length,20);
   assert.equal(d.querySelectorAll('.theory-question input:checked').length,1);
   assert.equal(d.querySelectorAll('.theory-question input:not(:disabled)').length,0);
@@ -66,14 +84,47 @@ const waitFor=async test=>{for(let n=0;n<100;n++){if(test())return;await new Pro
   click('[data-theory-action="return"]');click('[data-theory-action="new"]');
   await waitFor(()=>!d.querySelector('.theory-summary')&&d.querySelectorAll('.theory-question').length===20);
   assert.equal(lastExam.questions.filter(q=>previousIds.includes(q.id)).length,0);
+  const normalTheory=w.localStorage.getItem('dc.basics.theory.v1');
   // QA performs a real server login and can edit shared configuration.
   click('[data-open-qa]');input('#qa-password','210592');submit('#qa-login-form');
   await waitFor(()=>d.querySelector('#course-admin'));
   input('[data-admin-name="mobile"]','קורס סלולר לבדיקה');submit('#course-admin-form');
   await waitFor(()=>d.querySelector('#admin-status')?.textContent.includes('נשמרו'));
+  change('#qa-course-switch','security');
+  click('[data-extra-tab="mixed"]');
+  for(const option of [...d.querySelectorAll('#qa-extra-exercise option')]){
+   change('#qa-extra-exercise',option.value);
+   const original=d.querySelector('.mixed-schematic svg');
+   assert.ok(original.querySelector('[data-node="A"]'));
+   for(const node of original.querySelectorAll('.mixed-resistor'))assert.notEqual(node.dataset.from,node.dataset.to);
+   if(!d.querySelector('.circuit-reductions'))click('[data-extra-action="solution"]');
+   const reductions=[...d.querySelectorAll('.circuit-reductions svg')];assert.equal(reductions.length,2);
+   const last=reductions.at(-1).querySelector('.mixed-resistor');assert.equal(last.dataset.symbol,'R_T');
+   assert.equal(last.dataset.from,'A');
+   assert.ok(original.querySelector(`[data-node="${last.dataset.to}"]`),'Reduction retains an original terminal node');
+  }
+  click('[data-extra-tab="formulas"]');assert.ok(d.querySelector('.course-formula-page'));
+  assert.ok(d.querySelector('.course-formula-page').textContent.includes('ענפי טור המחוברים במקביל'));
+  change('#qa-course-switch','mobile');
+  click('[data-extra-tab="battery"]');
+  const phoneOption=[...d.querySelectorAll('#qa-extra-exercise option')].find(node=>node.textContent.includes('התנגדות פנימית'));
+  assert.ok(phoneOption);change('#qa-extra-exercise',phoneOption.value);
+  assert.ok(d.querySelector('.phone-battery-svg'),'Phone circuit schematic');
+  assert.ok(d.querySelector('.phone-battery-svg').textContent.includes('מעגלי הטלפון'));
+  change('#qa-course-switch','hvac');
+  click('[data-course-action="theory"]');
+  await waitFor(()=>d.querySelectorAll('.theory-question').length===20);
+  assert.equal(d.querySelector('#theory-password'),null,'QA bypass requires no additional password');
+  assert.equal(lastExam.qa,true);
+  click('.theory-choice input');click('[data-theory-action="submit"]');click('[data-theory-action="submit"]');
+  await waitFor(()=>d.querySelector('.theory-result-page'));
+  assert.ok(d.querySelector('.theory-result-page').textContent.includes('אינה נשמרת'));
+  assert.equal(w.localStorage.getItem('dc.basics.theory.v1'),normalTheory,'QA must not persist exams, answers, scores or seen-question history');
   click('[data-exit-qa]');
   assert.equal(d.body.classList.contains('qa-mode'),false);
+  assert.equal(w.localStorage.getItem('dc.basics.theory.v1'),normalTheory);
+  assert.equal(d.querySelectorAll('.theory-question').length,20,'Restore ordinary in-progress exam after QA');
   assert.equal(errors.length,0,errors.join('\n'));
-  console.log('Frontend DOM integration: navigation, profiles, restrictions, MathML, night palette, server exam grading, rotation, graph, QA passed');
+  console.log('Frontend DOM integration: course icons, navigation, mixed circuits and shared nodes, reductions and zoom, saved-state migration, profiles, restrictions, MathML, night palette, server exams, formula pages and isolated QA passed');
  }finally{child.kill();w.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});

@@ -1,6 +1,6 @@
 {
   "reviewed_at": "2026-10-22",
-  "scope": "190 retained questions; 16 deleted questions excluded",
+  "scope": "Original review of 190 questions retained as historical evidence. Current bank: 193 active questions; later user changes are recorded in question_updates.json.",
   "method": "Independent conceptual review, arithmetic checks, figure inspection, and selected regulatory/manufacturer source checks. No-discrepancy status is not an assertion that every case or equipment model has been verified.",
   "summary": {
     "no_discrepancy_identified": 158,
@@ -3601,6 +3601,19 @@
       "new_choice_label": "א",
       "authority": "user",
       "new_number": 53
+    }
+  ],
+  "later_user_revisions": [
+    {
+      "question_id": "c-057",
+      "action": "answer_updated",
+      "correct_choice_id": "c-057-4"
+    },
+    {
+      "question_id": "c-087",
+      "action": "choices_updated_from_pdf",
+      "source_question": 40,
+      "correct_choice_id": "c-087-2"
     }
   ]
 }

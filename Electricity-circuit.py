@@ -21,6 +21,7 @@ Profile details and progress remain in local browser storage. Theory answers are
 """
 from pathlib import Path
 import tempfile
+import hashlib
 import json
 import re
 import time
@@ -3039,7 +3040,7 @@ extension = (asset_root / "course_practice.js").read_text(encoding="utf-8") + "\
 APP_HTML = APP_HTML.replace("/* COURSE_EXTENSION */", extension)
 
 @st.cache_resource
-def shared_course_service(repository, token, admin_password):
+def shared_course_service(repository, token, admin_password, bank_revision):
     return CourseService(ConfigStore(repository=repository, token=token), asset_root / "data/questions.json", admin_password)
 
 practice = components.declare_component("dc_electricity_basics", path=frontend_directory(APP_HTML))
@@ -3058,6 +3059,7 @@ course_service = shared_course_service(
     str(admin_settings.get("storage_repository", "")),
     str(admin_settings.get("storage_token", contact_token)),
     str(admin_settings.get("password", "210592")),
+    hashlib.sha256((asset_root / "data/questions.json").read_bytes()).hexdigest(),
 )
 try:
     course_public_config = course_service.store.public()
