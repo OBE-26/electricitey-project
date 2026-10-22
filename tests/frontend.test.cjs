@@ -100,7 +100,11 @@ const waitFor=async test=>{for(let n=0;n<100;n++){if(test())return;await new Pro
   assert.equal(d.querySelectorAll('.mixed-junction,.mixed-node-guide').length,0,'No node markings or guide in the question');
   click('[data-open-mixed="0"]');assert.equal(d.querySelectorAll('#diagram-canvas .mixed-junction').length,0,'Question zoom has no node markings');click('[data-close-dialog="diagram-dialog"]');
   click('[data-extra-action="solution"]');
-  assert.equal(d.querySelectorAll('#course-panel svg').length,3,'Original and two reduction schematics');
+  assert.equal(d.querySelectorAll('#course-panel svg').length,4,'Unmarked question, marked original solution and two reductions');
+  assert.equal(d.querySelectorAll('.mixed-schematic .mixed-junction').length,0,'Question stays unmarked with the solution open');
+  assert.ok(d.querySelector('.mixed-original-solution [data-node="A"]'),'Original circuit with nodes is inside the solution');
+  assert.equal(d.querySelector('.mixed-schematic svg').querySelectorAll('.mixed-resistor').length,d.querySelector('.mixed-original-solution svg').querySelectorAll('.mixed-resistor').length,'Same original circuit before reduction');
+  click('.mixed-original-solution [data-open-mixed="0"]');assert.ok(d.querySelector('#diagram-canvas [data-node="A"]'),'Solution zoom retains node labels');click('[data-close-dialog="diagram-dialog"]');
   assert.ok(d.querySelector('#course-panel msub'));
   assert.ok(d.querySelector('.mixed-node-map').textContent.includes('↔'));
   assert.equal(JSON.parse(w.localStorage.getItem('dc.basics.extra.security.v1'))['mixed:0'].questions[0].schemaVersion,2);
@@ -161,7 +165,8 @@ const waitFor=async test=>{for(let n=0;n<100;n++){if(test())return;await new Pro
   for(const option of [...d.querySelectorAll('#qa-extra-exercise option')]){
    change('#qa-extra-exercise',option.value);
    if(!d.querySelector('.circuit-reductions'))click('[data-extra-action="solution"]');
-   const original=d.querySelector('.mixed-schematic svg');
+   assert.equal(d.querySelectorAll('.mixed-schematic .mixed-junction').length,0);
+   const original=d.querySelector('.mixed-original-solution svg');
    assert.ok(original.querySelector('[data-node="A"]'));
    for(const node of original.querySelectorAll('.mixed-resistor'))assert.notEqual(node.dataset.from,node.dataset.to);
    const reductions=[...d.querySelectorAll('.circuit-reductions svg')];assert.equal(reductions.length,2);

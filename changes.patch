@@ -1,5 +1,5 @@
 diff --git a/README.md b/README.md
-index 4dff07d..e2a23f1 100644
+index 4dff07d..16ee399 100644
 --- a/README.md
 +++ b/README.md
 @@ -36,6 +36,8 @@ streamlit run Electricity-circuit.py
@@ -31,7 +31,7 @@ index 4dff07d..e2a23f1 100644
  `data/questions.json` הוא המאגר המעודכן מ־22.10.2026: א׳ 50, ב׳ 48, ג׳ 92 ועוד שלוש שאלות השלמה — 193 שאלות בסך הכול, כולל המחיקות ותיקוני המשתמש. הציון משתמש במפתח המשתמש המאושר. בשאלת מיקום לוח החשמל התשובה היא ״כל התשובות נכונות״. שאלות 31–40 מה־PDF הושוו למאגר: שמונה כבר קיימות ושתי שאלות נוספו; שאלה 40 עודכנה לאפשרויות שב־PDF ולמפתח ב׳. שאלה 34 מהצילום נוספה עם תשובה ב׳. המיפוי מתועד ב־`data/question_updates.json`. `data/technical_review.json` שומר את ההערות המקצועיות הקיימות לשאלות שדורשות בירור; התשובות שלהן לא הוחלפו. התרשימים המקוריים המעודכנים נשמרים ב־`data/figures`.
  
 -תרגילי המעגל המעורב עודכנו לפי דף הדוגמאות שסופק: נגד בטור לשניים, שלושה או ארבעה נגדים במקביל; שתי קבוצות מקבילות ונגדי טור; נגד במקביל לזוג נגדים בטור; ושני ענפים שבכל אחד זוג נגדי טור. הסכמות שומרות על מיקום המקור ועל סדר הנגדים בדוגמאות. הצמתים מסומנים A, B, C וכו׳: כל מוליך רציף מקבל אותה אות, ומעבר לנגד מגיעים לצומת אחרת. ענפים במקביל חולקים את אותם צמתי קצה. בצמצום נשמרות האותיות של צמתי הקצה וצמתים פנימיים שנבלעו מוסרים. קיימת גם מפת חיבורים נפתחת ואפשר לפתוח כל סכמה להגדלה ולזום. סבבי מעגל מעורב מגרסה קודמת מתחדשים אוטומטית; שאר ההתקדמות נשמרת.
-+תרגילי המעגל המעורב עודכנו לפי דף הדוגמאות שסופק: נגד בטור לשניים, שלושה או ארבעה נגדים במקביל; שתי קבוצות מקבילות ונגדי טור; נגד במקביל לזוג נגדים בטור; ושני ענפים שבכל אחד זוג נגדי טור. הסכמות שומרות על מיקום המקור ועל סדר הנגדים בדוגמאות. אותיות הצמתים A, B, C וכו׳ ומפת החיבורים מופיעות רק בפתרון מלא. בסכמת השאלה ובהגדלתה אין אותיות צמתים; נקודות החיבור החשמליות נשארות. בפתרון כל מוליך רציף מקבל אותה אות, ומעבר לנגד מגיעים לצומת אחרת. ענפים במקביל חולקים את אותם צמתי קצה. בצמצום נשמרות האותיות של צמתי הקצה וצמתים פנימיים שנבלעו מוסרים. סגירת הפתרון מסתירה את הסימונים מחדש. אפשר לפתוח כל סכמה להגדלה ולזום. סבבי מעגל מעורב מגרסה קודמת מתחדשים אוטומטית; שאר ההתקדמות נשמרת.
++תרגילי המעגל המעורב עודכנו לפי דף הדוגמאות שסופק: נגד בטור לשניים, שלושה או ארבעה נגדים במקביל; שתי קבוצות מקבילות ונגדי טור; נגד במקביל לזוג נגדים בטור; ושני ענפים שבכל אחד זוג נגדי טור. הסכמות שומרות על מיקום המקור ועל סדר הנגדים בדוגמאות. אותיות הצמתים A, B, C וכו׳ ומפת החיבורים מופיעות רק בפתרון מלא. בסכמת השאלה ובהגדלתה אין אותיות צמתים; נקודות החיבור החשמליות נשארות. בפתרון כל מוליך רציף מקבל אותה אות, ומעבר לנגד מגיעים לצומת אחרת. ענפים במקביל חולקים את אותם צמתי קצה. בצמצום נשמרות האותיות של צמתי הקצה וצמתים פנימיים שנבלעו מוסרים. בתחילת הפתרון המלא מוצג עותק של המעגל המקורי עם סימון הצמתים, לפני שלבי הצמצום; סכמת השאלה נשארת ללא סימון גם כשהפתרון פתוח. סגירת הפתרון מסתירה את הסימונים מחדש. אפשר לפתוח כל סכמה להגדלה ולזום. סבבי מעגל מעורב מגרסה קודמת מתחדשים אוטומטית; שאר ההתקדמות נשמרת.
  
  אייקונים וקטוריים נפרדים מלווים את בחירת הקורס ואת כותרתו: מזגן למיזוג, מגן עם מנעול למיגון וטלפון לסלולר. הם משתמשים בצבע הטקסט הקיים כדי להתאים גם למצב לילה.
  
@@ -222,7 +222,7 @@ index 062ba3e..512a47b 100644
        <path d="M490 60H550M495 302H545" stroke="${ink}" stroke-width="3"/>
        <rect x="500" y="145" width="30" height="70" fill="var(--card)" stroke="${ink}" stroke-width="2.5"/>
 diff --git a/courses.js b/courses.js
-index 325e911..60fa565 100644
+index 325e911..f5e3999 100644
 --- a/courses.js
 +++ b/courses.js
 @@ -66,7 +66,7 @@ const CourseApp = window.CourseApp = (() => {
@@ -239,14 +239,15 @@ index 325e911..60fa565 100644
      return `<div class="mixed-node-guide"><p><strong>סימון צמתים:</strong> מעבר לכל נגד מגיעים לצומת אחרת. לאורך מוליך רציף נשארת אותה אות. ענפים במקביל מחוברים לאותן שתי צמתים.</p><details><summary>מפת החיבורים לפי הצמתים</summary><div class="mixed-node-map">${q.resistorNodes.map((nodes,i)=>`<span>${math('R'+(i+1))}: <bdi>${nodes.from} ↔ ${nodes.to}</bdi></span>`).join('')}</div></details></div>`;
    }
 -  function mixedPreview(q,stage=0){return `<button type="button" class="diagram-preview" data-open-mixed="${stage}" aria-label="הגדלת סכמה ${stage===0?'מקורית':'לאחר צמצום '+stage}">${CoursePractice.mixedSVG(q,stage)}<span class="diagram-open-label">הגדלת הסכמה ⤢</span></button>`;}
+-  function openMixedDiagram(stage){
 +  function mixedPreview(q,stage=0,showNodes=false){return `<button type="button" class="diagram-preview" data-open-mixed="${stage}" data-mixed-nodes="${showNodes}" aria-label="הגדלת סכמה ${stage===0?'מקורית':'לאחר צמצום '+stage}">${CoursePractice.mixedSVG(q,stage,showNodes)}<span class="diagram-open-label">הגדלת הסכמה ⤢</span></button>`;}
-   function openMixedDiagram(stage){
++  function openMixedDiagram(stage,showNodes=false){
      const {q}=currentExtra();if(q.kind!=='mixed')return;
      diagramReturnToFormulas=false;diagramReturnFieldId=null;diagramZoom=1;diagramBaseWidth=0;
      $('diagram-dialog').classList.remove('dark-diagram');
      $('diagram-context').innerHTML=`<h3>${escapeHTML(q.title)}</h3><p>${stage===0?'המעגל המקורי':escapeHTML(q.reductions[stage-1].title)}</p>`;
 -    $('diagram-canvas').innerHTML=CoursePractice.mixedSVG(q,stage);
-+    $('diagram-canvas').innerHTML=CoursePractice.mixedSVG(q,stage,q.solution);
++    $('diagram-canvas').innerHTML=CoursePractice.mixedSVG(q,stage,showNodes&&q.solution);
      $('diagram-canvas').style.width='100%';openDialog('diagram-dialog');zoomDiagram('reset');
    }
    function renderExtra(){
@@ -256,8 +257,8 @@ index 325e911..60fa565 100644
      const qaPicker=qaActive?`<label class="qa-extra-picker" for="qa-extra-exercise">תרגיל לבדיקה<select id="qa-extra-exercise">${state.questions.map((item,i)=>`<option value="${i}" ${state.index===i?'selected':''}>${i+1}. ${escapeHTML(item.title)}</option>`).join('')}</select></label>`:'';
 -    const picture=q.unitFamily==='Rs'?`<figure class="diagram phone-schematic">${CoursePractice.phoneBatterySVG(q)}<figcaption>מודל שקול של סוללת טלפון. ההתנגדות הפנימית מחוברת בטור לעומס של מעגלי הטלפון.</figcaption></figure>`:extra==='mixed'?`<figure class="diagram mixed-schematic">${mixedPreview(q)}<figcaption>${escapeHTML(q.caption)}</figcaption></figure>${nodeGuide(q)}`:'';
 -    const reduction=extra==='mixed'?`<div class="circuit-reductions"><h3>צמצום המעגל לפי הצמתים</h3>${q.reductions.map((item,i)=>`<section class="circuit-reduction"><h4>${i+1}. ${escapeHTML(item.title)}</h4>${solutionRows(q,item.steps)}<figure class="diagram">${mixedPreview(q,i+1)}</figure></section>`).join('')}<p class="small muted">אותיות הצמתים נשמרות. צומת פנימית שנבלעה בנגד שקול אינה מסומנת בסכמה המצומצמת.</p></div>`:'';
-+    const picture=q.unitFamily==='Rs'?`<figure class="diagram phone-schematic">${CoursePractice.phoneBatterySVG(q)}<figcaption>מודל שקול של סוללת טלפון. ההתנגדות הפנימית מחוברת בטור לעומס של מעגלי הטלפון.</figcaption></figure>`:extra==='mixed'?`<figure class="diagram mixed-schematic">${mixedPreview(q,0,q.solution)}<figcaption>${escapeHTML(q.caption)}</figcaption></figure>`:'';
-+    const reduction=extra==='mixed'?`${nodeGuide(q)}<div class="circuit-reductions"><h3>צמצום המעגל לפי הצמתים</h3>${q.reductions.map((item,i)=>`<section class="circuit-reduction"><h4>${i+1}. ${escapeHTML(item.title)}</h4>${solutionRows(q,item.steps)}<figure class="diagram">${mixedPreview(q,i+1,true)}</figure></section>`).join('')}<p class="small muted">אותיות הצמתים נשמרות. צומת פנימית שנבלעה בנגד שקול אינה מסומנת בסכמה המצומצמת.</p></div>`:'';
++    const picture=q.unitFamily==='Rs'?`<figure class="diagram phone-schematic">${CoursePractice.phoneBatterySVG(q)}<figcaption>מודל שקול של סוללת טלפון. ההתנגדות הפנימית מחוברת בטור לעומס של מעגלי הטלפון.</figcaption></figure>`:extra==='mixed'?`<figure class="diagram mixed-schematic">${mixedPreview(q,0,false)}<figcaption>${escapeHTML(q.caption)}</figcaption></figure>`:'';
++    const reduction=extra==='mixed'?`<section class="mixed-original-solution"><h3>המעגל המקורי עם סימון צמתים</h3><figure class="diagram">${mixedPreview(q,0,true)}</figure></section>${nodeGuide(q)}<div class="circuit-reductions"><h3>צמצום המעגל לפי הצמתים</h3>${q.reductions.map((item,i)=>`<section class="circuit-reduction"><h4>${i+1}. ${escapeHTML(item.title)}</h4>${solutionRows(q,item.steps)}<figure class="diagram">${mixedPreview(q,i+1,true)}</figure></section>`).join('')}<p class="small muted">אותיות הצמתים נשמרות. צומת פנימית שנבלעה בנגד שקול אינה מסומנת בסכמה המצומצמת.</p></div>`:'';
      const remainingSteps=extra==='mixed'?q.steps.slice(q.reductions.reduce((sum,item)=>sum+item.steps.length,0)):q.steps;
      const answer=done?`<div class="complete-badge">✓ התרגיל הושלם</div><h2>כל החישובים הושלמו</h2><button class="btn" data-extra-action="next">${state.index===9?'סבב חדש':'לתרגיל הבא ←'}</button>`:`<div class="task-kicker">שלב ${q.cursor+1} מתוך ${q.steps.length}</div><h2>${escapeHTML(s.label)}</h2><form id="extra-answer-form"><label for="extra-answer">התשובה ביחידות ${escapeHTML(s.unit)}</label><div class="answer-row"><div class="answer-wrap"><input class="numeric${q.accepted?' answer-correct':q.attempts?' answer-incorrect':''}" id="extra-answer" inputmode="decimal" autocomplete="off" maxlength="24" value="${escapeHTML(q.draft??'')}" ${q.accepted?'readonly':''}><span class="unit">${escapeHTML(s.unit)}</span></div><button class="btn" type="${q.accepted?'button':'submit'}" ${q.accepted?'data-extra-action="step"':''}>${q.accepted?'הבא ←':'בדיקת תשובה'}</button></div></form><p class="small muted">אפשר לעגל לשתי ספרות אחרי הנקודה.</p>`;
      $('course-panel').innerHTML=`<div class="course-head"><h2>${extra==='mixed'?'מעגל מעורב מורכב':'חישובי סוללות'}</h2><div class="levels">${levelsHTML}</div></div>${qaPicker}<div class="progress-row"><span>תרגיל ${state.index+1} מתוך 10</span><span>רמה ${letters[extraLevel]}</span></div><div class="exercise-grid"><section class="card"><h3>${escapeHTML(q.title)}</h3>${q.text?`<p>${escapeHTML(q.text)}</p>`:''}<div class="givens">${statementRows(q)}</div>${picture}${q.unitFamily==='Rs'?notationKey():''}${q.kind==='battery'&&q.unitFamily!=='Rs'?`<p class="small muted">${escapeHTML(q.note)}</p>`:''}</section><section class="card">${answer}<div class="answer-tools"><button class="btn secondary tiny" data-extra-action="hint">רמז</button><button class="btn secondary tiny" data-extra-action="solution">${q.solution?'סגירת פתרון מלא':'פתרון מלא'}</button><button class="btn secondary tiny" data-open-calculator>מחשבון</button><button class="btn secondary tiny" data-extra-action="new">תרגילים חדשים</button></div>${status(extraMessage,extraError)}${q.hint&&s?`<div class="hint">השתמשו בנוסחה ${math(s.formula)}</div>`:''}${q.solution?`<div class="solution"><div class="dialog-head"><h3>פתרון מלא</h3><button class="close" data-extra-action="solution" aria-label="סגירת פתרון מלא">×</button></div>${reduction}${solutionRows(q,remainingSteps)}</div>`:''}${done?`<div class="completed-steps">${solutionRows(q)}</div>`:''}${(done||q.solution)&&q.unitFamily==='Rs'?`<p class="small muted">${escapeHTML(q.note)}</p>`:''}</section></div>`;
@@ -290,6 +291,15 @@ index 325e911..60fa565 100644
      }catch(error){if(qaActive&&token===adminToken){adminMessage=error.message;adminError=true;}}
      finally{adminBusy=false;if(qaActive&&token===adminToken){renderAdmin();resizeFrame();}}
    }
+@@ -317,7 +321,7 @@ const CourseApp = window.CourseApp = (() => {
+     const entry=get(entryKey,null);if(entry?.profile){personal.profile=entry.profile;if(entry.preferences)personal.preferences=entry.preferences;}else syncProfile();
+     document.addEventListener('click',event=>{
+       const b=event.target.closest('button');if(!b)return;
+-      if(b.hasAttribute('data-open-mixed')){event.preventDefault();event.stopImmediatePropagation();return openMixedDiagram(Number(b.dataset.openMixed));}
++      if(b.hasAttribute('data-open-mixed')){event.preventDefault();event.stopImmediatePropagation();return openMixedDiagram(Number(b.dataset.openMixed),b.dataset.mixedNodes==='true');}
+       const action=b.dataset.courseAction;
+       const handled=b.dataset.selectCourse||action||b.dataset.extraTab||b.dataset.extraLevel!==undefined||b.dataset.extraAction||b.dataset.theoryAction||b.dataset.removePassword!==undefined||b.dataset.editPassword!==undefined;
+       if(handled){event.preventDefault();event.stopImmediatePropagation();}
 diff --git a/package.json b/package.json
 index bcc096c..f048adc 100644
 --- a/package.json
@@ -331,7 +341,7 @@ index 3b04861..fe0655e 100644
   else:reply=service.handle(event,session)
   print(json.dumps({'request_id':event.get('id'),**reply},ensure_ascii=False),flush=True)
 diff --git a/tests/frontend.test.cjs b/tests/frontend.test.cjs
-index cfc2604..6ce9622 100644
+index cfc2604..0a2250a 100644
 --- a/tests/frontend.test.cjs
 +++ b/tests/frontend.test.cjs
 @@ -27,6 +27,32 @@ const submit=selector=>d.querySelector(selector).dispatchEvent(new w.Event('subm
@@ -367,19 +377,25 @@ index cfc2604..6ce9622 100644
    assert.equal(d.querySelectorAll('[data-select-course]').length,3);
    for(const id of ['hvac','security','mobile'])assert.ok(d.querySelector(`[data-select-course="${id}"] [data-course-icon="${id}"]`),'Distinct course icon');
    assert.equal(d.querySelector('#profile-dialog').open,false,'Existing terms approval should be reused');
-@@ -70,7 +96,10 @@ const waitFor=async test=>{for(let n=0;n<100;n++){if(test())return;await new Pro
+@@ -70,8 +96,15 @@ const waitFor=async test=>{for(let n=0;n<100;n++){if(test())return;await new Pro
    click('[data-select-course="security"]');
    assert.ok(d.querySelector('#course-title [data-course-icon="security"]'));
    assert.equal(w.testState.questions().ohm.length,3);
 -  click('[data-extra-tab="mixed"]');click('[data-extra-action="solution"]');
+-  assert.equal(d.querySelectorAll('#course-panel svg').length,3,'Original and two reduction schematics');
 +  click('[data-extra-tab="mixed"]');
 +  assert.equal(d.querySelectorAll('.mixed-junction,.mixed-node-guide').length,0,'No node markings or guide in the question');
 +  click('[data-open-mixed="0"]');assert.equal(d.querySelectorAll('#diagram-canvas .mixed-junction').length,0,'Question zoom has no node markings');click('[data-close-dialog="diagram-dialog"]');
 +  click('[data-extra-action="solution"]');
-   assert.equal(d.querySelectorAll('#course-panel svg').length,3,'Original and two reduction schematics');
++  assert.equal(d.querySelectorAll('#course-panel svg').length,4,'Unmarked question, marked original solution and two reductions');
++  assert.equal(d.querySelectorAll('.mixed-schematic .mixed-junction').length,0,'Question stays unmarked with the solution open');
++  assert.ok(d.querySelector('.mixed-original-solution [data-node="A"]'),'Original circuit with nodes is inside the solution');
++  assert.equal(d.querySelector('.mixed-schematic svg').querySelectorAll('.mixed-resistor').length,d.querySelector('.mixed-original-solution svg').querySelectorAll('.mixed-resistor').length,'Same original circuit before reduction');
++  click('.mixed-original-solution [data-open-mixed="0"]');assert.ok(d.querySelector('#diagram-canvas [data-node="A"]'),'Solution zoom retains node labels');click('[data-close-dialog="diagram-dialog"]');
    assert.ok(d.querySelector('#course-panel msub'));
    assert.ok(d.querySelector('.mixed-node-map').textContent.includes('↔'));
-@@ -81,6 +110,8 @@ const waitFor=async test=>{for(let n=0;n<100;n++){if(test())return;await new Pro
+   assert.equal(JSON.parse(w.localStorage.getItem('dc.basics.extra.security.v1'))['mixed:0'].questions[0].schemaVersion,2);
+@@ -81,6 +114,8 @@ const waitFor=async test=>{for(let n=0;n<100;n++){if(test())return;await new Pro
    click('[data-diagram-zoom="in"]');assert.equal(d.querySelector('#diagram-zoom-label').textContent,'150%');
    click('[data-close-dialog="diagram-dialog"]');
    click('[data-open-mixed="2"]');assert.equal(d.querySelector('#diagram-canvas svg').dataset.stage,'2');click('[data-close-dialog="diagram-dialog"]');
@@ -388,12 +404,14 @@ index cfc2604..6ce9622 100644
    click('[data-extra-tab="battery"]');assert.ok(d.querySelector('#extra-answer'));
    click('[data-extra-tab="formulas"]');assert.ok(d.querySelector('.course-formula-page'));assert.ok(d.querySelector('.course-formula-page').textContent.includes('אנרגיה בסוללה'));
    click('[data-course-action="home"]');click('[data-select-course="mobile"]');
-@@ -129,10 +160,10 @@ const waitFor=async test=>{for(let n=0;n<100;n++){if(test())return;await new Pro
+@@ -129,10 +164,11 @@ const waitFor=async test=>{for(let n=0;n<100;n++){if(test())return;await new Pro
    click('[data-extra-tab="mixed"]');
    for(const option of [...d.querySelectorAll('#qa-extra-exercise option')]){
     change('#qa-extra-exercise',option.value);
+-   const original=d.querySelector('.mixed-schematic svg');
 +   if(!d.querySelector('.circuit-reductions'))click('[data-extra-action="solution"]');
-    const original=d.querySelector('.mixed-schematic svg');
++   assert.equal(d.querySelectorAll('.mixed-schematic .mixed-junction').length,0);
++   const original=d.querySelector('.mixed-original-solution svg');
     assert.ok(original.querySelector('[data-node="A"]'));
     for(const node of original.querySelectorAll('.mixed-resistor'))assert.notEqual(node.dataset.from,node.dataset.to);
 -   if(!d.querySelector('.circuit-reductions'))click('[data-extra-action="solution"]');
