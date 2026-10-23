@@ -36,10 +36,10 @@ const waitFor=async test=>{for(let n=0;n<100;n++){if(test())return;await new Pro
   assert.ok(d.querySelector('#course-title [data-course-icon="security"]'));
   assert.equal(w.testState.questions().ohm.length,3);
   click('[data-extra-tab="mixed"]');click('[data-extra-action="solution"]');
-  assert.equal(d.querySelectorAll('#course-panel svg').length,3,'Original and two reduction schematics');
+  assert.equal(d.querySelectorAll('#course-panel svg').length,4,'Question schematic, annotated solution schematic and two reductions');
   assert.ok(d.querySelector('#course-panel msub'));
   assert.ok(d.querySelector('.mixed-node-map').textContent.includes('↔'));
-  assert.equal(JSON.parse(w.localStorage.getItem('dc.basics.extra.security.v1'))['mixed:0'].questions[0].schemaVersion,2);
+  assert.equal(JSON.parse(w.localStorage.getItem('dc.basics.extra.security.v1'))['mixed:0'].questions[0].schemaVersion,3);
   assert.equal(JSON.parse(w.localStorage.getItem('dc.basics.extra.security.v1'))['battery:0'].keep,'existing');
   click('[data-open-mixed="0"]');assert.equal(d.querySelector('#diagram-dialog').open,true);
   assert.ok(d.querySelector('#diagram-canvas .mixed-circuit-svg'));
@@ -94,10 +94,10 @@ const waitFor=async test=>{for(let n=0;n<100;n++){if(test())return;await new Pro
   click('[data-extra-tab="mixed"]');
   for(const option of [...d.querySelectorAll('#qa-extra-exercise option')]){
    change('#qa-extra-exercise',option.value);
-   const original=d.querySelector('.mixed-schematic svg');
+   if(!d.querySelector('.circuit-reductions'))click('[data-extra-action="solution"]');
+   const original=d.querySelector('.mixed-original-solution svg');
    assert.ok(original.querySelector('[data-node="A"]'));
    for(const node of original.querySelectorAll('.mixed-resistor'))assert.notEqual(node.dataset.from,node.dataset.to);
-   if(!d.querySelector('.circuit-reductions'))click('[data-extra-action="solution"]');
    const reductions=[...d.querySelectorAll('.circuit-reductions svg')];assert.equal(reductions.length,2);
    const last=reductions.at(-1).querySelector('.mixed-resistor');assert.equal(last.dataset.symbol,'R_T');
    assert.equal(last.dataset.from,'A');

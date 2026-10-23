@@ -49,7 +49,7 @@ for(let seed=1;seed<=60;seed++){
   const mixed=practice.batch('security','mixed',level,seed);
   assert.equal(mixed.filter(q=>q.family==='series-parallel').length,5);
   assert.equal(mixed.filter(q=>q.family==='parallel-series').length,5);
-  assert.equal(new Set(mixed.map(q=>q.variant)).size,6);
+  assert.equal(new Set(mixed.map(q=>q.variant)).size,7,'Seven mixed-circuit variants in the current generator');
   for(const q of mixed){
    assert.equal(q.diagrams.length,3);assert.equal(q.reductions.length,2);
    const solve=edges=>solveNetwork(edges,'A',q.groups.at(-1).to,q.u);
@@ -69,7 +69,7 @@ for(let seed=1;seed<=60;seed++){
    }
    q.diagrams.forEach((diagram,stage)=>{
     close(solve(diagram.flat(2)).resistance,q.rt,'Each reduction preserves terminal resistance');
-    const svg=practice.mixedSVG(q,stage);
+    const svg=practice.mixedSVG(q,stage,true);
     for(const node of new Set(diagram.flat(2).flatMap(e=>[e.from,e.to])))assert.ok(svg.includes(`data-node="${node}"`),'Display every surviving node '+node);
     for(const e of diagram.flat(2))assert.ok(svg.includes(`data-symbol="${e.symbol}" data-from="${e.from}" data-to="${e.to}"`));
    });

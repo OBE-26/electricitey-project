@@ -122,6 +122,24 @@ const fillTriangle=({ctx,definition})=>{
   assert.equal(JSON.stringify(w.testState.question()),hiddenBefore,'Mixed-circuit answer stays scoped to the current circuit');
   closeFormulas();openCourse();assert.equal(d.querySelector('#formula-tab-manual').getAttribute('aria-selected'),'true');
   click('#formula-tab-reference');closeFormulas();openIcon();assert.ok(d.querySelector('.course-formula-page'),'Remember reference view too');
+  // The course formula page always includes prefixes and the working converter.
+  assert.ok(d.querySelector('.order-of-magnitude').textContent.includes('מיקרו'));
+  input('#unit-converter-value','2.5');change('#unit-converter-from','kΩ');change('#unit-converter-to','Ω');
+  assert.ok(d.querySelector('#unit-converter-result').textContent.includes('2500 Ω'));
+  assert.ok(d.querySelector('#unit-converter-result sup'),'Scientific exponent is rendered as a superscript');
+  closeFormulas();
+  assert.equal(d.querySelector('[data-course-action="simulator"]'),null,'No simulator before finishing the exercise');
+  while(circuit.cursor<circuit.steps.length){
+   if(!circuit.accepted){input('#extra-answer',String(circuit.steps[circuit.cursor].value));submit('#extra-answer-form');}
+   click('[data-extra-action="step"]');
+  }
+  click('[data-course-action="simulator"]');
+  assert.ok(d.querySelector('#course-sim-voltage'));
+  const before=d.querySelector('#course-sim-display').textContent;
+  input('#course-sim-voltage',String(circuit.u/2));
+  assert.notEqual(d.querySelector('#course-sim-display').textContent,before,'Slider updates circuit values');
+  click('[data-course-action="simulator"]');
+  assert.equal(d.querySelector('#course-simulator'),null,'Simulator closes');
   assert.equal(errors.length,0,errors.join('\n'));
   console.log('Unified course formulas: both entry points, course content, remembered views, question/list/triangle preservation, calculator, wrong substitution, actual answers, battery units and mixed-circuit isolation passed');
  }finally{child.kill();w.close();}
