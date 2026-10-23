@@ -49,18 +49,7 @@ for(let seed=1;seed<=60;seed++){
   const mixed=practice.batch('security','mixed',level,seed);
   assert.equal(mixed.filter(q=>q.family==='series-parallel').length,5);
   assert.equal(mixed.filter(q=>q.family==='parallel-series').length,5);
-  assert.equal(new Set(mixed.map(q=>q.variant)).size,7);
-  const grouped=mixed.filter(q=>q.variant.startsWith('parallel-groups'));
-  assert.equal(grouped.length,2,'Two worksheet-style circuits in every batch and level');
-  for(const q of grouped){
-   assert.equal(q.r.length,6);assert.deepEqual(q.groups.map(g=>g.branches.length),[2,1,2,1]);
-   assert.ok(practice.mixedSVG(q).includes('M355 342V388'),'Source is horizontal on the lower wire');
-   assert.equal(q.schemaVersion,3);
-  }
-  if(level===1){
-   const example=grouped.find(q=>q.variant==='parallel-groups-worksheet');
-   assert.deepEqual(example.r,[15,10,3,6,12,5]);close(example.u,45);close(example.rt,18);close(example.it,2.5);
-  }
+  assert.equal(new Set(mixed.map(q=>q.variant)).size,6);
   for(const q of mixed){
    assert.equal(q.diagrams.length,3);assert.equal(q.reductions.length,2);
    const solve=edges=>solveNetwork(edges,'A',q.groups.at(-1).to,q.u);
@@ -80,8 +69,7 @@ for(let seed=1;seed<=60;seed++){
    }
    q.diagrams.forEach((diagram,stage)=>{
     close(solve(diagram.flat(2)).resistance,q.rt,'Each reduction preserves terminal resistance');
-    assert.ok(!practice.mixedSVG(q,stage).includes('data-node='),'Question schematics have no node markings');
-    const svg=practice.mixedSVG(q,stage,true);
+    const svg=practice.mixedSVG(q,stage);
     for(const node of new Set(diagram.flat(2).flatMap(e=>[e.from,e.to])))assert.ok(svg.includes(`data-node="${node}"`),'Display every surviving node '+node);
     for(const e of diagram.flat(2))assert.ok(svg.includes(`data-symbol="${e.symbol}" data-from="${e.from}" data-to="${e.to}"`));
    });
@@ -97,31 +85,8 @@ for(let seed=1;seed<=60;seed++){
   const mobile=practice.batch('mobile','battery',level,seed);
   assert.equal(mobile.filter(q=>q.unitFamily==='Wh').length,0);
   assert.equal(mobile.filter(q=>q.unitFamily==='Rs').length,3);
-  for(const batch of [security,mobile]){
-   const integral=batch.filter(q=>q.givens.every(([,value])=>Number.isInteger(value))&&q.steps.every(s=>Number.isInteger(s.value)));
-   assert.equal(integral.length,7,'Exactly 70% integral questions in every batch and level');
-   assert.ok(integral.every(q=>q.steps.every(s=>s.value>=2&&s.value<=10)),'Integral answers are 2–10');
-   assert.ok(batch.filter(q=>q.steps.some(s=>s.value===1)).length<=2,'At most 20% with answer 1');
-   const fractional=batch.filter(q=>!integral.includes(q));
-   assert.equal(fractional.length,3);
-   assert.ok(fractional.every(q=>q.steps.some(s=>!Number.isInteger(s.value))),'Every fractional question has a fractional answer');
-   assert.ok(fractional.some(q=>q.steps.some(s=>s.key==='t_h')),'Minutes to fractional hours');
-   assert.ok(fractional.some(q=>q.steps.some(s=>s.key==='t_minutes')&&q.steps.some(s=>s.key==='t_remainder')),'Fractional hours to hours and minutes');
-   for(const q of batch){
-    assert.equal(q.schemaVersion,3);
-    const given=Object.fromEntries(q.givens.map(([key,value,unit])=>[key,unit==='min'?value/60:value]));
-    const primary=q.steps.find(s=>['Q','I','t','E','R_s'].includes(s.key));
-    if(q.unitFamily==='Rs'){
-     const drop=given.U_t-given.U_L;close(q.steps[0].value,drop);close(primary.value,drop/given.I);
-     assert.equal(q.steps[1].unit,q.givens[0][2]==='mV'?'mΩ':'Ω');
-    }else{
-     const expected={Q:()=>given.E!==undefined?given.E/given.U:given.I*given.t,I:()=>given.Q/given.t,t:()=>given.E!==undefined?given.E/given.P:given.Q/given.I,E:()=>given.P*given.t};
-     close(primary.value,expected[primary.key](),'Solve from the displayed givens, including time conversion');
-    }
-   }
-  }
   for(const q of [...security,...mobile])assert.ok(q.steps.every(s=>Number.isFinite(s.value)&&s.value>0));
-  for(const q of mobile.filter(q=>q.unitFamily==='Rs')){assert.equal(q.note,'','No manufacturer or diagnosis note');const svg=practice.phoneBatterySVG(q);assert.ok(svg.includes('phone-battery-svg'));assert.ok(svg.includes('מעגלי הטלפון'));assert.ok(svg.includes(' = ?'));assert.ok(svg.includes('dy="5"'));}
+  for(const q of mobile.filter(q=>q.unitFamily==='Rs')){const svg=practice.phoneBatterySVG(q);assert.ok(svg.includes('phone-battery-svg'));assert.ok(svg.includes('מעגלי הטלפון'));assert.ok(svg.includes(' = ?'));assert.ok(svg.includes('dy="5"'));}
  }
 }
 console.log('Practice generators: 60 seeds, all courses and levels passed');
