@@ -6,12 +6,15 @@ const html=raw.replace('/* COURSE_EXTENSION */',fs.readFileSync('course_practice
 const errors=[];const virtualConsole=new VirtualConsole();virtualConsole.on('jsdomError',e=>{if(!e.message.includes('CSS stylesheet'))errors.push(e.message);});
 const dom=new JSDOM(html,{url:'https://unit.test/',runScripts:'outside-only',virtualConsole});
 const w=dom.window,d=w.document;
-w.matchMedia=()=>({matches:false,addEventListener(){},removeEventListener(){}});
+let phoneDark=false,phoneThemeChange;
+w.matchMedia=()=>({get matches(){return phoneDark;},addEventListener(type,callback){phoneThemeChange=callback;},removeEventListener(){}});
 w.requestAnimationFrame=()=>0;w.cancelAnimationFrame=()=>{};w.scrollTo=()=>{};
 w.HTMLElement.prototype.scrollIntoView=()=>{};
 w.HTMLDialogElement.prototype.showModal=function(){this.open=true;};
 w.HTMLDialogElement.prototype.close=function(){this.open=false;this.dispatchEvent(new w.Event('close'));};
 w.localStorage.setItem('dc.basics.personal.v1',JSON.stringify({version:1,profile:{name:'בדיקת קוד',birth:'1990-01-01',termsVersion:'2026-10-14.1'},preferences:{textScale:100,theme:'light',motion:true},sessions:[],topics:{},totals:{}}));
+const shabbatStart=Date.parse('2099-10-23T17:00:00+03:00'),shabbatEnd=shabbatStart+90000000;
+w.localStorage.setItem('dc.basics.shabbat.jerusalem.v1',JSON.stringify({schedule:[{start:shabbatStart,end:shabbatEnd}]}));
 const child=spawn(python,['tests/course_bridge.py'],{stdio:['pipe','pipe','inherit']});
 let lastExam=null;
 const dispatch=reply=>w.dispatchEvent(new w.MessageEvent('message',{source:w,data:{type:'streamlit:render',args:{course_config:{names:{hvac:'קורס מיזוג וקירור',security:'קורס מיגון',mobile:'קורס סלולר'}},course_response:reply,contact_availability:{}}}}));
@@ -25,6 +28,19 @@ const input=(selector,value)=>{const node=d.querySelector(selector);assert.ok(no
 const change=(selector,value)=>{const node=d.querySelector(selector);assert.ok(node,'Missing '+selector);node.value=value;node.dispatchEvent(new w.Event('change',{bubbles:true}));};
 const submit=selector=>d.querySelector(selector).dispatchEvent(new w.Event('submit',{bubbles:true,cancelable:true}));
 const waitFor=async test=>{for(let n=0;n<100;n++){if(test())return;await new Promise(resolve=>setTimeout(resolve,20));}throw Error('Timed out waiting for state');};
+const luminance=color=>{
+ const rgb=color.match(/^rgb\((\d+), (\d+), (\d+)\)$/);assert.ok(rgb,'Computed RGB color: '+color);
+ return rgb.slice(1).map(Number).map(x=>x/255).map(x=>x<=0.04045?x/12.92:((x+0.055)/1.055)**2.4).reduce((sum,x,i)=>sum+x*[0.2126,0.7152,0.0722][i],0);
+};
+const checkShabbatContrast=()=>{
+ const card=d.querySelector('.shabbat-card'),background=w.getComputedStyle(card).backgroundColor;
+ for(const selector of ['.shabbat-card h1','.shabbat-card > p','.shabbat-test-label','.shabbat-preview-time','.shabbat-branding p','.shabbat-qa-controls button']){
+  for(const node of d.querySelectorAll(selector)){
+   const style=w.getComputedStyle(node),[low,high]=[luminance(style.color),luminance(node.tagName==='BUTTON'?style.backgroundColor:background)].sort((a,b)=>a-b);
+   assert.ok((high+0.05)/(low+0.05)>=4.5,selector+' has readable text contrast');
+  }
+ }
+};
 (async()=>{
  try{
   assert.equal(d.querySelectorAll('[data-select-course]').length,3);
@@ -88,6 +104,38 @@ const waitFor=async test=>{for(let n=0;n<100;n++){if(test())return;await new Pro
   // QA performs a real server login and can edit shared configuration.
   click('[data-open-qa]');input('#qa-password','210592');submit('#qa-login-form');
   await waitFor(()=>d.querySelector('#course-admin'));
+  assert.ok(d.querySelector('#qa-shabbat-status').textContent.includes('עקיפת שבת פעילה'));
+  click('[data-open-accessibility]');change('#access-theme','system');click('#accessibility-dialog [data-close-dialog]');
+  const realNow=w.Date.now;
+  click('#qa-panel [data-shabbat-mode="test"]');
+  assert.ok(d.querySelector('#shabbat-screen .shabbat-test-label'));
+  assert.ok(d.querySelector('#shabbat-screen .shabbat-logo'));
+  assert.ok(d.querySelector('#shabbat-screen').textContent.includes('כל הזכויות שמורות'));
+  assert.ok(d.querySelector('#app').hasAttribute('inert'));
+  input('#qa-shabbat-progress','100');
+  assert.equal(d.querySelector('#shabbat-screen').dataset.waxPercent,'5','QA time slider reaches the final wax level');
+  assert.equal(d.querySelectorAll('.candle-wax[height="3.5"]').length,2);
+  input('#qa-shabbat-progress','0');
+  assert.equal(d.querySelector('#shabbat-screen').dataset.waxPercent,'100');
+  assert.equal(w.getComputedStyle(d.querySelector('.shabbat-flame')).animation,'none','Reduced-motion preference disables flicker');
+  checkShabbatContrast();
+  phoneDark=true;phoneThemeChange({matches:true});
+  assert.ok(d.documentElement.classList.contains('dark-mode'),'Shabbat follows phone night mode while already open');
+  assert.equal(w.getComputedStyle(d.querySelector('.shabbat-card')).backgroundColor,'rgb(22, 27, 35)');
+  checkShabbatContrast();
+  phoneDark=false;phoneThemeChange({matches:false});
+  assert.equal(d.documentElement.classList.contains('dark-mode'),false,'Shabbat returns to day mode when phone changes');
+  checkShabbatContrast();
+  click('#shabbat-screen [data-shabbat-mode="bypass"]');
+  assert.equal(d.querySelector('#shabbat-screen'),null);
+  assert.equal(d.querySelector('#app').hasAttribute('inert'),false);
+  w.Date.now=()=>shabbatStart;
+  click('#qa-panel [data-shabbat-mode="auto"]');
+  assert.ok(d.querySelector('#shabbat-screen'),'Real Shabbat can be checked from QA');
+  assert.equal(d.querySelector('.shabbat-test-label'),null);
+  click('#shabbat-screen [data-shabbat-mode="bypass"]');
+  assert.equal(d.querySelector('#shabbat-screen'),null);
+  w.Date.now=realNow;
   input('[data-admin-name="mobile"]','קורס סלולר לבדיקה');submit('#course-admin-form');
   await waitFor(()=>d.querySelector('#admin-status')?.textContent.includes('נשמרו'));
   change('#qa-course-switch','security');
@@ -120,10 +168,14 @@ const waitFor=async test=>{for(let n=0;n<100;n++){if(test())return;await new Pro
   await waitFor(()=>d.querySelector('.theory-result-page'));
   assert.ok(d.querySelector('.theory-result-page').textContent.includes('אינה נשמרת'));
   assert.equal(w.localStorage.getItem('dc.basics.theory.v1'),normalTheory,'QA must not persist exams, answers, scores or seen-question history');
+  w.Date.now=()=>shabbatStart;
   click('[data-exit-qa]');
   assert.equal(d.body.classList.contains('qa-mode'),false);
   assert.equal(w.localStorage.getItem('dc.basics.theory.v1'),normalTheory);
   assert.equal(d.querySelectorAll('.theory-question').length,20,'Restore ordinary in-progress exam after QA');
+  assert.ok(d.querySelector('#shabbat-screen'),'Exiting QA reapplies the real Shabbat lock');
+  assert.equal(d.querySelector('#shabbat-screen [data-shabbat-mode]'),null);
+  assert.equal(w.ShabbatMode.setMode('bypass'),false);
   assert.equal(errors.length,0,errors.join('\n'));
   console.log('Frontend DOM integration: course icons, navigation, mixed circuits and shared nodes, reductions and zoom, saved-state migration, profiles, restrictions, MathML, night palette, server exams, formula pages and isolated QA passed');
  }finally{child.kill();w.close();}

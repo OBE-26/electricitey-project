@@ -93,23 +93,80 @@ APP_HTML = r'''<!doctype html>
     // Jerusalem Shabbat schedule from Hebcal; keep cached times available offline.
     (function(){
       const KEY='dc.basics.shabbat.jerusalem.v1',now=()=>Date.now();
+      let schedule=[],mode='auto',previewProgress=0,locked=false,access={isQA:()=>false,canUseApp:()=>true,onUnlock:()=>{}};
       function makeSchedule(items){return items.filter(x=>x&&x.category==='candles'&&x.date).map(c=>{const h=items.find(x=>x&&x.category==='havdalah'&&x.date>c.date);return h?{start:Date.parse(c.date),end:Date.parse(h.date)}:null;}).filter(x=>x&&Number.isFinite(x.start)&&Number.isFinite(x.end));}
-      function show(end){
+      function candlesHTML(){
+        return '<svg viewBox="0 0 140 150" role="img" aria-hidden="true">'+[51,88].map(x=>`<rect class="candle-wax" x="${x-12}" y="58" width="25" height="70" fill="#fff7e7" stroke="#c99c56" stroke-width="2"/><g class="candle-burning-top"><path d="M${x} 59V47" stroke="#5a3c27" stroke-width="2"/><g class="shabbat-flame"><path d="M${x} 49c-12-14 7-19 0-34 18 17 13 27 0 34Z" fill="#ffbf45"/><path d="M${x} 46c-6-8 4-11 1-18 9 9 6 14-1 18Z" fill="#fff2a6"/></g></g><ellipse cx="${x}" cy="130" rx="22" ry="5" fill="#d8bd8e"/>`).join('')+'</svg>';
+      }
+      function show(end,test,qa,progress){
         let screen=document.getElementById('shabbat-screen');
-        if(!screen){screen=document.createElement('section');screen.id='shabbat-screen';screen.setAttribute('role','dialog');screen.setAttribute('aria-modal','true');screen.setAttribute('aria-labelledby','shabbat-title');screen.innerHTML='<div class="shabbat-card"><div class="shabbat-candles" aria-label="שתי נרות שבת"><svg viewBox="0 0 140 150" role="img" aria-hidden="true"><path d="M39 58h25v70H39zM76 58h25v70H76z" fill="#fff7e7" stroke="#c99c56" stroke-width="2"/><path d="M51 49c-12-14 7-19 0-34 18 17 13 27 0 34ZM88 49c-12-14 7-19 0-34 18 17 13 27 0 34Z" fill="#ffbf45"/><path d="M51 46c-6-8 4-11 1-18 9 9 6 14-1 18ZM88 46c-6-8 4-11 1-18 9 9 6 14-1 18Z" fill="#fff2a6"/><ellipse cx="51" cy="130" rx="22" ry="5" fill="#d8bd8e"/><ellipse cx="88" cy="130" rx="22" ry="5" fill="#d8bd8e"/></svg></div><h1 id="shabbat-title">שבת שלום</h1><p>האתר סגור לשימוש במהלך השבת.</p><p class="shabbat-return">נשוב לפעול בצאת השבת</p><p class="shabbat-time">צאת השבת בירושלים: <bdi id="shabbat-until"></bdi></p></div>';document.body.appendChild(screen);}
-        document.getElementById('shabbat-until').textContent=new Intl.DateTimeFormat('he-IL',{timeZone:'Asia/Jerusalem',hour:'2-digit',minute:'2-digit'}).format(new Date(end));screen.hidden=false;document.getElementById('app')?.setAttribute('inert','');
+        const created=!screen;
+        if(!screen){
+          screen=document.createElement('section');screen.id='shabbat-screen';screen.tabIndex=-1;screen.setAttribute('role','dialog');screen.setAttribute('aria-modal','true');screen.setAttribute('aria-labelledby','shabbat-title');
+          screen.innerHTML=`<div class="shabbat-card"><div class="shabbat-candles" aria-label="שני נרות שבת">${candlesHTML()}</div><p class="shabbat-wax"></p><h1 id="shabbat-title">שבת שלום</h1><p>האתר סגור לשימוש במהלך השבת.</p><p class="shabbat-return">נשוב לפעול בצאת השבת</p><p class="shabbat-time">צאת השבת בירושלים: <bdi id="shabbat-until"></bdi></p></div>`;
+          document.body.appendChild(screen);
+        }
+        const wax=100-95*Math.min(1,Math.max(0,progress)),height=70*wax/100;
+        screen.dataset.waxPercent=String(Math.round(wax*100)/100);
+        screen.querySelectorAll('.candle-wax').forEach(node=>{node.setAttribute('y',String(128-height));node.setAttribute('height',String(height));});
+        screen.querySelectorAll('.candle-burning-top').forEach(node=>node.setAttribute('transform',`translate(0 ${70-height})`));
+        screen.querySelector('.shabbat-wax').textContent=`השעווה שנותרה: ${Math.round(wax)}%`;
+        if(!screen.querySelector('.shabbat-branding')){
+          const branding=document.createElement('footer');branding.className='shabbat-branding';
+          const logo=document.querySelector('.footer-logo');
+          if(logo){const image=logo.cloneNode(false);image.className='shabbat-logo';branding.appendChild(image);}
+          const rights=document.createElement('p');rights.textContent='© OBE-26 · כל הזכויות שמורות';branding.appendChild(rights);screen.querySelector('.shabbat-card').appendChild(branding);
+        }
+        const time=document.getElementById('shabbat-until');
+        time.parentElement.hidden=!Number.isFinite(end);
+        if(Number.isFinite(end))time.textContent=new Intl.DateTimeFormat('he-IL',{timeZone:'Asia/Jerusalem',hour:'2-digit',minute:'2-digit'}).format(new Date(end));
+        let controls=screen.querySelector('.shabbat-qa-controls');
+        if(!controls){controls=document.createElement('div');controls.className='shabbat-qa-controls';screen.querySelector('.shabbat-branding').before(controls);}
+        const controlsKey=qa+':'+test;
+        if(controls.dataset.mode!==controlsKey){
+          controls.dataset.mode=controlsKey;
+          controls.innerHTML=qa?`${test?'<p class="shabbat-test-label" role="status">מצב טסט — תצוגת שבת לבדיקה</p><label class="shabbat-preview-time" for="qa-shabbat-progress">התקדמות השבת בבדיקה: <output id="qa-shabbat-progress-value">0%</output><input id="qa-shabbat-progress" type="range" min="0" max="100" step="1" value="0"></label>':''}<button type="button" class="btn" data-shabbat-mode="bypass">${test?'סיום הבדיקה וחזרה ל־QA':'עקיפת שבת וחזרה ל־QA'}</button><button type="button" class="btn secondary" data-exit-qa>חזרה למצב רגיל</button>`:'<button type="button" class="btn secondary tiny" data-open-qa>כניסת מנהל / QA</button>';
+        }
+        if(test){screen.querySelector('#qa-shabbat-progress').value=String(previewProgress*100);screen.querySelector('#qa-shabbat-progress-value').textContent=Math.round(previewProgress*100)+'%';}
+        screen.hidden=false;document.getElementById('app')?.setAttribute('inert','');
+        document.querySelectorAll('dialog[open]').forEach(dialog=>{if(dialog.id!=='qa-login-dialog')dialog.close();});
+        if(created&&!document.getElementById('qa-login-dialog')?.open)screen.focus({preventScroll:true});
+      }
+      function apply(){
+        const qa=access.isQA();if(!qa)mode='auto';
+        const active=schedule.find(x=>x.start<=now()&&now()<x.end),test=qa&&mode==='test';
+        if(test||(active&&!(qa&&mode==='bypass'))){
+          const interval=active??schedule.find(x=>x.end>now());
+          locked=true;show(interval?.end,test,qa,test?previewProgress:(now()-interval.start)/(interval.end-interval.start));
+        }else if(locked){
+          locked=false;document.getElementById('shabbat-screen')?.remove();
+          document.getElementById('app')?.toggleAttribute('inert',!access.canUseApp());access.onUnlock();
+        }
       }
       async function refresh(){
-        let schedule=[];try{schedule=JSON.parse(localStorage.getItem(KEY)||'null')?.schedule||[];}catch{}
+        try{const cached=JSON.parse(localStorage.getItem(KEY)||'null')?.schedule;if(Array.isArray(cached))schedule=cached.filter(x=>Number.isFinite(x?.start)&&Number.isFinite(x?.end)&&x.start<x.end);}catch{}
+        apply();
         try{const url='https://www.hebcal.com/shabbat?cfg=json&geonameid=281184&b=40&M=on&leyning=off',response=await fetch(url,{cache:'no-store'});if(!response.ok)throw Error('schedule unavailable');const data=await response.json();schedule=makeSchedule(data.items||[]);localStorage.setItem(KEY,JSON.stringify({saved:now(),schedule}));}catch{}
-        const active=schedule.find(x=>x.start<=now()&&now()<x.end);if(active)show(active.end);else{document.getElementById('shabbat-screen')?.remove();document.getElementById('app')?.removeAttribute('inert');}
+        apply();
       }
-      document.addEventListener('DOMContentLoaded',()=>{refresh();setInterval(refresh,60000);});
+      window.ShabbatMode=Object.freeze({
+        configure(callbacks){access=callbacks;},
+        getMode:()=>mode,
+        isLocked:()=>locked,
+        resetQA(){mode=access.isQA()?'bypass':'auto';previewProgress=0;apply();},
+        setMode(value){if(!access.isQA()||!['auto','test','bypass'].includes(value))return false;if(value!==mode)previewProgress=0;mode=value;apply();return true;},
+        setPreviewProgress(value){if(!access.isQA()||mode!=='test'||!Number.isFinite(value)||value<0||value>100)return false;previewProgress=value/100;apply();return true;}
+      });
+      document.addEventListener('DOMContentLoaded',()=>{refresh();setInterval(refresh,60000);setInterval(apply,1000);});
     })();
   </script>
   <style>
-    #shabbat-screen{position:fixed;inset:0;z-index:2147483000;display:grid;place-items:center;padding:24px;background:radial-gradient(ellipse at center,#fff5d8 0%,#e9c98d 100%);color:#422f1b;text-align:center}
+    #shabbat-screen{position:fixed;inset:0;z-index:2147483000;display:flex;overflow-y:auto;padding:clamp(12px,3vw,24px);background:radial-gradient(ellipse at center,#fff5d8 0%,#e9c98d 100%);color:#422f1b;text-align:center}
     #shabbat-screen[hidden]{display:none!important}.shabbat-card{width:min(100%,520px);padding:30px 24px;border:1px solid #d6b576;border-radius:24px;background:#fffaf0;box-shadow:0 22px 80px #50340d30}.shabbat-candles svg{display:block;width:132px;height:142px;margin:0 auto 12px}.shabbat-card h1{font-size:clamp(36px,8vw,54px);margin:0 0 12px;color:#80521c}.shabbat-card p{font-size:20px;margin:8px 0}.shabbat-card .shabbat-return{font-weight:700;color:#4a6654}.shabbat-card .shabbat-time{font-size:16px;color:#74604a}
+    .shabbat-card{margin:auto;flex-shrink:0}.shabbat-qa-controls{display:flex;justify-content:center;align-items:center;flex-wrap:wrap;gap:10px;margin:18px 0}.shabbat-card .shabbat-test-label{width:100%;font-size:16px;font-weight:700;color:#80521c}.shabbat-branding{margin-top:22px;padding-top:18px;border-top:1px solid #d6b576}.shabbat-logo{display:block;width:170px;max-width:100%;height:auto;margin:0 auto 10px;padding:8px;background:#fff8e8;border-radius:8px}.shabbat-card .shabbat-branding p{font-size:14px;color:#74604a}.qa-shabbat{margin-top:16px;padding-top:12px;border-top:1px solid var(--line)}.qa-shabbat h3{margin-bottom:8px}.qa-shabbat-controls{display:flex;flex-wrap:wrap;gap:8px}.qa-shabbat-controls [aria-pressed=true]{outline:2px solid var(--green);outline-offset:2px}
+    .dark-mode #shabbat-screen{background:radial-gradient(ellipse at center,#17202b 0%,#07090d 100%);color:#f0eadf}.dark-mode .shabbat-card{background:#161b23;border-color:#8e7956;box-shadow:0 22px 80px #0008}.dark-mode .shabbat-card h1,.dark-mode .shabbat-card .shabbat-test-label{color:#f8d58b}.dark-mode .shabbat-card .shabbat-return{color:#b9e0c7}.dark-mode .shabbat-card .shabbat-time,.dark-mode .shabbat-card .shabbat-branding p{color:#c2bcaf}.dark-mode .shabbat-branding{border-color:#8e7956}
+    #shabbat-screen .btn{background:#116e65;color:#fff}#shabbat-screen .btn.secondary{background:#fffaf0;color:#422f1b;border-color:#a3844d}.dark-mode #shabbat-screen .btn{background:#4b381d;color:#f2e6d0}.dark-mode #shabbat-screen .btn.secondary{background:#212a36;color:#f0eadf;border-color:#8e7956}
+    .shabbat-card .shabbat-wax{font-size:14px;color:#74604a}.dark-mode .shabbat-card .shabbat-wax{color:#c2bcaf}.shabbat-preview-time{display:block;width:100%;font-size:14px}.shabbat-preview-time input{display:block;width:100%;min-height:36px;accent-color:#116e65}.dark-mode .shabbat-preview-time input{accent-color:#f8d58b}.shabbat-flame{transform-box:fill-box;transform-origin:center bottom;animation:shabbat-flame-sway 2.4s ease-in-out infinite alternate}.candle-burning-top:nth-of-type(2) .shabbat-flame{animation-delay:-1.2s}@keyframes shabbat-flame-sway{0%{transform:rotate(-4deg) scale(.96,1.02)}50%{transform:rotate(2deg) scale(1.02,.97)}100%{transform:rotate(4deg) scale(.98,1.04)}}.reduce-motion .shabbat-flame{animation:none}@media(prefers-reduced-motion:reduce){.shabbat-flame{animation:none!important}}
     :root{--text-scale:1;color-scheme:light;--paper:#fff8e8;--card:#fffbf2;--ink:#3b3027;--muted:#74604a;--line:#e8cfa2;--green:#116e65;--soft:#ffebc4;--accent:#ffc45c;--amber:#a65b20;--shadow:0 8px 28px #7045110a}
     html:not(.ui-ready) body{visibility:hidden}
     .footer.footer{display:block}
@@ -1239,6 +1296,7 @@ function applyPreferences() {
 }
 function paintProfileButton() { $('profile-label').textContent = 'פרופיל'; }
 function openProfile() {
+  if(window.ShabbatMode.isLocked()||qaActive&&!profileReady())return;
   profileRequired = !profileReady(); $('app').inert = profileRequired;
   if (!$('profile-dialog').open) {
     $('profile-name').value = personal.profile?.name ?? ''; $('profile-birth').value = birthTextFromISO(personal.profile?.birth ?? '');$('profile-birth-picker').value=personal.profile?.birth??'';
@@ -1450,6 +1508,7 @@ async function enterQA() {
   coursePrevious=coursePrevious.slice();previous=previous.slice();personal=JSON.parse(JSON.stringify(personal));
   customSimulator=JSON.parse(JSON.stringify(customSimulator));reviewReturn=null;simulatorQuestion=null;
   viewTab=tab;feedback='';feedbackType='success';qaActive=true;qaAnswerVisible=false;
+  window.ShabbatMode.resetQA();
   document.querySelectorAll('dialog[open]').forEach(dialog=>dialog.close());hideManualKeypad();
   $('qa-password').value='';document.body.classList.add('qa-mode');
   applyPreferences();render();$('qa-panel').scrollIntoView({block:'start'});
@@ -1462,7 +1521,9 @@ function exitQA() {
     personal,activeSessionId,storageAvailable,simulatorMode,simulatorQuestion,customSimulator,formulaView}=saved);
   customDraft.kind=saved.customDraft.kind;customDraft.voltage=saved.customDraft.voltage;customDraft.resistances=saved.customDraft.resistances;
   qaActive=false;qaSnapshot=null;qaAnswerVisible=false;document.body.classList.remove('qa-mode');
+  window.ShabbatMode.resetQA();
   window.CourseApp.onExitQA();clearCalculator();applyPreferences();render();requestAnimationFrame(()=>window.scrollTo(0,saved.scroll));
+  if(!profileReady()&&!window.ShabbatMode.isLocked())openProfile();
 }
 function qaExercises() {
   return DC.kinds.flatMap(kind=>questions[kind].flatMap((list,level)=>list.map((q,index)=>({kind,level,index,q}))));
@@ -1491,6 +1552,8 @@ function renderQA() {
   const all=qaExercises(),at=all.findIndex(item=>item.q===q),step=currentStep();
   panel.innerHTML=`<section class="qa-banner" aria-labelledby="qa-mode-title"><div class="qa-banner-head"><h2 id="qa-mode-title">מצב בדיקות</h2><button class="btn" data-exit-qa>חזרה למצב רגיל</button></div><p class="small">אפשר לעבור בחופשיות בין כל הנושאים, התרגילים והסעיפים. הפעולות במצב הזה אינן נשמרות בהתקדמות האישית.</p><div class="qa-selectors"><label for="qa-topic">נושא<select id="qa-topic">${options(DC.kinds.map(kind=>[kind,names[kind]]),tab)}</select></label><label for="qa-level">רמה<select id="qa-level">${options(questions[tab].map((_,i)=>[i,`רמה ${letters[i]} — ${DC.levelNames[i]}`]),level)}</select></label><label for="qa-exercise">תרגיל<select id="qa-exercise">${options(questions[tab][level].map((item,i)=>[i,`${i+1}. ${item.title}`]),index)}</select></label><label for="qa-step">סעיף<select id="qa-step">${options([...q.steps.map((item,i)=>[i,`${i+1}. ${item.label}`]),[q.steps.length,'סיום התרגיל']],q.cursor)}</select></label></div><div class="qa-actions"><button class="btn secondary tiny" data-qa-previous${at===0&&q.cursor===0?' disabled':''}>סעיף קודם</button><button class="btn tiny" data-qa-next${at===all.length-1&&completed(q)?' disabled':''}>עבור סעיף</button><button class="btn secondary tiny" data-qa-answer${step?'':' disabled'} aria-expanded="${qaAnswerVisible}">${qaAnswerVisible?'הסתר תשובה':'הצג תשובה'}</button><button class="btn secondary tiny" data-go-simulator>הצג בסימולטור</button></div>${qaAnswerVisible&&step?`<div class="qa-answer" role="status"><strong>${escapeHTML(step.label)}</strong><div class="math">${mathNotation(step.formula)}</div><div class="math">${mathNotation(step.substitution)} = ${DC.fmt(step.value)} ${step.unit}</div></div>`:''}</section>`;
   window.CourseApp?.renderAdmin();
+  const mode=window.ShabbatMode.getMode(),status=mode==='bypass'?'עקיפת שבת פעילה ב־QA בלבד':mode==='test'?'מצב טסט — תצוגת שבת לבדיקה':'מצב אוטומטי לפי זמני ירושלים';
+  panel.querySelector('.qa-banner').insertAdjacentHTML('beforeend',`<section class="qa-shabbat" aria-labelledby="qa-shabbat-title"><h3 id="qa-shabbat-title">בדיקת מצב שבת</h3><p id="qa-shabbat-status" class="small" role="status">${status}</p><div class="qa-shabbat-controls"><button type="button" class="btn secondary tiny" data-shabbat-mode="test" aria-pressed="${mode==='test'}">מצב טסט — הצגת שבת</button><button type="button" class="btn secondary tiny" data-shabbat-mode="bypass" aria-pressed="${mode==='bypass'}">עקיפת מצב שבת</button><button type="button" class="btn secondary tiny" data-shabbat-mode="auto" aria-pressed="${mode==='auto'}">לפי זמני ירושלים</button></div><p class="small muted">השינויים חלים רק בבדיקות הנוכחיות. יציאה מ־QA או רענון הדף מחזירים את מצב השבת האוטומטי.</p></section>`);
 }
 function currentQuestion() { return questions[tab][levels[tab]][positions[tab][levels[tab]]]; }
 function completed(q) { return q.cursor === q.steps.length; }
@@ -2155,7 +2218,8 @@ function renderFormulas() {
 
 function openDialog(id, { preserveFormulaView = false } = {}) {
   hideIconTooltip();
-  if (!profileReady() && id !== 'profile-dialog') { openProfile(); return; }
+  if(window.ShabbatMode.isLocked()&&id!=='qa-login-dialog')return;
+  if (!profileReady() && !qaActive && id !== 'profile-dialog' && id !== 'qa-login-dialog') { openProfile(); return; }
   calculatorReturnToFormulas = id === 'calculator-dialog' && $('formula-dialog').open;
   if(id==='calculator-dialog'){prepareCalculator();renderCalculatorTriangleReference();}
   if (id === 'formula-dialog' && !preserveFormulaView) formulaView = window.CourseApp?.preferredFormulaView()??'reference';
@@ -2400,6 +2464,7 @@ document.addEventListener('click', event => {
   }
   if(button.hasAttribute('data-open-qa'))return openQA();
   if(button.hasAttribute('data-exit-qa'))return exitQA();
+  if(button.dataset.shabbatMode){if(window.ShabbatMode.setMode(button.dataset.shabbatMode)){renderQA();resizeFrame();}return;}
   if(button.hasAttribute('data-qa-previous'))return qaMove(-1);
   if(button.hasAttribute('data-qa-next'))return qaMove(1);
   if(button.hasAttribute('data-qa-answer')){if(qaActive){qaAnswerVisible=!qaAnswerVisible;renderQA();resizeFrame();}return;}
@@ -2512,6 +2577,7 @@ document.addEventListener('submit', event => {
   checkAnswer(event.target.querySelector('[data-answer]')?.value ?? currentQuestion().draft);
 });
 document.addEventListener('input', event => {
+  if(event.target.id==='qa-shabbat-progress'){window.ShabbatMode.setPreviewProgress(Number(event.target.value));return;}
   if(event.target.id==='custom-voltage'){customDraft.voltage=event.target.value;recalculateCustom();return;}
   if(event.target.dataset.customResistance!==undefined){customDraft.resistances[Number(event.target.dataset.customResistance)]=event.target.value;recalculateCustom();return;}
   if (event.target.hasAttribute('data-manual-list')) {
@@ -2588,7 +2654,8 @@ document.querySelectorAll('dialog').forEach(dialog => {
   dialog.addEventListener('cancel', event => {if(dialog.id==='profile-dialog'&&profileRequired)event.preventDefault();});
   dialog.addEventListener('close', () => {
     if(dialog.id==='formula-dialog')hideManualKeypad();
-    if(dialog.id==='profile-dialog'&&profileRequired){requestAnimationFrame(openProfile);return;}
+    if(window.ShabbatMode.isLocked()){calculatorReturnToFormulas=false;diagramReturnToFormulas=false;return;}
+    if(dialog.id==='profile-dialog'&&profileRequired&&!qaActive){requestAnimationFrame(openProfile);return;}
     if (dialog.id === 'calculator-dialog' && calculatorReturnToFormulas) {
       calculatorReturnToFormulas = false;
       openDialog('formula-dialog', { preserveFormulaView:true });
@@ -2804,6 +2871,7 @@ window.addEventListener('message',event=>{
 
 
 /* COURSE_EXTENSION */
+window.ShabbatMode.configure({isQA:()=>qaActive,canUseApp:()=>qaActive||profileReady(),onUnlock:()=>{if(!qaActive&&!profileReady())openProfile();}});
 CourseApp.initialize();
 sendStreamlitMessage('streamlit:componentReady', { apiVersion:1 });
 if(!restoreCourse())newCourse();

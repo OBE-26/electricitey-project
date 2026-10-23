@@ -1,28 +1,92 @@
-const assert=require('node:assert/strict'),fs=require('node:fs'),{JSDOM}=require('jsdom');
+const assert=require('node:assert/strict'),fs=require('node:fs'),{execFileSync}=require('node:child_process'),{JSDOM,VirtualConsole}=require('jsdom');
 const source=fs.readFileSync('Electricity-circuit.py','utf8');
 const script=source.match(/<script>\s*(\/\/ Jerusalem Shabbat schedule[\s\S]*?)\n  <\/script>/)[1];
-const dom=new JSDOM('<div id="app"><button>תרגול</button></div>',{url:'https://unit.test/',runScripts:'outside-only'});
+const dom=new JSDOM('<div id="app"><button>תרגול</button><img class="footer-logo" src="logo.jpg" alt="לוגו OBE-26 Electronic Systems"></div>',{url:'https://unit.test/',runScripts:'outside-only'});
 const w=dom.window,d=w.document,start=Date.parse('2026-10-23T17:00:00+03:00'),end=Date.parse('2026-10-24T18:30:00+03:00');
-let now=start-1,refresh,url,offline=false;
+let now=start-1,refresh,url,offline=false,qa=false;
 w.Date.now=()=>now;
-w.setInterval=fn=>{refresh=fn;return 1;};
+w.setInterval=(fn,delay)=>{if(delay===60000)refresh=fn;return 1;};
 w.fetch=async request=>{url=request;if(offline)throw Error('test outage');return {ok:true,json:async()=>({items:[{category:'candles',date:new Date(start).toISOString()},{category:'havdalah',date:new Date(end).toISOString()}]})};};
 w.eval(script);
+w.ShabbatMode.configure({isQA:()=>qa,canUseApp:()=>true,onUnlock:()=>{}});
+async function checkClosedEntry(){
+ const raw=execFileSync(process.env.CODEX_PRIMARY_RUNTIME_PYTHON||'python3',['-c',`import ast;from pathlib import Path;t=ast.parse(Path('Electricity-circuit.py').read_text());print(next(ast.literal_eval(n.value) for n in t.body if isinstance(n,ast.Assign) and any(getattr(a,'id','')=='APP_HTML' for a in n.targets)))`],{encoding:'utf8'});
+ const html=raw.replace('/* COURSE_EXTENSION */',fs.readFileSync('course_practice.js','utf8')+'\n'+fs.readFileSync('courses.js','utf8'));
+ const entry=new JSDOM(html,{url:'https://fresh.test/',runScripts:'outside-only',virtualConsole:new VirtualConsole()}),v=entry.window,doc=v.document;
+ try{
+  v.matchMedia=()=>({matches:false,addEventListener(){},removeEventListener(){}});v.requestAnimationFrame=()=>0;v.cancelAnimationFrame=()=>{};v.scrollTo=()=>{};v.HTMLElement.prototype.scrollIntoView=()=>{};v.postMessage=()=>{};
+  v.HTMLDialogElement.prototype.showModal=function(){this.open=true;};
+  v.HTMLDialogElement.prototype.close=function(){this.open=false;this.dispatchEvent(new v.Event('close'));};
+  v.Date.now=()=>start;
+  v.localStorage.setItem('dc.basics.shabbat.jerusalem.v1',JSON.stringify({schedule:[{start,end}]}));
+  v.eval([...doc.querySelectorAll('script')].map(n=>n.textContent).join('\n'));
+  await new Promise(resolve=>setTimeout(resolve,0));
+  assert.ok(v.ShabbatMode.isLocked(),'Fresh device is closed during Shabbat');
+  assert.equal(doc.querySelector('#profile-dialog').open,false,'Profile modal cannot cover the Shabbat screen');
+  doc.querySelector('#shabbat-screen [data-open-qa]').click();
+  assert.equal(doc.querySelector('#qa-login-dialog').open,true,'Admin login works without an existing learner profile');
+  assert.equal(v.ShabbatMode.setMode('bypass'),false,'Opening login does not authorize a bypass');
+  doc.querySelector('#qa-login-dialog [data-close-dialog]').click();
+  assert.ok(v.ShabbatMode.isLocked(),'Cancelling login keeps Shabbat closed');
+  doc.querySelector('[data-open-calculator]').click();
+  assert.equal(doc.querySelector('#calculator-dialog').open,false,'Other dialogs stay blocked');
+ }finally{v.close();}
+}
 (async()=>{
  try{
   await new Promise(resolve=>setTimeout(resolve,0));
   assert.ok(url.includes('geonameid=281184&b=40&M=on'));
   assert.equal(d.getElementById('shabbat-screen'),null,'Open before candle lighting');
+  assert.equal(w.ShabbatMode.setMode('bypass'),false,'No override without authenticated QA');
+  qa=true;w.ShabbatMode.resetQA();
+  assert.equal(w.ShabbatMode.getMode(),'bypass');
+  assert.equal(w.ShabbatMode.setMode('test'),true);
+  assert.ok(d.querySelector('.shabbat-test-label'),'Preview works outside Shabbat');
+  assert.equal(d.querySelector('.shabbat-logo').getAttribute('src'),'logo.jpg');
+  assert.ok(d.querySelector('.shabbat-branding').textContent.includes('כל הזכויות שמורות'));
+  assert.equal(d.querySelector('#shabbat-screen').dataset.waxPercent,'100');
+  assert.equal(w.ShabbatMode.setPreviewProgress(50),true);
+  assert.equal(d.querySelector('#shabbat-screen').dataset.waxPercent,'52.5');
+  assert.equal(Number(d.querySelector('.candle-wax').getAttribute('height')),36.75);
+  await refresh();assert.equal(d.querySelector('#shabbat-screen').dataset.waxPercent,'52.5','Refresh preserves the preview clock');
+  assert.equal(w.ShabbatMode.setPreviewProgress(100),true);
+  assert.equal(d.querySelector('#shabbat-screen').dataset.waxPercent,'5');
+  assert.equal(Number(d.querySelector('.candle-wax').getAttribute('height')),3.5);
+  assert.equal(w.ShabbatMode.setPreviewProgress(101),false);
+  assert.equal(w.ShabbatMode.setMode('bypass'),true);
+  assert.equal(d.getElementById('shabbat-screen'),null,'Tester can return from preview');
+  qa=false;w.ShabbatMode.resetQA();
   now=start;await refresh();
   assert.ok(d.getElementById('app').hasAttribute('inert'));
   assert.ok(d.getElementById('shabbat-screen').textContent.includes('שבת שלום'));
   assert.ok(d.getElementById('shabbat-screen').textContent.includes('נשוב לפעול בצאת השבת'));
   assert.equal(d.querySelectorAll('#shabbat-screen svg ellipse').length,2,'Two candle holders');
+  assert.equal(d.querySelectorAll('#shabbat-screen .shabbat-flame').length,2,'Two independently animated flames');
+  assert.equal(d.querySelector('#shabbat-screen').dataset.waxPercent,'100','Real candles are full at entry');
+  now=(start+end)/2;await refresh();
+  assert.equal(d.querySelector('#shabbat-screen').dataset.waxPercent,'52.5','Real wax follows elapsed Jerusalem Shabbat time');
+  assert.ok(d.querySelector('#shabbat-screen [data-open-qa]'),'Admin can reach login while closed');
+  assert.equal(d.querySelector('#shabbat-screen [data-shabbat-mode]'),null,'Ordinary visitors never get bypass controls');
+  assert.equal(w.ShabbatMode.setMode('test'),false);
+  assert.equal(w.ShabbatMode.setPreviewProgress(50),false);
+  qa=true;w.ShabbatMode.resetQA();
+  assert.equal(d.getElementById('shabbat-screen'),null,'Authenticated QA bypasses real Shabbat');
+  await refresh();
+  assert.equal(d.getElementById('shabbat-screen'),null,'Schedule refresh preserves QA override');
+  w.ShabbatMode.setMode('auto');
+  assert.ok(d.getElementById('shabbat-screen'),'QA can test the actual Jerusalem schedule too');
+  qa=false;w.ShabbatMode.resetQA();
+  assert.equal(w.ShabbatMode.getMode(),'auto','Exit clears overrides');
   offline=true;now=start+10000;await refresh();
   assert.ok(d.getElementById('app').hasAttribute('inert'),'Cached times survive a schedule-service outage');
   now=end;await refresh();
   assert.equal(d.getElementById('shabbat-screen'),null,'Reopen at Shabbat end');
   assert.equal(d.getElementById('app').hasAttribute('inert'),false);
-  console.log('Shabbat: Jerusalem query, before/start/end boundaries, greeting, two candles and offline cache passed');
+  assert.equal(w.localStorage.length,1,'QA overrides are never persisted');
+  // An unrelated profile lock must survive a periodic schedule refresh.
+  d.getElementById('app').setAttribute('inert','');await refresh();
+  assert.ok(d.getElementById('app').hasAttribute('inert'));
+  await checkClosedEntry();
+  console.log('Shabbat: Jerusalem boundaries, admin-only preview/bypass/reset, branding, profile lock and offline cache passed');
  }finally{w.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});
