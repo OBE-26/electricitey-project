@@ -219,7 +219,7 @@ const CoursePractice = (() => {
       <rect x="437" y="45" width="168" height="272" rx="24" fill="none" stroke="${ink}" stroke-width="2.5"/>
       <path d="M490 60H550M495 302H545" stroke="${ink}" stroke-width="3"/>
       <rect x="500" y="145" width="30" height="70" fill="var(--card)" stroke="${ink}" stroke-width="2.5"/>
-      ${symbolText(550,184,'R','L')}${text(521,248,'מעגלי הטלפון',ink,18)}
+      ${symbolText(550,184,'R','L')}${q.simLoadResistance!==undefined?text(521,232,`${fmt(q.simLoadResistance)} Ω`,ink,14):''}${text(521,258,'מעגלי הטלפון',ink,18)}
       ${text(177,334,'מקור אידאלי והתנגדות פנימית',ink,15)}
     </svg>`;
   }
