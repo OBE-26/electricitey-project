@@ -89,7 +89,27 @@ APP_HTML = r'''<!doctype html>
       applyTheme(prefs?.theme??'system');
     } catch { applyTextScale(100); applyTheme('system'); }
   </script>
+  <script>
+    // Jerusalem Shabbat schedule from Hebcal; keep cached times available offline.
+    (function(){
+      const KEY='dc.basics.shabbat.jerusalem.v1',now=()=>Date.now();
+      function makeSchedule(items){return items.filter(x=>x&&x.category==='candles'&&x.date).map(c=>{const h=items.find(x=>x&&x.category==='havdalah'&&x.date>c.date);return h?{start:Date.parse(c.date),end:Date.parse(h.date)}:null;}).filter(x=>x&&Number.isFinite(x.start)&&Number.isFinite(x.end));}
+      function show(end){
+        let screen=document.getElementById('shabbat-screen');
+        if(!screen){screen=document.createElement('section');screen.id='shabbat-screen';screen.setAttribute('role','dialog');screen.setAttribute('aria-modal','true');screen.setAttribute('aria-labelledby','shabbat-title');screen.innerHTML='<div class="shabbat-card"><div class="shabbat-candles" aria-label="שתי נרות שבת"><svg viewBox="0 0 140 150" role="img" aria-hidden="true"><path d="M39 58h25v70H39zM76 58h25v70H76z" fill="#fff7e7" stroke="#c99c56" stroke-width="2"/><path d="M51 49c-12-14 7-19 0-34 18 17 13 27 0 34ZM88 49c-12-14 7-19 0-34 18 17 13 27 0 34Z" fill="#ffbf45"/><path d="M51 46c-6-8 4-11 1-18 9 9 6 14-1 18ZM88 46c-6-8 4-11 1-18 9 9 6 14-1 18Z" fill="#fff2a6"/><ellipse cx="51" cy="130" rx="22" ry="5" fill="#d8bd8e"/><ellipse cx="88" cy="130" rx="22" ry="5" fill="#d8bd8e"/></svg></div><h1 id="shabbat-title">שבת שלום</h1><p>האתר סגור לשימוש במהלך השבת.</p><p class="shabbat-return">נשוב לפעול בצאת השבת</p><p class="shabbat-time">צאת השבת בירושלים: <bdi id="shabbat-until"></bdi></p></div>';document.body.appendChild(screen);}
+        document.getElementById('shabbat-until').textContent=new Intl.DateTimeFormat('he-IL',{timeZone:'Asia/Jerusalem',hour:'2-digit',minute:'2-digit'}).format(new Date(end));screen.hidden=false;document.getElementById('app')?.setAttribute('inert','');
+      }
+      async function refresh(){
+        let schedule=[];try{schedule=JSON.parse(localStorage.getItem(KEY)||'null')?.schedule||[];}catch{}
+        try{const d=new Date(),from=new Date(d.getTime()-86400000),to=new Date(d.getTime()+8*86400000),iso=x=>x.toISOString().slice(0,10),url=`https://www.hebcal.com/shabbat?cfg=json&geonameid=281184&start=${iso(from)}&end=${iso(to)}&M=on`,response=await fetch(url,{cache:'no-store'});if(!response.ok)throw Error('schedule unavailable');const data=await response.json();schedule=makeSchedule(data.items||[]);localStorage.setItem(KEY,JSON.stringify({saved:now(),schedule}));}catch{}
+        const active=schedule.find(x=>x.start<=now()&&now()<x.end);if(active)show(active.end);else{document.getElementById('shabbat-screen')?.remove();document.getElementById('app')?.removeAttribute('inert');}
+      }
+      document.addEventListener('DOMContentLoaded',()=>{refresh();setInterval(refresh,60000);});
+    })();
+  </script>
   <style>
+    #shabbat-screen{position:fixed;inset:0;z-index:2147483000;display:grid;place-items:center;padding:24px;background:radial-gradient(ellipse at center,#fff5d8 0%,#e9c98d 100%);color:#422f1b;text-align:center}
+    #shabbat-screen[hidden]{display:none!important}.shabbat-card{width:min(100%,520px);padding:30px 24px;border:1px solid #d6b576;border-radius:24px;background:#fffaf0;box-shadow:0 22px 80px #50340d30}.shabbat-candles svg{display:block;width:132px;height:142px;margin:0 auto 12px}.shabbat-card h1{font-size:clamp(36px,8vw,54px);margin:0 0 12px;color:#80521c}.shabbat-card p{font-size:20px;margin:8px 0}.shabbat-card .shabbat-return{font-weight:700;color:#4a6654}.shabbat-card .shabbat-time{font-size:16px;color:#74604a}
     :root{--text-scale:1;color-scheme:light;--paper:#fff8e8;--card:#fffbf2;--ink:#3b3027;--muted:#74604a;--line:#e8cfa2;--green:#116e65;--soft:#ffebc4;--accent:#ffc45c;--amber:#a65b20;--shadow:0 8px 28px #7045110a}
     html:not(.ui-ready) body{visibility:hidden}
     .footer.footer{display:block}
@@ -2777,26 +2797,6 @@ window.addEventListener('message',event=>{
       if(mode==='review'&&typeof reply.url==='string'&&/^https:\/\/github\.com\/[^/]+\/[^/]+\/issues\/\d+$/.test(reply.url)){
         const link=$('feedback-result-link');link.href=reply.url;link.hidden=false;
       }
-    }
-  }
-  paintFeedbackAvailability();syncQuickbar();fitDialogs();resizeFrame();
-});
-
-
-/* COURSE_EXTENSION */
-CourseApp.initialize();
-sendStreamlitMessage('streamlit:componentReady', { apiVersion:1 });
-if(!restoreCourse())newCourse();
-initializePersonal();
-function finishInitialLayout(){
-  applyPreferences();
-  const app = $('app'), started = performance.now();
-  let viewport = '', unchangedSince = started;
-  function settleLayout(){
-    const nextViewport = `${innerWidth}x${innerHeight}`;
-    if (nextViewport !== viewport) {
-      viewport = nextViewport; unchangedSince = performance.now();
-      // Rebuild every section's layout after the host applies its frame size.
       // This is done while hidden, without changing text preferences or DOM nodes.
       const display = app.style.getPropertyValue('display'), priority = app.style.getPropertyPriority('display');
       app.style.setProperty('display','none','important');
