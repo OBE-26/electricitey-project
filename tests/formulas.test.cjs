@@ -84,6 +84,9 @@ const fillTriangle=({ctx,definition})=>{
   mobile[phoneIndex].note='לצורך התרגיל בלבד, נתון יצרן: התנגדות פנימית מרבית';
   w.localStorage.setItem('dc.basics.extra.mobile.v1',JSON.stringify({'battery:0':{seed:34,index:phoneIndex,questions:mobile}}));
   click('[data-select-course="mobile"]');click('[data-extra-tab="battery"]');
+  assert.equal(d.querySelector('#tab-simulator').hidden,false,'Keep the simulator tab visible for battery practice');
+  assert.equal(d.querySelector('#tab-simulator').disabled,true,'Unsolved internal-resistance exercises remain locked outside QA');
+  click('#tab-simulator');assert.equal(d.querySelector('#course-simulator'),null);
   const base=w.testState.question(),baseBefore=JSON.stringify(base);
   openCourse();assert.equal(d.querySelector('#formula-title').textContent,'דף נוסחאות לקורס סלולר');
   assert.ok(!d.querySelector('.course-formula-page').textContent.includes('אנרגיה בסוללה'));
@@ -94,12 +97,27 @@ const fillTriangle=({ctx,definition})=>{
   assert.ok(!d.querySelector('#formula-body').textContent.includes('נתון יצרן'),'Old saved diagnostic notes stay hidden');
   input('#formula-body [data-triangle-form] [data-answer]',String(given.U_t-given.U_L));submit('#formula-body [data-triangle-form]');
   assert.equal(phone.accepted,true);assert.equal(JSON.stringify(base),baseBefore,'Battery tools never alter a hidden electrical exercise');
+  assert.equal(d.querySelector('#tab-simulator').disabled,true,'Solving only the voltage drop does not unlock internal-resistance simulation');
   click('#formula-body [data-next-step]');assert.equal(phone.cursor,1);assert.equal(d.querySelector('#formula-dialog').open,false);
   openIcon();assert.equal(w.testState.formulaQuestion(),phone);click('[data-manual-list-help]');
   const internal=chooseUsable();assert.equal(internal.definition.id,'battery-internal');
   const resistance=fillTriangle(internal);assert.equal(d.getElementById('manual-slot-R_s').parentElement.querySelector('small').textContent,'mΩ');
   submit('#manual-form');assert.equal(phone.accepted,true);assert.equal(Number(phone.draft),resistance);
-  assert.equal(JSON.stringify(base),baseBefore);closeFormulas();click('[data-course-action="home"]');
+  assert.equal(JSON.stringify(base),baseBefore);closeFormulas();
+  assert.equal(d.querySelector('#tab-simulator').disabled,false,'Final accepted answer unlocks the simulator without an extra Next click');
+  click('#tab-simulator');
+  assert.ok(d.querySelector('#course-sim-load'),'Battery tab opens the current internal-resistance simulator');
+  const batteryBefore=d.querySelector('#course-sim-display').textContent;
+  input('#course-sim-load',String(Number(d.querySelector('#course-sim-load').value)*2));
+  assert.notEqual(d.querySelector('#course-sim-display').textContent,batteryBefore);
+  const load=Number(d.querySelector('#course-sim-load').value),expectedCurrent=given.U_t/(phone.rs+load);
+  assert.ok(Math.abs(parseFloat(d.querySelector('#course-sim-display .metric bdi').textContent)-expectedCurrent)<0.011,'Battery simulation obeys Ohm’s law in the displayed mV/mΩ units');
+  click('[data-course-action="simulator"]');
+  assert.equal(phone.cursor,1);assert.equal(phone.accepted,true,'Simulation preserves the solved answer');
+  click('[data-extra-action="step"]');
+  assert.equal(phone.cursor,phone.steps.length);
+  click('[data-course-action="simulator"]');assert.ok(d.querySelector('#course-sim-load'));
+  click('[data-course-action="simulator"]');click('[data-course-action="home"]');
 
   const mixed=practice.batch('security','mixed',0,34),mixedIndex=mixed.findIndex(q=>q.variant.startsWith('parallel-groups'));
   const security=practice.batch('security','battery',0,35),chargeIndex=security.findIndex(q=>q.unitFamily==='Ah'&&q.steps.length===1&&q.steps[0].key==='Q');
@@ -110,6 +128,8 @@ const fillTriangle=({ctx,definition})=>{
   manual();click('[data-manual-list-help]');const charge=chooseUsable();assert.equal(charge.definition.id,'battery-charge');
   fillTriangle(charge);submit('#manual-form');assert.equal(w.testState.formulaQuestion().accepted,true);closeFormulas();
   click('[data-extra-tab="mixed"]');
+  assert.equal(d.querySelector('#tab-simulator').hidden,false,'Keep the simulator tab visible for mixed circuits');
+  assert.equal(d.querySelector('#tab-simulator').disabled,true);
   const circuit=w.testState.formulaQuestion(),hiddenBefore=JSON.stringify(w.testState.question());
   for(let n=0;n<3;n++){
    openCourse();manual();
@@ -131,6 +151,11 @@ const fillTriangle=({ctx,definition})=>{
   assert.equal(d.querySelector('[data-course-action="simulator"]'),null,'No simulator before finishing the exercise');
   while(circuit.cursor<circuit.steps.length){
    if(!circuit.accepted){input('#extra-answer',String(circuit.steps[circuit.cursor].value));submit('#extra-answer-form');}
+   if(circuit.cursor===circuit.steps.length-1){
+    assert.equal(d.querySelector('#tab-simulator').disabled,false);
+    click('#tab-simulator');assert.ok(d.querySelector('#course-sim-voltage'));
+    click('[data-course-action="simulator"]');
+   }
    click('[data-extra-action="step"]');
   }
   click('[data-course-action="simulator"]');
@@ -138,6 +163,8 @@ const fillTriangle=({ctx,definition})=>{
   const before=d.querySelector('#course-sim-display').textContent;
   input('#course-sim-voltage',String(circuit.u/2));
   assert.notEqual(d.querySelector('#course-sim-display').textContent,before,'Slider updates circuit values');
+  assert.ok(Math.abs(parseFloat(d.querySelector('#course-sim-display .metric:nth-child(3) bdi').textContent)-circuit.it/2)<0.011,'Half source voltage gives half total current');
+  assert.ok(Math.abs(parseFloat(d.querySelector('#course-sim-display .metric:nth-child(4) bdi').textContent)-circuit.u*circuit.it/4)<0.011,'Half source voltage gives one-quarter total power');
   click('[data-course-action="simulator"]');
   assert.equal(d.querySelector('#course-simulator'),null,'Simulator closes');
   assert.equal(errors.length,0,errors.join('\n'));

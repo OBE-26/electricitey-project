@@ -101,6 +101,8 @@ const checkShabbatContrast=()=>{
   await waitFor(()=>!d.querySelector('.theory-summary')&&d.querySelectorAll('.theory-question').length===20);
   assert.equal(lastExam.questions.filter(q=>previousIds.includes(q.id)).length,0);
   const normalTheory=w.localStorage.getItem('dc.basics.theory.v1');
+  const normalMixed=w.localStorage.getItem('dc.basics.extra.security.v1');
+  const normalBattery=w.localStorage.getItem('dc.basics.extra.mobile.v1');
   // QA performs a real server login and can edit shared configuration.
   click('[data-open-qa]');input('#qa-password','210592');submit('#qa-login-form');
   await waitFor(()=>d.querySelector('#course-admin'));
@@ -142,6 +144,14 @@ const checkShabbatContrast=()=>{
   click('[data-extra-tab="mixed"]');
   for(const option of [...d.querySelectorAll('#qa-extra-exercise option')]){
    change('#qa-extra-exercise',option.value);
+   const circuit=w.CourseApp.formulaQuestion(),cursor=circuit.cursor;
+   assert.equal(d.querySelector('#tab-simulator').hidden,false);
+   assert.equal(d.querySelector('#tab-simulator').disabled,false,'QA can simulate an unsolved mixed circuit');
+   click('#qa-panel [data-go-simulator]');
+   assert.ok(d.querySelector('#course-sim-voltage'),'QA simulator button routes to the mixed circuit');
+   assert.equal(circuit.cursor,cursor,'Opening a QA simulator never marks answers solved');
+   assert.equal(d.querySelector('#tab-simulator').getAttribute('aria-selected'),'true');
+   click('[data-course-action="simulator"]');
    if(!d.querySelector('.circuit-reductions'))click('[data-extra-action="solution"]');
    const original=d.querySelector('.mixed-original-solution svg');
    assert.ok(original.querySelector('[data-node="A"]'));
@@ -159,6 +169,24 @@ const checkShabbatContrast=()=>{
   assert.ok(phoneOption);change('#qa-extra-exercise',phoneOption.value);
   assert.ok(d.querySelector('.phone-battery-svg'),'Phone circuit schematic');
   assert.ok(d.querySelector('.phone-battery-svg').textContent.includes('מעגלי הטלפון'));
+  const phone=w.CourseApp.formulaQuestion(),phoneCursor=phone.cursor;
+  click('#tab-simulator');
+  assert.ok(d.querySelector('#course-sim-load'),'QA opens an unsolved internal-resistance simulator');
+  assert.equal(phone.cursor,phoneCursor);
+  const batteryMetrics=d.querySelector('#course-sim-display').textContent;
+  input('#course-sim-load',String(Number(d.querySelector('#course-sim-load').value)*2));
+  assert.notEqual(d.querySelector('#course-sim-display').textContent,batteryMetrics,'Load slider updates internal-resistance circuit');
+  click('[data-course-action="simulator"]');
+  click('[data-extra-action="qa-complete"]');
+  assert.equal(phone.cursor,phone.steps.length,'QA can skip to the end without entering answers');
+  assert.ok(d.querySelector('.complete-badge'));
+  click('#tab-simulator');assert.ok(d.querySelector('#course-sim-load'));
+  click('[data-extra-tab="battery"]');
+  assert.ok(d.querySelector('.complete-badge'),'Battery tab returns to the same exercise');
+  const chargeOption=[...d.querySelectorAll('#qa-extra-exercise option')].find(node=>!node.textContent.includes('התנגדות פנימית'));
+  change('#qa-extra-exercise',chargeOption.value);
+  assert.equal(d.querySelector('#tab-simulator').hidden,false,'General simulator stays visible for charge/time exercises too');
+  click('#tab-simulator');assert.ok(d.querySelector('#simulator-workspace .simulator'),'General battery practice keeps the circuit builder available');
   change('#qa-course-switch','hvac');
   click('[data-course-action="theory"]');
   await waitFor(()=>d.querySelectorAll('.theory-question').length===20);
@@ -172,6 +200,8 @@ const checkShabbatContrast=()=>{
   click('[data-exit-qa]');
   assert.equal(d.body.classList.contains('qa-mode'),false);
   assert.equal(w.localStorage.getItem('dc.basics.theory.v1'),normalTheory);
+  assert.equal(w.localStorage.getItem('dc.basics.extra.security.v1'),normalMixed,'QA simulation preserves normal mixed-circuit progress');
+  assert.equal(w.localStorage.getItem('dc.basics.extra.mobile.v1'),normalBattery,'QA skipping preserves normal battery progress');
   assert.equal(d.querySelectorAll('.theory-question').length,20,'Restore ordinary in-progress exam after QA');
   assert.ok(d.querySelector('#shabbat-screen'),'Exiting QA reapplies the real Shabbat lock');
   assert.equal(d.querySelector('#shabbat-screen [data-shabbat-mode]'),null);

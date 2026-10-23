@@ -50,6 +50,10 @@ for(let seed=1;seed<=60;seed++){
   assert.equal(mixed.filter(q=>q.family==='series-parallel').length,5);
   assert.equal(mixed.filter(q=>q.family==='parallel-series').length,5);
   assert.equal(new Set(mixed.map(q=>q.variant)).size,7,'Seven mixed-circuit variants in the current generator');
+  const worksheet=mixed.find(q=>q.variant==='parallel-groups-worksheet');
+  assert.ok(worksheet,'Preserve the six-resistor circuit from worksheet exercise 15');
+  assert.deepEqual(worksheet.groups.map(g=>g.branches),[[[0],[1]],[[2]],[[3],[4]],[[5]]]);
+  if(level===1){assert.equal(worksheet.u,45);assert.deepEqual(worksheet.r,[15,10,3,6,12,5]);close(worksheet.rt,18);close(worksheet.it,2.5);}
   for(const q of mixed){
    assert.equal(q.diagrams.length,3);assert.equal(q.reductions.length,2);
    const solve=edges=>solveNetwork(edges,'A',q.groups.at(-1).to,q.u);

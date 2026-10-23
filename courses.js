@@ -78,7 +78,7 @@ const CourseApp = window.CourseApp = (() => {
     return {state,q:state.questions[state.index]};
   }
   function courseFormulaTitle(){return 'דף נוסחאות לקורס '+config.names[selected].replace(/^קורס\s+/,'');}
-  function tabMarkup(){return (selected==='security'?['mixed','battery','formulas']:selected==='mobile'?['battery','formulas']:['formulas']).map(kind=>`<button class="tab" type="button" role="tab" id="tab-${kind}" aria-controls="course-panel" data-extra-tab="${kind}" aria-selected="${extra===kind}" tabindex="${extra===kind?0:-1}">${kind==='formulas'?escapeHTML(courseFormulaTitle()):kind==='mixed'?'מעגל מעורב מורכב':'סוללות'}<span>${kind==='formulas'?(selected==='hvac'?'חשמל':'חשמל וסוללות'):kind==='mixed'?'טור של קבוצות מקבילות · מקביל של ענפי טור':selected==='mobile'?'מטען · טעינה ופריקה · התנגדות פנימית':'מטען ואנרגיה · טעינה ופריקה'}</span></button>`).join('');}
+  function tabMarkup(){const q=formulaQuestion(),simulating=q?.simulatorOpen&&courseSimulatorReady(q);return (selected==='security'?['mixed','battery','formulas']:selected==='mobile'?['battery','formulas']:['formulas']).map(kind=>`<button class="tab" type="button" role="tab" id="tab-${kind}" aria-controls="course-panel" data-extra-tab="${kind}" aria-selected="${extra===kind&&!simulating}" tabindex="${extra===kind&&!simulating?0:-1}">${kind==='formulas'?escapeHTML(courseFormulaTitle()):kind==='mixed'?'מעגל מעורב מורכב':'סוללות'}<span>${kind==='formulas'?(selected==='hvac'?'חשמל':'חשמל וסוללות'):kind==='mixed'?'טור של קבוצות מקבילות · מקביל של ענפי טור':selected==='mobile'?'מטען · טעינה ופריקה · התנגדות פנימית':'מטען ואנרגיה · טעינה ופריקה'}</span></button>`).join('');}
   function updateChrome(){
     const practice=screen==='practice';
     document.body.classList.toggle('course-home',screen==='home');
@@ -95,7 +95,12 @@ const CourseApp = window.CourseApp = (() => {
     navigation.append($('tab-simulator'),$('tab-formulas'));
     $('tab-ohm').firstChild.textContent='חוק אוהם';
     document.querySelectorAll('[role="tab"][data-tab]').forEach(node=>{if(extra){node.setAttribute('aria-selected','false');node.tabIndex=-1;}});
-    $('tab-simulator').hidden=practice&&!!extra;
+    const q=formulaQuestion(),contextual=hasCourseSimulator(q),simulator=$('tab-simulator');
+    simulator.hidden=false;simulator.disabled=contextual&&!courseSimulatorReady(q);
+    simulator.title=simulator.disabled?'הסימולטור ייפתח לאחר פתרון התרגיל':'';
+    simulator.querySelector('span').textContent=contextual?'התרגיל הנוכחי · זמין בסיום או ב־QA':'מעגל מתרגיל או מעגל משלכם';
+    simulator.setAttribute('aria-controls',contextual?'course-panel':'simulator-workspace');
+    if(contextual){const active=q.simulatorOpen&&courseSimulatorReady(q);simulator.setAttribute('aria-selected',String(!!active));simulator.tabIndex=active?0:-1;}
     applyConfig(config);
   }
   function renderOverride(){
@@ -135,8 +140,10 @@ const CourseApp = window.CourseApp = (() => {
     const simQ={...q,simLoadResistance:rl,solution:true,cursor:2,givens:[['U_t',ut,q.voltageUnit],['U_L',ul,q.voltageUnit],['I',current,'A']]};
     return `<figure class="diagram phone-schematic">${CoursePractice.phoneBatterySVG(simQ)}</figure><div class="metrics"><div class="metric"><small>זרם במעגל</small><bdi>${DC.fmt(current)} A</bdi></div><div class="metric"><small>מתח על העומס</small><bdi>${DC.fmt(ul)} ${escapeHTML(q.voltageUnit)}</bdi></div><div class="metric"><small>מפל מתח פנימי</small><bdi>${DC.fmt(drop)} ${escapeHTML(q.voltageUnit)}</bdi></div><div class="metric"><small>התנגדות פנימית</small><bdi>${DC.fmt(rs)} ${escapeHTML(q.resistanceUnit)}</bdi></div><div class="metric"><small>התנגדות עומס</small><bdi>${DC.fmt(rl)} ${escapeHTML(q.resistanceUnit)}</bdi></div></div><p class="small muted">המודל מחשב מקור מתח אידאלי בטור עם ההתנגדות הפנימית ועם העומס שנבחר.</p>`;
   }
+  function hasCourseSimulator(q){return !!q&&(q.kind==='mixed'||q.unitFamily==='Rs');}
+  function courseSimulatorReady(q){return hasCourseSimulator(q)&&(qaActive||q.cursor>=q.steps.length||q.accepted&&q.cursor===q.steps.length-1);}
   function courseSimulatorHTML(q){
-    const open=q.simulatorOpen===true;if(!open||q.cursor<q.steps.length)return '';
+    if(!q.simulatorOpen||!courseSimulatorReady(q))return '';
     if(q.kind==='mixed'){
       const value=Number(q.simVoltage??q.u),max=Math.max(1,q.u*2),step=Math.max(.01,max/1000);
       return `<section class="card course-simulator" id="course-simulator"><div class="sim-head"><div><div class="eyebrow">סימולציה חיה לתרגיל</div><h3>שינוי מתח המקור</h3></div><button class="btn secondary tiny" data-course-action="simulator">סגירת סימולטור</button></div><label for="course-sim-voltage">מתח המקור: <bdi id="course-sim-voltage-value">${DC.fmt(value)} V</bdi></label><input id="course-sim-voltage" type="range" min="0" max="${max}" step="${step}" value="${value}"><div id="course-sim-display">${courseSimulatorDisplay(q)}</div><button class="btn secondary tiny" data-course-action="reset-simulator">חזרה למתח התרגיל (${DC.fmt(q.u)} V)</button></section>`;
@@ -255,9 +262,12 @@ const CourseApp = window.CourseApp = (() => {
     const reduction=extra==='mixed'?`<section class="mixed-original-solution"><h3>המעגל המקורי עם סימון צמתים</h3><figure class="diagram">${mixedPreview(q,0,true)}</figure></section>${nodeGuide(q)}<div class="circuit-reductions"><h3>צמצום המעגל לפי הצמתים</h3>${q.reductions.map((item,i)=>`<section class="circuit-reduction"><h4>${i+1}. ${escapeHTML(item.title)}</h4>${solutionRows(q,item.steps)}<figure class="diagram">${mixedPreview(q,i+1,true)}</figure></section>`).join('')}<p class="small muted">אותיות הצמתים נשמרות. צומת פנימית שנבלעה בנגד שקול אינה מסומנת בסכמה המצומצמת.</p></div>`:'';
     const remainingSteps=extra==='mixed'?q.steps.slice(q.reductions.reduce((sum,item)=>sum+item.steps.length,0)):q.steps;
     const answer=done?`<div class="complete-badge">✓ התרגיל הושלם</div><h2>כל החישובים הושלמו</h2><button class="btn" data-extra-action="next">${state.index===9?'סבב חדש':'לתרגיל הבא ←'}</button>`:`<div class="task-kicker">שלב ${q.cursor+1} מתוך ${q.steps.length}</div><h2>${escapeHTML(s.label)}</h2><form id="extra-answer-form"><label for="extra-answer">התשובה ביחידות ${escapeHTML(s.unit)}</label><div class="answer-row"><div class="answer-wrap"><input class="numeric${q.accepted?' answer-correct':q.attempts?' answer-incorrect':''}" id="extra-answer" inputmode="decimal" autocomplete="off" maxlength="24" value="${escapeHTML(q.draft??'')}" ${q.accepted?'readonly':''}><span class="unit">${escapeHTML(s.unit)}</span></div><button class="btn" type="${q.accepted?'button':'submit'}" ${q.accepted?'data-extra-action="step"':''}>${q.accepted?'הבא ←':'בדיקת תשובה'}</button></div></form><p class="small muted">אפשר לעגל לשתי ספרות אחרי הנקודה.</p>`;
-    const simulatorEligible=done&&(q.kind==='mixed'||q.unitFamily==='Rs');
+    const simulatorEligible=courseSimulatorReady(q);
     const simulatorButton=simulatorEligible?`<button class="btn soft tiny" data-course-action="simulator">${q.simulatorOpen?'סגירת הסימולטור':'פתיחת סימולטור'}</button>`:'';
+    const simulator=courseSimulatorHTML(q);
+    if(simulator){$('course-panel').innerHTML=`<div class="course-head"><h2>סימולטור — ${escapeHTML(q.title)}</h2></div>${qaPicker}${simulator}`;saveExtra();return;}
     $('course-panel').innerHTML=`<div class="course-head"><h2>${extra==='mixed'?'מעגל מעורב מורכב':'חישובי סוללות'}</h2><div class="levels">${levelsHTML}</div></div>${qaPicker}<div class="progress-row"><span>תרגיל ${state.index+1} מתוך 10</span><span>רמה ${letters[extraLevel]}</span></div><div class="exercise-grid"><section class="card"><h3>${escapeHTML(q.title)}</h3>${q.text?`<p>${escapeHTML(q.text)}</p>`:''}<div class="givens">${statementRows(q)}</div>${picture}${q.unitFamily==='Rs'?notationKey():''}${q.kind==='battery'&&q.unitFamily!=='Rs'?`<p class="small muted">${escapeHTML(q.note)}</p>`:''}</section><section class="card">${answer}<div class="answer-tools"><button class="btn secondary tiny" data-extra-action="hint">רמז</button><button class="btn secondary tiny" data-extra-action="solution">${q.solution?'סגירת פתרון מלא':'פתרון מלא'}</button>${simulatorButton}<button class="btn secondary tiny" data-open-calculator>מחשבון</button><button class="btn secondary tiny" data-extra-action="new">תרגילים חדשים</button></div>${status(extraMessage,extraError)}${q.hint&&s?`<div class="hint">השתמשו בנוסחה ${math(s.formula)}</div>`:''}${q.solution?`<div class="solution"><div class="dialog-head"><h3>פתרון מלא</h3><button class="close" data-extra-action="solution" aria-label="סגירת פתרון מלא">×</button></div>${reduction}${solutionRows(q,remainingSteps)}</div>`:''}${done?`<div class="completed-steps">${solutionRows(q)}</div>`:''}</section></div>${courseSimulatorHTML(q)}`;
+    if(qaActive&&!done)$('course-panel').querySelector('.answer-tools').insertAdjacentHTML('afterbegin','<button class="btn secondary tiny" data-extra-action="qa-complete">דלג לסיום התרגיל (QA)</button>');
     saveExtra();
   }
   function markExtraHelp(q){
@@ -278,15 +288,16 @@ const CourseApp = window.CourseApp = (() => {
     q.draft=$('extra-answer').value;
     const correct=DC.accepted(q.draft,s.value),attempt=q.attempts??0;
     recordExtraAttempt(q,correct);
-    q.attempts=attempt+1;q.accepted=correct;extraMessage=correct?'נכון! אפשר להמשיך לשלב הבא.':'התשובה אינה נכונה. אפשר לנסות שוב.';extraError=!correct;
+    q.attempts=attempt+1;q.accepted=correct;extraMessage=correct?(q.cursor===q.steps.length-1?(hasCourseSimulator(q)?'נכון! כל התשובות הושלמו. אפשר לפתוח את הסימולטור או לסיים את התרגיל.':'נכון! כל התשובות הושלמו. אפשר לסיים את התרגיל.'):'נכון! אפשר להמשיך לשלב הבא.'):'התשובה אינה נכונה. אפשר לנסות שוב.';extraError=!correct;
     render();$('extra-answer')?.focus();
   }
   function extraAction(action){
     const {state,q}=currentExtra();extraMessage='';extraError=false;
     if(action==='hint'){q.hint=!q.hint;if(q.hint)markExtraHelp(q);}
     if(action==='solution'){q.solution=!q.solution;if(q.solution)markExtraHelp(q);}
-    if(action==='simulator'&&q.cursor>=q.steps.length){q.simulatorOpen=!q.simulatorOpen;if(q.simulatorOpen&&q.kind==='mixed')q.simVoltage??=q.u;if(q.simulatorOpen&&q.unitFamily==='Rs'){const g=Object.fromEntries(q.givens.map(([key,value])=>[key,value]));q.simLoadResistance??=g.U_L/g.I;}}
-    if(action==='reset-simulator'){if(q.kind==='mixed')q.simVoltage=q.u;else if(q.unitFamily==='Rs'){const g=Object.fromEntries(q.givens.map(([key,value])=>[key,value]));q.simLoadResistance=g.U_L/g.I;}}
+    if(action==='simulator'){if(!courseSimulatorReady(q))return;q.simulatorOpen=!q.simulatorOpen;if(q.simulatorOpen&&q.kind==='mixed')q.simVoltage??=q.u;if(q.simulatorOpen&&q.unitFamily==='Rs'){const g=Object.fromEntries(q.givens.map(([key,value])=>[key,value]));q.simLoadResistance??=g.U_L/g.I;}}
+    if(action==='reset-simulator'&&courseSimulatorReady(q)){if(q.kind==='mixed')q.simVoltage=q.u;else if(q.unitFamily==='Rs'){const g=Object.fromEntries(q.givens.map(([key,value])=>[key,value]));q.simLoadResistance=g.U_L/g.I;}}
+    if(action==='qa-complete'&&qaActive){q.cursor=q.steps.length;q.accepted=false;q.attempts=0;q.draft='';q.hint=false;}
     if(action==='step'&&q.accepted){q.cursor++;q.accepted=false;q.attempts=0;q.draft='';q.hint=false;}
     if(action==='next'){if(state.index<9)state.index++;else delete extraState[extra+':'+extraLevel];}
     if(action==='new')delete extraState[extra+':'+extraLevel];
@@ -453,7 +464,13 @@ const CourseApp = window.CourseApp = (() => {
     const deleteDialog=document.createElement('dialog');deleteDialog.id='password-delete-dialog';deleteDialog.setAttribute('aria-labelledby','password-delete-title');deleteDialog.innerHTML='<h2 id="password-delete-title">הסרת סיסמה</h2><p id="password-delete-question"></p><div class="completion-actions"><button type="button" class="btn" data-course-action="confirm-password-delete">כן</button><button type="button" class="btn secondary" data-course-action="cancel-password-delete">לא</button></div>';document.body.append(deleteDialog);
     const entry=get(entryKey,null);if(entry?.profile){personal.profile=entry.profile;if(entry.preferences)personal.preferences=entry.preferences;}else syncProfile();
     document.addEventListener('click',event=>{
-      const b=event.target.closest('button');if(!b)return;
+      const b=event.target.closest('button');if(!b||b.disabled)return;
+      if(formulaQuestion()&&(b.dataset.tab==='simulator'||b.hasAttribute('data-go-simulator'))){
+        event.preventDefault();event.stopImmediatePropagation();const q=currentExtra().q;
+        if(hasCourseSimulator(q)){if(courseSimulatorReady(q)&&!q.simulatorOpen)extraAction('simulator');$('course-simulator')?.scrollIntoView({block:'start'});}
+        else{simulatorMode='custom';selectTab('simulator');}
+        return;
+      }
       if(b.hasAttribute('data-open-mixed')){event.preventDefault();event.stopImmediatePropagation();return openMixedDiagram(Number(b.dataset.openMixed),b.dataset.mixedNodes==='true');}
       if(b.hasAttribute('data-open-formulas')||b.dataset.extraTab==='formulas'){
         event.preventDefault();event.stopImmediatePropagation();openFormulas();return;
@@ -484,7 +501,7 @@ const CourseApp = window.CourseApp = (() => {
       }
       if(b.dataset.editPassword!==undefined){const editor=document.querySelector(`[data-password-editor="${Number(b.dataset.editPassword)}"]`);if(editor){editor.open=true;editor.scrollIntoView({block:'center'});resizeFrame();}return;}
       if(action==='confirm-password-delete'){const index=adminDraft.passwords.findIndex(row=>row.id===deletePasswordId);$('password-delete-dialog').close();if(index>=0)return adminOperation('admin_password_delete',{password_id:deletePasswordId},index);return;}
-      if(b.dataset.extraTab){screen='practice';extra=b.dataset.extraTab;extraLevel=0;extraMessage='';return render();}
+      if(b.dataset.extraTab){const q=formulaQuestion();if(q)q.simulatorOpen=false;screen='practice';if(extra!==b.dataset.extraTab){extra=b.dataset.extraTab;extraLevel=0;}extraMessage='';return render();}
       if(b.dataset.extraLevel!==undefined){extraLevel=Number(b.dataset.extraLevel);extraMessage='';return render();}
       if(b.dataset.extraAction)return extraAction(b.dataset.extraAction);
       if(b.dataset.theoryAction){
@@ -504,7 +521,7 @@ const CourseApp = window.CourseApp = (() => {
       const button=event.target.closest('.tabs [role=tab]');
       if(!button||!['ArrowLeft','ArrowRight','Home','End'].includes(event.key))return;
       event.preventDefault();event.stopImmediatePropagation();
-      const buttons=[...document.querySelectorAll('.tabs [role=tab]')].filter(item=>!item.hidden),i=buttons.indexOf(button);
+      const buttons=[...document.querySelectorAll('.tabs [role=tab]')].filter(item=>!item.hidden&&!item.disabled),i=buttons.indexOf(button);
       const next=buttons[event.key==='Home'?0:event.key==='End'?buttons.length-1:(i+(event.key==='ArrowLeft'?1:buttons.length-1))%buttons.length];
       next.click();if(next.id!=='tab-formulas')document.getElementById(next.id)?.focus();
     },true);
