@@ -59,6 +59,8 @@ class ConfigStore:
     def _remote(self):
         if not re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", self.repository):
             raise ValueError("Invalid storage repository")
+        if not self.token or not self.token.isascii() or self.token.strip().upper() in {"XXX", "PASTE_YOUR_GITHUB_TOKEN_HERE"}:
+            raise ValueError("יש להחליף את טקסט הדוגמה ב־course_admin.storage_token בטוקן GitHub אמיתי ב־Streamlit Secrets, עם הרשאת Contents: Read and write למאגר הפרטי.")
         if self._request("").get("private") is not True:
             raise ValueError("Course access configuration requires a private repository")
         try:
@@ -120,12 +122,23 @@ class ConfigStore:
                 plain = row.get("password", "")
                 if not isinstance(plain, str) or plain and not 4 <= len(plain) <= 128:
                     raise ValueError("סיסמה חדשה צריכה לכלול 4–128 תווים.")
-                if plain and any(password_matches(plain, item) for item in saved):
+                if plain and (any(password_matches(plain, item) for item in saved) or any(
+                    other is not row and (
+                        hmac.compare_digest(plain.encode(), other["password"].encode())
+                        if isinstance(other.get("password"), str) and other["password"]
+                        else password_matches(plain, existing.get(other.get("id"), {})))
+                    for other in rows)):
                     raise ValueError("יש להזין סיסמאות שונות.")
                 hashed = password_hash(plain) if plain else {k: existing.get(identifier, {}).get(k) for k in ("salt", "hash")}
                 if not hashed["hash"]:
                     raise ValueError("יש להזין סיסמה עבור הרשומה החדשה.")
-                saved.append({"id": identifier, "label": label, "expires_on": expiry, "active": row.get("active") is True, **hashed})
+                # Shared classroom access codes are recoverable for the owner,
+                # by explicit request. Only authenticated admin responses expose
+                # this value; student authentication still checks the hash.
+                display_password = plain or existing.get(identifier, {}).get("display_password")
+                saved.append({"id": identifier, "label": label, "expires_on": expiry,
+                              "active": row.get("active") is True, **hashed,
+                              **({"display_password": display_password} if display_password else {})})
             data = {**current, "names": {k: v.strip() for k, v in names.items()}, "passwords": saved}
             if self.repository:
                 _, sha = self._remote()
@@ -141,9 +154,34 @@ class ConfigStore:
         data = self.read()
         result = {"names": data["names"]}
         if admin:
-            result["passwords"] = [{k: row[k] for k in ("id", "label", "expires_on", "active")} for row in data["passwords"]]
+            result["passwords"] = [
+                {**{k: row[k] for k in ("id", "label", "expires_on", "active")},
+                 "status": "disabled" if not row["active"] else "active" if code_active(row) else "expired",
+                 "password_text": row.get("display_password")}
+                for row in data["passwords"]]
             result["durable"] = bool(self.repository)
         return result
+
+    def update(self, *, names=None, password=None, delete_id=None):
+        """Edit one part of the latest saved settings without replacing others."""
+        with self.lock:
+            current = self.read(fresh=True)
+            rows = [dict(row) for row in current["passwords"]]
+            if password is not None:
+                if not isinstance(password, dict):
+                    raise ValueError("פרטי הסיסמה אינם תקפים.")
+                identifier = password.get("id")
+                if identifier:
+                    if identifier not in {row["id"] for row in rows}:
+                        raise ValueError("הסיסמה אינה קיימת עוד. לחצו על רענון הרשימה.")
+                    rows = [password if row["id"] == identifier else row for row in rows]
+                else:
+                    rows.append(password)
+            if delete_id is not None:
+                if delete_id not in {row["id"] for row in rows}:
+                    raise ValueError("הסיסמה אינה קיימת עוד. לחצו על רענון הרשימה.")
+                rows = [row for row in rows if row["id"] != delete_id]
+            return self.save(current["names"] if names is None else names, rows)
 
 
 def select_questions(pool, seen=(), previous=(), count=20, rng=None):
@@ -234,6 +272,21 @@ class CourseService:
             result["figure"] = {"src": f"data:{mime};base64," + base64.b64encode(path.read_bytes()).decode(), "alt": figure.get("alt", "תרשים המעגל")}
         return result
 
+    def _admin_config(self):
+        try:
+            self.store.read(fresh=True)
+            return self.store.public(admin=True)
+        except (ValueError, OSError, urllib.error.URLError) as error:
+            if isinstance(error, ValueError):
+                message = str(error)
+            elif isinstance(error, urllib.error.HTTPError) and error.code in (401, 403, 404):
+                message = "לא ניתן לגשת למאגר השמירה הפרטי. בדקו ב־Streamlit Secrets את course_admin.storage_repository ואת storage_token, ואת הרשאת Contents: Read and write של הטוקן למאגר הזה."
+            else:
+                message = "החיבור לשמירה אינו זמין כרגע. אפשר לבדוק את התרגילים ב־QA ולנסות לרענן את החיבור בהמשך."
+            # Authentication is independent of storage. Do not invent an empty
+            # password list or fall back to another store during an outage.
+            return {"names": dict(COURSES), "unavailable": True, "storage_message": message}
+
     def handle(self, event, session):
         action = event.get("action")
         try:
@@ -243,7 +296,24 @@ class CourseService:
                     raise ValueError("סיסמה שגויה. נסו שוב.")
                 token = secrets.token_urlsafe(24)
                 session["course_admin"] = {"token": token, "until": time.time() + 8 * 3600}
-                return {"ok": True, "token": token, "config": self.store.public(admin=True)}
+                return {"ok": True, "token": token, "config": self._admin_config(),
+                        "capabilities": {"qa_theory": True, "password_management": True}}
+            if action in {"admin_refresh", "admin_names_save", "admin_password_save", "admin_password_delete"}:
+                if not self._authorized(event, session, admin=True):
+                    return {"ok": False, "unauthorized": True, "message": "נדרשת כניסה מחדש למצב בדיקות."}
+                if action == "admin_refresh":
+                    config = self._admin_config()
+                    message = config.get("storage_message", "הרשימה נטענה מחדש מהשמירה.")
+                elif action == "admin_names_save":
+                    config = self.store.update(names=event.get("names", {}))
+                    message = "שמות הקורסים נשמרו."
+                elif action == "admin_password_save":
+                    config = self.store.update(password=event.get("password", {}))
+                    message = "הסיסמה והשינויים שלה נשמרו."
+                else:
+                    config = self.store.update(delete_id=event.get("password_id", ""))
+                    message = "הסיסמה נמחקה."
+                return {"ok": True, "config": config, "message": message}
             if action == "admin_save":
                 if not self._authorized(event, session, admin=True):
                     return {"ok": False, "unauthorized": True, "message": "נדרשת כניסה מחדש למצב בדיקות."}
@@ -264,10 +334,11 @@ class CourseService:
                 token = secrets.token_urlsafe(24)
                 session["course_theory"] = {"token": token, "code_id": code["id"], "hash": code["hash"]}
                 return {"ok": True, "token": token, "count": len(self.pool)}
-            if action in {"exam_new", "exam_resume", "exam_submit"}:
-                qa = event.get("qa") is True
+            if action in {"exam_new", "exam_resume", "exam_submit", "admin_exam_new", "admin_exam_resume", "admin_exam_submit"}:
+                qa = action.startswith("admin_exam_") or event.get("qa") is True
+                action = action.removeprefix("admin_")
                 if not self._authorized(event, session, admin=qa):
-                    return {"ok": False, "unauthorized": True, "message": "נדרשת סיסמה תקפה כדי להמשיך למבחן."}
+                    return {"ok": False, "unauthorized": True, "message": "פג תוקף כניסת המנהל. צאו מ־QA והיכנסו אליו שוב." if qa else "נדרשת סיסמה תקפה כדי להמשיך למבחן."}
                 if action == "exam_new":
                     seen = [s for s in event.get("seen", []) if isinstance(s, str)][-len(self.pool):]
                     previous = [s for s in event.get("previous", []) if isinstance(s, str)][:20]

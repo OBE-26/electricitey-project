@@ -101,7 +101,7 @@ APP_HTML = r'''<!doctype html>
       }
       async function refresh(){
         let schedule=[];try{schedule=JSON.parse(localStorage.getItem(KEY)||'null')?.schedule||[];}catch{}
-        try{const d=new Date(),from=new Date(d.getTime()-86400000),to=new Date(d.getTime()+8*86400000),iso=x=>x.toISOString().slice(0,10),url=`https://www.hebcal.com/shabbat?cfg=json&geonameid=281184&start=${iso(from)}&end=${iso(to)}&M=on`,response=await fetch(url,{cache:'no-store'});if(!response.ok)throw Error('schedule unavailable');const data=await response.json();schedule=makeSchedule(data.items||[]);localStorage.setItem(KEY,JSON.stringify({saved:now(),schedule}));}catch{}
+        try{const url='https://www.hebcal.com/shabbat?cfg=json&geonameid=281184&b=40&M=on&leyning=off',response=await fetch(url,{cache:'no-store'});if(!response.ok)throw Error('schedule unavailable');const data=await response.json();schedule=makeSchedule(data.items||[]);localStorage.setItem(KEY,JSON.stringify({saved:now(),schedule}));}catch{}
         const active=schedule.find(x=>x.start<=now()&&now()<x.end);if(active)show(active.end);else{document.getElementById('shabbat-screen')?.remove();document.getElementById('app')?.removeAttribute('inert');}
       }
       document.addEventListener('DOMContentLoaded',()=>{refresh();setInterval(refresh,60000);});
@@ -2797,6 +2797,26 @@ window.addEventListener('message',event=>{
       if(mode==='review'&&typeof reply.url==='string'&&/^https:\/\/github\.com\/[^/]+\/[^/]+\/issues\/\d+$/.test(reply.url)){
         const link=$('feedback-result-link');link.href=reply.url;link.hidden=false;
       }
+    }
+  }
+  paintFeedbackAvailability();syncQuickbar();fitDialogs();resizeFrame();
+});
+
+
+/* COURSE_EXTENSION */
+CourseApp.initialize();
+sendStreamlitMessage('streamlit:componentReady', { apiVersion:1 });
+if(!restoreCourse())newCourse();
+initializePersonal();
+function finishInitialLayout(){
+  applyPreferences();
+  const app = $('app'), started = performance.now();
+  let viewport = '', unchangedSince = started;
+  function settleLayout(){
+    const nextViewport = `${innerWidth}x${innerHeight}`;
+    if (nextViewport !== viewport) {
+      viewport = nextViewport; unchangedSince = performance.now();
+      // Rebuild every section's layout after the host applies its frame size.
       // This is done while hidden, without changing text preferences or DOM nodes.
       const display = app.style.getPropertyValue('display'), priority = app.style.getPropertyPriority('display');
       app.style.setProperty('display','none','important');
