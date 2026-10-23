@@ -26,11 +26,11 @@ import json
 import re
 import time
 import threading
+import types
 import urllib.error
 import urllib.request
 import streamlit as st
 import streamlit.components.v1 as components
-from course_backend import ConfigStore, CourseService
 
 APP_HTML = r'''<!doctype html>
 <html lang="he" dir="rtl">
@@ -103,18 +103,20 @@ APP_HTML = r'''<!doctype html>
         const created=!screen;
         if(!screen){
           screen=document.createElement('section');screen.id='shabbat-screen';screen.tabIndex=-1;screen.setAttribute('role','dialog');screen.setAttribute('aria-modal','true');screen.setAttribute('aria-labelledby','shabbat-title');
-          screen.innerHTML=`<div class="shabbat-card"><div class="shabbat-candles" aria-label="שני נרות שבת">${candlesHTML()}</div><p class="shabbat-wax"></p><h1 id="shabbat-title">שבת שלום</h1><p>האתר סגור לשימוש במהלך השבת.</p><p class="shabbat-return">נשוב לפעול בצאת השבת</p><p class="shabbat-time">צאת השבת בירושלים: <bdi id="shabbat-until"></bdi></p></div>`;
+          screen.innerHTML=`<div class="shabbat-card"><div class="shabbat-candles" aria-label="שני נרות שבת">${candlesHTML()}</div><h1 id="shabbat-title">שבת שלום</h1><p>האתר סגור לשימוש במהלך השבת.</p><p class="shabbat-return">נשוב לפעול בצאת השבת</p><p class="shabbat-time">צאת השבת בירושלים: <bdi id="shabbat-until"></bdi></p></div>`;
           document.body.appendChild(screen);
         }
         const wax=100-95*Math.min(1,Math.max(0,progress)),height=70*wax/100;
         screen.dataset.waxPercent=String(Math.round(wax*100)/100);
         screen.querySelectorAll('.candle-wax').forEach(node=>{node.setAttribute('y',String(128-height));node.setAttribute('height',String(height));});
         screen.querySelectorAll('.candle-burning-top').forEach(node=>node.setAttribute('transform',`translate(0 ${70-height})`));
-        screen.querySelector('.shabbat-wax').textContent=`השעווה שנותרה: ${Math.round(wax)}%`;
         if(!screen.querySelector('.shabbat-branding')){
           const branding=document.createElement('footer');branding.className='shabbat-branding';
           const logo=document.querySelector('.footer-logo');
-          if(logo){const image=logo.cloneNode(false);image.className='shabbat-logo';branding.appendChild(image);}
+          if(logo){
+            const zoom=document.createElement('button');zoom.type='button';zoom.className='logo-zoom';zoom.dataset.openLogo='';zoom.setAttribute('aria-label','הגדלת לוגו OBE-26');zoom.setAttribute('aria-haspopup','dialog');zoom.setAttribute('aria-controls','logo-dialog');
+            const image=logo.cloneNode(false);image.className='shabbat-logo';zoom.appendChild(image);branding.appendChild(zoom);
+          }
           const rights=document.createElement('p');rights.textContent='© OBE-26 · כל הזכויות שמורות';branding.appendChild(rights);screen.querySelector('.shabbat-card').appendChild(branding);
         }
         const time=document.getElementById('shabbat-until');
@@ -129,7 +131,7 @@ APP_HTML = r'''<!doctype html>
         }
         if(test){screen.querySelector('#qa-shabbat-progress').value=String(previewProgress*100);screen.querySelector('#qa-shabbat-progress-value').textContent=Math.round(previewProgress*100)+'%';}
         screen.hidden=false;document.getElementById('app')?.setAttribute('inert','');
-        document.querySelectorAll('dialog[open]').forEach(dialog=>{if(dialog.id!=='qa-login-dialog')dialog.close();});
+        document.querySelectorAll('dialog[open]').forEach(dialog=>{if(!['qa-login-dialog','logo-dialog'].includes(dialog.id))dialog.close();});
         if(created&&!document.getElementById('qa-login-dialog')?.open)screen.focus({preventScroll:true});
       }
       function apply(){
@@ -166,7 +168,7 @@ APP_HTML = r'''<!doctype html>
     .shabbat-card{margin:auto;flex-shrink:0}.shabbat-qa-controls{display:flex;justify-content:center;align-items:center;flex-wrap:wrap;gap:10px;margin:18px 0}.shabbat-card .shabbat-test-label{width:100%;font-size:16px;font-weight:700;color:#80521c}.shabbat-branding{margin-top:22px;padding-top:18px;border-top:1px solid #d6b576}.shabbat-logo{display:block;width:170px;max-width:100%;height:auto;margin:0 auto 10px;padding:8px;background:#fff8e8;border-radius:8px}.shabbat-card .shabbat-branding p{font-size:14px;color:#74604a}.qa-shabbat{margin-top:16px;padding-top:12px;border-top:1px solid var(--line)}.qa-shabbat h3{margin-bottom:8px}.qa-shabbat-controls{display:flex;flex-wrap:wrap;gap:8px}.qa-shabbat-controls [aria-pressed=true]{outline:2px solid var(--green);outline-offset:2px}
     .dark-mode #shabbat-screen{background:radial-gradient(ellipse at center,#17202b 0%,#07090d 100%);color:#f0eadf}.dark-mode .shabbat-card{background:#161b23;border-color:#8e7956;box-shadow:0 22px 80px #0008}.dark-mode .shabbat-card h1,.dark-mode .shabbat-card .shabbat-test-label{color:#f8d58b}.dark-mode .shabbat-card .shabbat-return{color:#b9e0c7}.dark-mode .shabbat-card .shabbat-time,.dark-mode .shabbat-card .shabbat-branding p{color:#c2bcaf}.dark-mode .shabbat-branding{border-color:#8e7956}
     #shabbat-screen .btn{background:#116e65;color:#fff}#shabbat-screen .btn.secondary{background:#fffaf0;color:#422f1b;border-color:#a3844d}.dark-mode #shabbat-screen .btn{background:#4b381d;color:#f2e6d0}.dark-mode #shabbat-screen .btn.secondary{background:#212a36;color:#f0eadf;border-color:#8e7956}
-    .shabbat-card .shabbat-wax{font-size:14px;color:#74604a}.dark-mode .shabbat-card .shabbat-wax{color:#c2bcaf}.shabbat-preview-time{display:block;width:100%;font-size:14px}.shabbat-preview-time input{display:block;width:100%;min-height:36px;accent-color:#116e65}.dark-mode .shabbat-preview-time input{accent-color:#f8d58b}.shabbat-flame{transform-box:fill-box;transform-origin:center bottom;animation:shabbat-flame-sway 2.4s ease-in-out infinite alternate}.candle-burning-top:nth-of-type(2) .shabbat-flame{animation-delay:-1.2s}@keyframes shabbat-flame-sway{0%{transform:rotate(-4deg) scale(.96,1.02)}50%{transform:rotate(2deg) scale(1.02,.97)}100%{transform:rotate(4deg) scale(.98,1.04)}}.reduce-motion .shabbat-flame{animation:none}@media(prefers-reduced-motion:reduce){.shabbat-flame{animation:none!important}}
+    .shabbat-preview-time{display:block;width:100%;font-size:14px}.shabbat-preview-time input{display:block;width:100%;min-height:36px;accent-color:#116e65}.dark-mode .shabbat-preview-time input{accent-color:#f8d58b}.shabbat-flame{transform-box:fill-box;transform-origin:center bottom;animation:shabbat-flame-sway 2.4s ease-in-out infinite alternate}.candle-burning-top:nth-of-type(2) .shabbat-flame{animation-delay:-1.2s}@keyframes shabbat-flame-sway{0%{transform:rotate(-4deg) scale(.96,1.02)}50%{transform:rotate(2deg) scale(1.02,.97)}100%{transform:rotate(4deg) scale(.98,1.04)}}.reduce-motion .shabbat-flame{animation:none}@media(prefers-reduced-motion:reduce){.shabbat-flame{animation:none!important}}
     :root{--text-scale:1;color-scheme:light;--paper:#fff8e8;--card:#fffbf2;--ink:#3b3027;--muted:#74604a;--line:#e8cfa2;--green:#116e65;--soft:#ffebc4;--accent:#ffc45c;--amber:#a65b20;--shadow:0 8px 28px #7045110a}
     html:not(.ui-ready) body{visibility:hidden}
     .footer.footer{display:block}
@@ -2218,8 +2220,8 @@ function renderFormulas() {
 
 function openDialog(id, { preserveFormulaView = false } = {}) {
   hideIconTooltip();
-  if(window.ShabbatMode.isLocked()&&id!=='qa-login-dialog')return;
-  if (!profileReady() && !qaActive && id !== 'profile-dialog' && id !== 'qa-login-dialog') { openProfile(); return; }
+  if(window.ShabbatMode.isLocked()&&!['qa-login-dialog','logo-dialog'].includes(id))return;
+  if (!profileReady() && !qaActive && !['profile-dialog','qa-login-dialog','logo-dialog'].includes(id)) { openProfile(); return; }
   calculatorReturnToFormulas = id === 'calculator-dialog' && $('formula-dialog').open;
   if(id==='calculator-dialog'){prepareCalculator();renderCalculatorTriangleReference();}
   if (id === 'formula-dialog' && !preserveFormulaView) formulaView = window.CourseApp?.preferredFormulaView()??'reference';
@@ -3148,7 +3150,14 @@ APP_HTML = APP_HTML.replace("/* COURSE_EXTENSION */", extension)
 
 @st.cache_resource
 def shared_course_service(repository, token, admin_password, bank_revision, backend_revision):
-    return CourseService(ConfigStore(repository=repository, token=token), asset_root / "data/questions.json", admin_password)
+    # A rerun can retain classes imported from a previous deployment in sys.modules.
+    # Compile the deployed source into its own namespace on each cache miss.
+    # Existing services keep their globals; the revision selects the new service.
+    backend_path = asset_root / "course_backend.py"
+    backend = types.ModuleType("dc_course_backend_" + backend_revision)
+    backend.__file__ = str(backend_path)
+    exec(compile(backend_path.read_bytes(), str(backend_path), "exec"), backend.__dict__)
+    return backend.CourseService(backend.ConfigStore(repository=repository, token=token), asset_root / "data/questions.json", admin_password)
 
 practice = components.declare_component("dc_electricity_basics", path=frontend_directory(APP_HTML))
 contact_config = feedback_configuration()

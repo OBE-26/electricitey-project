@@ -23,6 +23,15 @@ async function checkClosedEntry(){
   await new Promise(resolve=>setTimeout(resolve,0));
   assert.ok(v.ShabbatMode.isLocked(),'Fresh device is closed during Shabbat');
   assert.equal(doc.querySelector('#profile-dialog').open,false,'Profile modal cannot cover the Shabbat screen');
+  assert.equal(doc.querySelector('.shabbat-wax'),null,'Wax percentage caption is hidden');
+  doc.querySelector('#shabbat-screen [data-open-logo]').click();
+  assert.equal(doc.querySelector('#logo-dialog').open,true,'Logo enlarges from the closed screen on a fresh device');
+  assert.equal(doc.querySelector('#logo-large').getAttribute('src'),doc.querySelector('.footer-logo').getAttribute('src'));
+  v.ShabbatMode.resetQA();
+  assert.equal(doc.querySelector('#logo-dialog').open,true,'Clock updates keep the enlarged logo open');
+  doc.querySelector('#logo-dialog [data-close-dialog]').click();
+  assert.equal(doc.querySelector('#logo-dialog').open,false);
+  assert.ok(v.ShabbatMode.isLocked(),'Closing logo returns to the Shabbat screen');
   doc.querySelector('#shabbat-screen [data-open-qa]').click();
   assert.equal(doc.querySelector('#qa-login-dialog').open,true,'Admin login works without an existing learner profile');
   assert.equal(v.ShabbatMode.setMode('bypass'),false,'Opening login does not authorize a bypass');
@@ -45,6 +54,8 @@ async function checkClosedEntry(){
   assert.equal(d.querySelector('.shabbat-logo').getAttribute('src'),'logo.jpg');
   assert.ok(d.querySelector('.shabbat-branding').textContent.includes('כל הזכויות שמורות'));
   assert.equal(d.querySelector('#shabbat-screen').dataset.waxPercent,'100');
+  assert.equal(d.querySelector('.shabbat-wax'),null);
+  assert.ok(!d.querySelector('#shabbat-screen').textContent.includes('השעווה שנותרה'));
   assert.equal(w.ShabbatMode.setPreviewProgress(50),true);
   assert.equal(d.querySelector('#shabbat-screen').dataset.waxPercent,'52.5');
   assert.equal(Number(d.querySelector('.candle-wax').getAttribute('height')),36.75);
