@@ -175,8 +175,9 @@ const CoursePractice = (() => {
   }
   // One notation and palette for every simulator, including enlarged diagrams.
   // Values stay unrounded in the model; rounding is only applied to these labels.
-  function simulationAnnotations({id,x,y,vertical=false,reverse=false,r,current,drop,resistanceUnit='Ω',currentUnit='A',voltageUnit='V',number=simulationNumber}){
+  function simulationAnnotations({id,x,y,vertical=false,reverse=false,r,current,drop,resistanceUnit='Ω',currentUnit='A',voltageUnit='V',number=simulationNumber,formatQuantity}){
     const ink='#fff',red='#ff6565',green='#65e680',n=number;
+    const quantity=formatQuantity??((value,unit)=>n(value)+' '+unit);
     const label=(tx,ty,value,color,anchor='middle')=>`<text x="${tx}" y="${ty}" fill="${color}" text-anchor="${anchor}" font-size="16" font-family="Arial,sans-serif" direction="ltr">${value}</text>`;
     const arrow=(x1,y1,x2,y2,color)=>{
       const dx=x2-x1,dy=y2-y1,length=Math.hypot(dx,dy),ux=dx/length,uy=dy/length;
@@ -192,10 +193,11 @@ const CoursePractice = (() => {
     // Voltage reference points toward +, opposite to conventional resistor current.
     const voltageArrow=vertical?arrow(x-30,y+30,x-30,y-30,green):reverse?arrow(x-38,y+29,x+38,y+29,green):arrow(x+38,y+29,x-38,y+29,green);
     const polarity=vertical?label(x-43,y-23,'+',green)+label(x-43,y+34,'−',green):label(x+(reverse?49:-49),y+34,'+',green)+label(x+(reverse?-49:49),y+34,'−',green);
-    return `<g class="sim-component" data-component="${id}" data-resistance="${r}" data-current="${current}" data-voltage="${drop}" data-resistance-unit="${resistanceUnit}" data-current-unit="${currentUnit}" data-voltage-unit="${voltageUnit}"><title>${id}: ${n(r)} ${resistanceUnit}; ${iSymbol} = ${n(current)} ${currentUnit}; ${uSymbol} = ${n(drop)} ${voltageUnit}</title><g class="sim-resistance">${label(tx,y+(vertical?-16:-55),`${id} = ${n(r)} ${resistanceUnit}`,ink,anchor)}</g><g class="sim-current">${currentArrow}${label(currentX,currentY,`${iSymbol} = ${n(current)} ${currentUnit}`,red,currentAnchor)}</g><g class="sim-voltage-drop">${voltageArrow}${polarity}${label(tx,y+(vertical?32:51),`${uSymbol} = ${n(drop)} ${voltageUnit}`,green,anchor)}</g></g>`;
+    return `<g class="sim-component" data-component="${id}" data-resistance="${r}" data-current="${current}" data-voltage="${drop}" data-resistance-unit="${resistanceUnit}" data-current-unit="${currentUnit}" data-voltage-unit="${voltageUnit}"><title>${id}: ${quantity(r,resistanceUnit)}; ${iSymbol} = ${quantity(current,currentUnit)}; ${uSymbol} = ${quantity(drop,voltageUnit)}</title><g class="sim-resistance">${label(tx,y+(vertical?-16:-55),`${id} = ${quantity(r,resistanceUnit)}`,ink,anchor)}</g><g class="sim-current">${currentArrow}${label(currentX,currentY,`${iSymbol} = ${quantity(current,currentUnit)}`,red,currentAnchor)}</g><g class="sim-voltage-drop">${voltageArrow}${polarity}${label(tx,y+(vertical?32:51),`${uSymbol} = ${quantity(drop,voltageUnit)}`,green,anchor)}</g></g>`;
   }
   function mixedSimulationSVG(q){
     const n=simulationNumber,ink='#fff',red='#ff6565',green='#65e680';
+    const quantity=q.formatQuantity??((value,unit)=>n(value)+' '+unit);
     const scale=q.currentUnit==='mA'?.001:q.currentUnit==='μA'?.000001:1;
     const text=(x,y,value,color=ink,anchor='middle')=>`<text x="${x}" y="${y}" fill="${color}" text-anchor="${anchor}" font-size="17" font-family="Arial,sans-serif" direction="ltr">${value}</text>`;
     const wire=(d,current)=>{
@@ -203,17 +205,17 @@ const CoursePractice = (() => {
       const flow=current>0?`<path class="mixed-current-flow${q.simAnimate===false?' is-paused':''}" d="${d}" fill="none" stroke="${red}" stroke-width="3.5" style="--mixed-flow-duration:${duration}s" data-current="${amps}" aria-hidden="true"/>`:'';
       return `<path d="${d}" fill="none" stroke="${ink}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>${flow}`;
     };
-    const node=(x,y,i,vertical=false,reverse=false)=>`<g class="mixed-resistor" data-symbol="R${i+1}" data-from="${q.resistorNodes[i].from}" data-to="${q.resistorNodes[i].to}"><rect x="${x-(vertical?12:38)}" y="${y-(vertical?30:12)}" width="${vertical?24:76}" height="${vertical?60:24}" fill="#000" stroke="${ink}" stroke-width="2.5"/>${simulationAnnotations({id:'R'+(i+1),x,y,vertical,reverse,r:q.r[i],current:q.currents[i],drop:q.voltages[i],resistanceUnit:q.resistanceUnit,currentUnit:q.currentUnit})}</g>`;
+    const node=(x,y,i,vertical=false,reverse=false)=>`<g class="mixed-resistor" data-symbol="R${i+1}" data-from="${q.resistorNodes[i].from}" data-to="${q.resistorNodes[i].to}"><rect x="${x-(vertical?12:38)}" y="${y-(vertical?30:12)}" width="${vertical?24:76}" height="${vertical?60:24}" fill="#000" stroke="${ink}" stroke-width="2.5"/>${simulationAnnotations({id:'R'+(i+1),x,y,vertical,reverse,r:q.r[i],current:q.currents[i],drop:q.voltages[i],resistanceUnit:q.resistanceUnit,currentUnit:q.currentUnit,formatQuantity:quantity})}</g>`;
     const junction=(x,y)=>`<circle cx="${x}" cy="${y}" r="4" fill="${ink}"/>`;
     const source=(top,bottom)=>{
       const mid=(top+bottom)/2;
-      return wire(`M100 ${top}V${mid-14}M100 ${mid+14}V${bottom}M77 ${mid-14}H123M87 ${mid+14}H113`)+text(69,mid-16,'+')+text(69,mid+26,'−')+text(145,mid+5,`U = ${n(q.u)} V`,green,'start');
+      return wire(`M100 ${top}V${mid-14}M100 ${mid+14}V${bottom}M77 ${mid-14}H123M87 ${mid+14}H113`)+text(69,mid-16,'+')+text(69,mid+26,'−')+text(145,mid+5,`U = ${quantity(q.u,'V')}`,green,'start');
     };
     let content='',width=960,height=560;
     if(q.variant.startsWith('parallel-groups')){
       width=1160;height=550;const top=190,bottom=440;
       content=wire('M110 440V190H200',q.it)+wire('M440 190H700',q.it)+wire('M940 190H1050V440H485',q.it)+wire('M455 440H110',q.it)
-        +wire('M455 417V463M485 427V453')+text(441,418,'+')+text(499,418,'−')+text(470,514,`U = ${n(q.u)} V`,green);
+        +wire('M455 417V463M485 427V453')+text(441,418,'+')+text(499,418,'−')+text(470,514,`U = ${quantity(q.u,'V')}`,green);
       const group=(g,left,right)=>g.branches.map((branch,bi)=>{
         const x=(left+right)/2,y=bi===0?100:280,i=branch[0];
         return wire(`M${left} ${top}V${y}H${right}V${top}`,q.currents[i])+node(x,y,i);

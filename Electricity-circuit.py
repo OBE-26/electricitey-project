@@ -93,6 +93,8 @@ APP_HTML = r'''<!doctype html>
     // Jerusalem Shabbat schedule from Hebcal; keep cached times available offline.
     (function(){
       const KEY='dc.basics.shabbat.jerusalem.v1',now=()=>Date.now();
+      const metadata=/* SHABBAT_METADATA */null;
+      let scheduleUpdatedAt=Date.parse(metadata?.generated_at)||null;
       let schedule=(/* SHABBAT_FALLBACK */[]).map(x=>({start:Date.parse(x.start),end:Date.parse(x.end)})),scheduleSource='bundled',mode='auto',previewProgress=0,locked=false,access={isQA:()=>false,canUseApp:()=>true,onUnlock:()=>{}};
       function covered(){
         const time=now(),day=new Intl.DateTimeFormat('en-US',{timeZone:'Asia/Jerusalem',weekday:'short'}).format(new Date(time));
@@ -156,15 +158,16 @@ APP_HTML = r'''<!doctype html>
         }
       }
       async function refresh(){
-        try{const cached=JSON.parse(localStorage.getItem(KEY)||'null')?.schedule;if(Array.isArray(cached)){if(!schedule.length)scheduleSource='cache';merge(cached);}}catch{}
+        try{const cache=JSON.parse(localStorage.getItem(KEY)||'null'),cached=cache?.schedule;if(Array.isArray(cached)){if(!schedule.length)scheduleSource='cache';merge(cached);if(Number.isFinite(cache.saved)&&(!scheduleUpdatedAt||cache.saved>scheduleUpdatedAt)){scheduleUpdatedAt=cache.saved;scheduleSource='cache';}}}catch{}
         apply();
-        try{const url='https://www.hebcal.com/shabbat?cfg=json&geonameid=281184&b=40&M=on&leyning=off',response=await fetch(url,{cache:'no-store'});if(!response.ok)throw Error('schedule unavailable');const data=await response.json();merge(makeSchedule(data.items||[]));scheduleSource='live';localStorage.setItem(KEY,JSON.stringify({saved:now(),schedule}));}catch{}
+        try{const url='https://www.hebcal.com/shabbat?cfg=json&geonameid=281184&b=40&M=on&leyning=off',response=await fetch(url,{cache:'no-store'});if(!response.ok)throw Error('schedule unavailable');const data=await response.json(),intervals=makeSchedule(data.items||[]);if(!intervals.length)throw Error('empty schedule');merge(intervals);scheduleSource='live';scheduleUpdatedAt=now();localStorage.setItem(KEY,JSON.stringify({saved:scheduleUpdatedAt,schedule}));}catch{}
         apply();
+        window.dispatchEvent(new Event('shabbat-schedule-updated'));
       }
       window.ShabbatMode=Object.freeze({
         configure(callbacks){access=callbacks;},
         getMode:()=>mode,
-        getScheduleStatus:()=>({covered:covered(),source:scheduleSource,intervals:schedule.length}),
+        getScheduleStatus:()=>({covered:covered(),source:scheduleSource,intervals:schedule.length,updatedAt:scheduleUpdatedAt,next:schedule.find(x=>x.end>now())?{...schedule.find(x=>x.end>now())}:null}),
         isLocked:()=>locked,
         resetQA(){mode=access.isQA()?'bypass':'auto';previewProgress=0;apply();},
         setMode(value){if(!access.isQA()||!['auto','test','bypass'].includes(value))return false;if(value!==mode)previewProgress=0;mode=value;apply();return true;},
@@ -1034,7 +1037,7 @@ function circuitSVG(q, options = {}) {
       parts.push(`<rect x="${x - (parallel ? 17 : 31)}" y="${y - (parallel ? 30 : 17)}" width="${parallel ? 34 : 62}" height="${parallel ? 60 : 34}" rx="2" fill="${palette.surface}" stroke="${palette.wire}" stroke-width="2.5"/>`);
     }
     if (complete) {
-      parts.push(CoursePractice.simulationAnnotations({id:'R'+(j+1),x,y,vertical:parallel,r:displayValue(q,'R',r),current:displayValue(q,'I',model.currents[j]),drop:model.drops[j],resistanceUnit:q.units?.R??'Ω',currentUnit:q.units?.I??'A'}));
+      parts.push(CoursePractice.simulationAnnotations({id:'R'+(j+1),x,y,vertical:parallel,r:displayValue(q,'R',r),current:displayValue(q,'I',model.currents[j]),drop:model.drops[j],resistanceUnit:q.units?.R??'Ω',currentUnit:q.units?.I??'A',formatQuantity:typeof LearningTools==='undefined'?undefined:LearningTools.formatSimulation}));
       parts.push(parallel ? text(x+35,y+57,`P${j+1} = ${quantityValue('P',model.powers[j])}`,13,'start',palette.power) : text(x,177,`P${j+1} = ${quantityValue('P',model.powers[j])}`,14,'middle',palette.power));
     } else if (parallel) {
       parts.push(text(x+35,y-10,`R${j+1}`,16,'start'),text(x+35,y+14,resistance,16,'start'));
@@ -1043,7 +1046,7 @@ function circuitSVG(q, options = {}) {
   parts.push(`<circle cx="85" cy="215" r="31" fill="${palette.surface}" stroke="${palette.wire}" stroke-width="2.5"/>`);
   parts.push(text(85, 204, '+', 19), text(85, 223, 'DC', 14), text(85, 239, '−', 18));
   const knownVoltage = complete || Object.hasOwn(q.givens, 'U');
-  parts.push(text(138, 222, `U = ${knownVoltage ? number(voltage) : '?'} V`, 16, 'start', complete ? palette.voltage : palette.text));
+  parts.push(text(138, 222, `U = ${complete?quantityValue('U',voltage):(knownVoltage?number(voltage):'?')+' V'}`, 16, 'start', complete ? palette.voltage : palette.text));
   const title = `${q.kind === 'parallel' ? 'מעגל מקבילי' : q.kind === 'series' ? 'מעגל טורי' : 'מעגל DC'} עם ${count} רכיבים`;
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} 365" role="img" aria-label="${title}" dir="ltr"${complete ? ` style="background:#000000${extended ? ';width:'+width+'px;max-width:none' : ''}"` : ''}><title>${title}</title><desc>${complete ? `מתח המקור ${number(voltage)} וולט. זרם כולל ${quantityValue('I',model.total)}. זרם מסומן באדום ומפלי מתח בירוק; ראש חץ המתח פונה לפלוס, נגד כיוון הזרם. הערכים כתובים ליד הרכיבים.` : 'סכמה של נתוני התרגיל. מלבן הוא נגד ועיגול עם X הוא נורה.'}</desc>${parts.join('')}</svg>`;
 }
@@ -1497,6 +1500,7 @@ function renderQA() {
   window.CourseApp?.renderAdmin();
   const mode=window.ShabbatMode.getMode(),status=mode==='bypass'?'עקיפת שבת פעילה ב־QA בלבד':mode==='test'?'מצב טסט — תצוגת שבת לבדיקה':'מצב אוטומטי לפי זמני ירושלים';
   panel.querySelector('.qa-banner').insertAdjacentHTML('beforeend',`<section class="qa-shabbat" aria-labelledby="qa-shabbat-title"><h3 id="qa-shabbat-title">בדיקת מצב שבת</h3><p id="qa-shabbat-status" class="small" role="status">${status}</p><div class="qa-shabbat-controls"><button type="button" class="btn secondary tiny" data-shabbat-mode="test" aria-pressed="${mode==='test'}">מצב טסט — הצגת שבת</button><button type="button" class="btn secondary tiny" data-shabbat-mode="bypass" aria-pressed="${mode==='bypass'}">עקיפת מצב שבת</button><button type="button" class="btn secondary tiny" data-shabbat-mode="auto" aria-pressed="${mode==='auto'}">לפי זמני ירושלים</button></div><p class="small muted">השינויים חלים רק בבדיקות הנוכחיות. יציאה מ־QA או רענון הדף מחזירים את מצב השבת האוטומטי.</p></section>`);
+  window.LearningTools?.decorateQA();
 }
 function currentQuestion() { return questions[tab][levels[tab]][positions[tab][levels[tab]]]; }
 function completed(q) { return q.cursor === q.steps.length; }
@@ -1715,7 +1719,7 @@ function activeSimulatorQuestion() { return simulatorMode==='custom' ? customSim
 function formatCustomNumber(value) { return CoursePractice.simulationNumber(value); }
 // Round simulator labels to four significant digits; never round the physics model.
 function simulatorNumber(q,value) { return CoursePractice.simulationNumber(value); }
-function simulatorQuantity(q,key,value) { return `${simulatorNumber(q,displayValue(q,key,value))} ${(q.units??units)[key==='Req'?'R':key[0]]}`; }
+function simulatorQuantity(q,key,value) { const shown=displayValue(q,key,value),unit=(q.units??units)[key==='Req'?'R':key[0]];return typeof LearningTools!=='undefined'?LearningTools.formatSimulation(shown,unit):`${simulatorNumber(q,shown)} ${unit}`; }
 function customBuilderHTML() {
   const rows=customDraft.resistances.map((value,index)=>`<div class="custom-resistor"><div class="custom-field"><label for="custom-r-${index}">${bdi('R'+(index+1))} · התנגדות ${bdi('Ω')}</label><input id="custom-r-${index}" class="numeric" type="text" inputmode="decimal" maxlength="24" data-custom-resistance="${index}" value="${escapeHTML(value)}"></div><button class="btn secondary tiny" data-remove-resistor="${index}" ${customDraft.resistances.length===1?'disabled':''} aria-label="הסרת נגד R${index+1}">הסרה</button></div>`).join('');
   return `<section class="card"><h2>בניית מעגל משלכם</h2><div class="custom-fields"><div class="custom-field"><label for="custom-kind">סוג המעגל</label><select id="custom-kind"><option value="series"${customDraft.kind==='series'?' selected':''}>טורי</option><option value="parallel"${customDraft.kind==='parallel'?' selected':''}>מקבילי</option></select></div><div class="custom-field"><label for="custom-voltage">מתח מקור התחלתי ${bdi('V')}</label><input id="custom-voltage" class="numeric" type="text" inputmode="decimal" maxlength="24" value="${escapeHTML(customDraft.voltage)}"></div></div><div id="custom-resistors" class="custom-resistors">${rows}</div><div class="custom-actions"><button class="btn" data-add-resistor>+ הוספת ${customDraft.kind==='parallel'?'ענף / נגד':'נגד'}</button><span class="small muted">${customDraft.resistances.length} ${customDraft.kind==='parallel'?'ענפים':'נגדים'}</span></div><p class="custom-sim-note">כל נגד במקביל נמצא בענף נפרד. אפשר להוסיף ולהסיר נגדים; החישוב מתעדכן עם שינוי הערכים.</p><div id="custom-error" class="feedback error" role="status" hidden></div></section><div id="custom-output"></div>`;
@@ -1830,7 +1834,7 @@ function syncDraft(value, source) {
   saveCourse();
 }
 function simulatorHTML(q) {
-  return `<section class="card simulator${q.custom?' custom-simulator':''}" id="simulator-section" aria-labelledby="sim-title"><div class="sim-head"><div><div class="eyebrow">אחרי החישוב — רואים את המעגל</div><h2 id="sim-title" tabindex="-1" style="margin:5px 0">סימולטור DC</h2></div><button class="btn secondary tiny" data-open-formulas>דף נוסחאות △</button></div><div class="sim-layout"><div><figure class="diagram" id="sim-diagram">${diagramPreview(q, { complete:true, voltage:q.simVoltage, animate:q.simAnimate })}</figure>${q.custom&&q.resistances.length>3?'<p class="small muted">אפשר לגלול את הסכמה לצדדים או לפתוח אותה בהגדלה.</p>':''}<div class="sim-legend"><span class="current">→ I — זרם</span><span class="voltage">ΔU — חץ לכיוון הפלוס</span><span>רכיבים ונתונים נוספים — לבן</span></div><div id="sim-metrics">${simMetrics(q)}</div></div><div class="sim-controls"><label for="sim-voltage">שינוי מתח המקור</label><div class="sim-value" id="sim-voltage-label">${bdi(`${simulatorNumber(q,q.simVoltage)} V`)}</div><input id="sim-voltage" type="range" min="0" max="${q.voltage * 2}" step="0.1" value="${q.simVoltage}" aria-describedby="sim-note"><label class="toggle"><input id="sim-animation" type="checkbox" ${personal.preferences.motion ? 'disabled' : ''} ${q.simAnimate ? 'checked' : ''}>הנפשת מסלול הזרם</label><button class="btn secondary tiny" data-reset-simulator>חזרה למתח התרגיל</button><p class="small muted" id="sim-note" style="margin:6px 0 0">החצים מציגים זרם מוסכם: מהפלוס אל המינוס דרך המעגל החיצוני. הבהירות ממחישה את ההספק בנורה בעלת התנגדות קבועה. שינוי המתח כאן אינו משנה את תשובות התרגיל.</p></div></div></section>`;
+  return `<section class="card simulator${q.custom?' custom-simulator':''}" id="simulator-section" aria-labelledby="sim-title"><div class="sim-head"><div><div class="eyebrow">אחרי החישוב — רואים את המעגל</div><h2 id="sim-title" tabindex="-1" style="margin:5px 0">סימולטור DC</h2></div><button class="btn secondary tiny" data-open-formulas>דף נוסחאות △</button></div><div class="sim-layout"><div><figure class="diagram" id="sim-diagram">${diagramPreview(q, { complete:true, voltage:q.simVoltage, animate:q.simAnimate })}</figure>${q.custom&&q.resistances.length>3?'<p class="small muted">אפשר לגלול את הסכמה לצדדים או לפתוח אותה בהגדלה.</p>':''}<div class="sim-legend"><span class="current">→ I — זרם</span><span class="voltage">ΔU — חץ לכיוון הפלוס</span><span>רכיבים ונתונים נוספים — לבן</span></div><div id="sim-metrics">${simMetrics(q)}</div></div><div class="sim-controls"><label for="sim-voltage">שינוי מתח המקור</label><div class="sim-value" id="sim-voltage-label">${bdi(`${simulatorQuantity(q,'U',q.simVoltage)}`)}</div><input id="sim-voltage" type="range" min="0" max="${q.voltage * 2}" step="0.1" value="${q.simVoltage}" aria-describedby="sim-note"><label class="toggle"><input id="sim-animation" type="checkbox" ${personal.preferences.motion ? 'disabled' : ''} ${q.simAnimate ? 'checked' : ''}>הנפשת מסלול הזרם</label><button class="btn secondary tiny" data-reset-simulator>חזרה למתח התרגיל</button><p class="small muted" id="sim-note" style="margin:6px 0 0">החצים מציגים זרם מוסכם: מהפלוס אל המינוס דרך המעגל החיצוני. הבהירות ממחישה את ההספק בנורה בעלת התנגדות קבועה. שינוי המתח כאן אינו משנה את תשובות התרגיל.</p></div></div></section>`;
 }
 function simMetrics(q) {
   const m = DC.physics(q.kind, q.simVoltage, q.resistances);
@@ -1841,7 +1845,7 @@ function updateSimulator() {
   if (!$('sim-diagram')) return;
   if(window.LearningTools)LearningTools.patchDisplay($('sim-diagram'),diagramPreview(q,{complete:true,voltage:q.simVoltage,animate:q.simAnimate}));else $('sim-diagram').innerHTML=diagramPreview(q,{complete:true,voltage:q.simVoltage,animate:q.simAnimate});
   if(window.LearningTools)LearningTools.patchDisplay($('sim-metrics'),simMetrics(q));else $('sim-metrics').innerHTML=simMetrics(q);
-  $('sim-voltage-label').innerHTML = bdi(`${simulatorNumber(q,q.simVoltage)} V`);
+  $('sim-voltage-label').innerHTML = bdi(`${simulatorQuantity(q,'U',q.simVoltage)}`);
   $('sim-voltage').value = q.simVoltage; $('sim-animation').checked = q.simAnimate; $('sim-animation').disabled = personal.preferences.motion;
   saveCourse();
 }
@@ -3094,6 +3098,7 @@ extension = "\n".join((asset_root / name).read_text(encoding="utf-8") for name i
 APP_HTML = APP_HTML.replace("/* COURSE_EXTENSION */", extension)
 shabbat_fallback = json.loads((asset_root / "data/shabbat_jerusalem.json").read_text(encoding="utf-8"))
 APP_HTML = APP_HTML.replace("/* SHABBAT_FALLBACK */[]", json.dumps(shabbat_fallback["intervals"]))
+APP_HTML = APP_HTML.replace("/* SHABBAT_METADATA */null", json.dumps({key: value for key, value in shabbat_fallback.items() if key != "intervals"}))
 
 @st.cache_resource
 def shared_course_service(repository, token, admin_password, bank_revision, backend_revision):

@@ -1,8 +1,11 @@
 /* Optional learning tools. They never change the underlying exercise answers. */
 const LearningTools=window.LearningTools=(()=>{
   const key='dc.basics.site-settings.v1',byId=id=>document.getElementById(id);
-  let settings={expandedLearning:false},qaSettings=null,selection='',busy=false;
-  try{settings.expandedLearning=JSON.parse(localStorage.getItem(key)||'null')?.expandedLearning===true;}catch{}
+  const defaults={expandedLearning:false,simUnits:'auto',animationSpeed:1};
+  const cleanSettings=value=>({expandedLearning:value?.expandedLearning===true,simUnits:['auto','base','milli'].includes(value?.simUnits)?value.simUnits:'auto',animationSpeed:[.5,1,2].includes(value?.animationSpeed)?value.animationSpeed:1});
+  let settings={...defaults},qaSettings=null,selection='',busy=false,qaControlsOpen=false;
+  const walkthroughs=new WeakMap();
+  try{settings=cleanSettings(JSON.parse(localStorage.getItem(key)||'null'));}catch{}
   const enabled=()=>settings.expandedLearning;
   const escape=value=>escapeHTML(value);
   function persist(){if(!qaActive)try{localStorage.setItem(key,JSON.stringify(settings));}catch{showStorageNotice();}}
@@ -14,15 +17,37 @@ const LearningTools=window.LearningTools=(()=>{
     if(expected!==0&&actual!==0&&Math.abs(actual*expected-1)<.02)return 'ייתכן שסדר החילוק התהפך. בדקו מה מופיע במונה ומה במכנה בנוסחה.';
     return 'עברו בשלושה צעדים: מה מבקשים למצוא? אילו נתונים ויחידות נתונים? איזו נוסחה מקשרת ביניהם? הציבו לפני החישוב, ובדקו אם התוצאה מתאימה לטור או למקביל.';
   }
-  function enterQA(){qaSettings={...settings};}
-  function exitQA(){if(qaSettings)settings=qaSettings;qaSettings=null;syncSettings();}
-  function syncSettings(){const n=byId('expanded-learning');if(n)n.checked=enabled();document.body.classList.toggle('expanded-learning',enabled());}
+  function enterQA(){qaSettings={...settings};qaControlsOpen=false;}
+  function exitQA(){if(qaSettings)settings=qaSettings;qaSettings=null;qaControlsOpen=false;syncSettings();}
+  function simulationUnitMode(){return settings.simUnits;}
+  function formatSimulation(value,unit){
+    const match=/^(μ|u|m|k|M)?(V|A|Ω|W)$/.exec(unit),mode=simulationUnitMode();
+    if(match&&mode!=='auto'){const factors={'':1,μ:1e-6,u:1e-6,m:1e-3,k:1e3,M:1e6},scale=mode==='milli'?1e-3:1;value=value*factors[match[1]??'']/scale;unit=(mode==='milli'?'m':'')+match[2];}
+    return CoursePractice.simulationNumber(value)+' '+unit;
+  }
+  function applySimulationSpeed(){
+    const root=simulatorRoot();if(!root)return;
+    root.dataset.animationSpeed=String(settings.animationSpeed);
+    root.querySelectorAll('.sim-current-flow,.mixed-current-flow,.phone-current-flow').forEach(node=>{
+      for(const animation of node.getAnimations?.()??[])if(animation.playbackRate!==settings.animationSpeed){if(animation.updatePlaybackRate)animation.updatePlaybackRate(settings.animationSpeed);else animation.playbackRate=settings.animationSpeed;}
+    });
+  }
+  function syncSettings(){
+    const n=byId('expanded-learning');if(n)n.checked=enabled();
+    if(byId('site-sim-units'))byId('site-sim-units').value=settings.simUnits;
+    if(byId('site-animation-speed'))byId('site-animation-speed').value=String(settings.animationSpeed);
+    document.body.classList.toggle('expanded-learning',enabled());
+  }
   function initialize(){
     const button=document.createElement('button');button.type='button';button.className='icon-button';button.dataset.openSiteSettings='';button.dataset.tooltip='הגדרות אתר';button.setAttribute('aria-label','הגדרות אתר');button.setAttribute('aria-haspopup','dialog');button.setAttribute('aria-controls','site-settings-dialog');
     button.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m10 3-1 3-3 1-2 3 2 2-1 3 3 2 3-1 2 3 3-1 1-3 3-1v-4l-3-1-1-3z"/><circle cx="12" cy="12" r="3"/></svg>';
     byId('quickbar').append(button);
     const dialog=document.createElement('dialog');dialog.id='site-settings-dialog';dialog.setAttribute('aria-labelledby','site-settings-title');
-    dialog.innerHTML=`<div class="dialog-head"><h2 id="site-settings-title">הגדרות אתר</h2><button type="button" class="close" data-close-dialog="site-settings-dialog" aria-label="סגירת הגדרות אתר">×</button></div><label class="toggle expanded-learning-switch"><input id="expanded-learning" type="checkbox" role="switch">למידה מורחבת</label><p>משוב שמכוון לסוג הטעות, המלצה לתרגול ממוקד וניסויים מודרכים בסימולטור. כשהמתג כבוי נשמרת דרך התרגול הרגילה.</p><div class="completion-actions"><button type="button" class="btn secondary" data-open-accessibility>התאמות נגישות</button></div><h3>גיבוי ההתקדמות במכשיר</h3><p>הקובץ כולל את הפרופיל, ההתקדמות והתרגילים. הוא נשמר במכשיר שלכם. מבחן עיוני פעיל אינו משוחזר.</p><div class="completion-actions"><button type="button" class="btn" data-learning-export>הורדת גיבוי</button><label class="btn secondary" for="learning-import">בחירת קובץ לשחזור</label><input id="learning-import" type="file" accept=".json,application/json"></div><div id="learning-backup-status" role="status" aria-live="polite"></div><div id="learning-import-review" hidden><p id="learning-import-summary"></p><button class="btn" type="button" data-learning-import-confirm>אישור שחזור ההתקדמות</button><button class="btn secondary" type="button" data-learning-import-cancel>ביטול</button></div>`;
+    dialog.innerHTML=`<div class="dialog-head"><h2 id="site-settings-title">הגדרות אתר</h2><button type="button" class="close" data-close-dialog="site-settings-dialog" aria-label="סגירת הגדרות אתר">×</button></div>
+      <details class="site-settings-section" open><summary>למידה</summary><div class="site-settings-content"><label class="toggle expanded-learning-switch"><input id="expanded-learning" type="checkbox" role="switch">למידה מורחבת</label><p>משוב לפי סוג הטעות, המלצות לתרגול, ניסויים בסימולטור וצמצום מעגל צעד אחר צעד.</p></div></details>
+      <details class="site-settings-section"><summary>תצוגה ונגישות</summary><div class="site-settings-content"><label for="site-sim-units">יחידות תצוגה בסימולטורים<select id="site-sim-units"><option value="auto">לפי התרגיל</option><option value="base">יחידות בסיס — V, A, Ω, W</option><option value="milli">מילי — mV, mA, mΩ, mW</option></select></label><p class="small muted">יחידות השאלה נשארות כפי שניתנו. בסימולטור התנגדות פנימית אפשר להחליף יחידות גם באמצעות הכפתור במעגל.</p><label for="site-animation-speed">מהירות הנפשת הזרם<select id="site-animation-speed"><option value="0.5">איטית ×0.5</option><option value="1">רגילה ×1</option><option value="2">מהירה ×2</option></select></label><p class="small muted">המהירות משנה את ההמחשה בלבד. הפחתת תנועה מכבה את ההנפשות.</p><div id="site-accessibility-controls">${accessibilityControls('site')}</div></div></details>
+      <details class="site-settings-section"><summary>נתונים וגיבוי</summary><div class="site-settings-content"><h3>גיבוי ההתקדמות במכשיר</h3><p>הקובץ כולל פרופיל, התקדמות, תרגילים והעדפות. מבחן עיוני פעיל אינו משוחזר.</p><div class="completion-actions"><button type="button" class="btn" data-learning-export>הורדת גיבוי</button><label class="btn secondary" for="learning-import">בחירת קובץ לשחזור</label><input id="learning-import" type="file" accept=".json,application/json"></div><div id="learning-backup-status" role="status" aria-live="polite"></div><div id="learning-import-review" hidden><p id="learning-import-summary"></p><button class="btn" type="button" data-learning-import-confirm>אישור שחזור ההתקדמות</button><button class="btn secondary" type="button" data-learning-import-cancel>ביטול</button></div></div></details>
+      <details class="site-settings-section" id="site-shabbat-section"><summary>זמני שבת בירושלים</summary><div class="site-settings-content" id="site-shabbat-status" aria-live="polite"></div></details>`;
     document.body.append(dialog);
     dialog.addEventListener('close',()=>document.querySelector('[data-open-site-settings]')?.focus());
     const style=document.createElement('style');style.textContent=`
@@ -36,12 +61,74 @@ const LearningTools=window.LearningTools=(()=>{
       #qa-panel .math{max-width:100%;overflow-x:auto;overflow-wrap:anywhere}
       #course-panel .course-solution-step .math{max-width:100%;overflow-x:auto}
       @media(max-width:850px){#course-panel .exercise-grid{grid-template-columns:minmax(0,1fr)}}
+      .site-settings-section{border:1px solid var(--line);border-radius:12px;margin:12px 0;background:var(--card)}
+      .site-settings-section>summary{cursor:pointer;min-height:48px;padding:12px 16px;font-weight:700}
+      .site-settings-content{padding:0 16px 16px;min-width:0}.site-settings-content>label{display:grid;gap:6px;margin:12px 0;font-weight:700}
+      .site-settings-content select{width:100%;min-width:0;min-height:44px;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink)}
+      .site-settings-content dl{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}.site-settings-content dt{font-weight:700}.site-settings-content dd{margin:0;overflow-wrap:anywhere}
+      body.qa-mode .hero{display:none}#qa-tools>summary{cursor:pointer;min-height:48px;padding:10px 0;font-weight:700}#qa-tools{min-width:0}#qa-tools .qa-banner{margin:12px 0 0}#qa-tools .qa-context-note{margin-top:0}
+      .qa-current-context{font-size:calc(14px * var(--text-scale));overflow-wrap:anywhere}.qa-banner-head .btn{min-height:44px}
+      .mixed-walkthrough{margin-top:16px;border:1px solid var(--line);border-radius:12px;padding:12px;min-width:0}.mixed-walkthrough>summary{cursor:pointer;font-weight:700;min-height:44px;align-content:center}
+      .reduction-diagrams{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:12px 0}.reduction-diagrams figure{margin:0;min-width:0}.reduction-diagrams figcaption{font-weight:700}.reduction-diagrams svg{display:block;width:100%;height:auto}
+      .reduction-focus rect{stroke:#a65b00;stroke-width:5;fill:#fff0b8}.reduction-focus text,.reduction-focus tspan{fill:#684000;font-weight:700}
+      .dark-mode .reduction-focus rect{stroke:#ffd37a;fill:#4b381d}.dark-mode .reduction-focus text,.dark-mode .reduction-focus tspan{fill:#ffdfa0}
+      .reduction-status{padding:10px;background:var(--soft);border-radius:8px}.reduction-equations .math{max-width:100%;overflow-x:auto}
+      @media(max-width:650px){.reduction-diagrams{grid-template-columns:minmax(0,1fr)}.site-settings-content dl{grid-template-columns:minmax(0,1fr)}.site-settings-content dd{margin-bottom:8px}}
     `;document.head.append(style);
     document.addEventListener('click',onClick,true);
     document.addEventListener('change',onChange);
+    document.addEventListener('toggle',event=>{
+      const node=event.target;if(!node.isConnected)return;
+      if(node.id==='qa-tools'&&node===byId('qa-tools')){qaControlsOpen=node.open;resizeFrame();}
+      if(node.id==='site-shabbat-section'&&node.open)renderShabbatStatus();
+      if(node.classList.contains('mixed-walkthrough')){const q=window.CourseApp?.formulaQuestion(),state=q&&walkthroughs.get(q);if(state)state.open=node.open;resizeFrame();}
+    },true);
+    window.addEventListener('shabbat-schedule-updated',()=>{if(byId('site-settings-dialog').open)renderShabbatStatus();});
+    document.addEventListener('visibilitychange',()=>{if(!document.hidden&&byId('site-settings-dialog').open)renderShabbatStatus();});
     document.addEventListener('fullscreenchange',()=>{if(!document.fullscreenElement)document.querySelectorAll('.sim-expanded').forEach(n=>{n.classList.remove('sim-expanded');n.querySelector('[data-sim-fullscreen]').textContent='מסך מלא / הרחבת הסכמה';});});
     document.addEventListener('keydown',event=>{if(event.key==='Escape')document.querySelectorAll('.sim-expanded').forEach(n=>{n.classList.remove('sim-expanded');const b=n.querySelector('[data-sim-fullscreen]');if(b)b.textContent='מסך מלא / הרחבת הסכמה';});const target=event.target.closest('[data-link-component]');if(target&&['Enter',' '].includes(event.key)&&target.tagName.toLowerCase()==='g'){event.preventDefault();selectComponent(target.dataset.linkComponent);}},true);
     syncSettings();
+  }
+  function renderShabbatStatus(){
+    const node=byId('site-shabbat-status');if(!node)return;
+    const status=window.ShabbatMode.getScheduleStatus(),interval=status.next;
+    const date=value=>new Intl.DateTimeFormat('he-IL',{timeZone:'Asia/Jerusalem',weekday:'long',day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}).format(new Date(value));
+    const source={live:'Hebcal — עדכון מהרשת',cache:'Hebcal — עותק שמור במכשיר',bundled:'Hebcal — לוח הזמנים השמור באתר'}[status.source]??'Hebcal';
+    node.innerHTML=`<p>המיקום קבוע: ירושלים. אין צורך בהרשאת מיקום מהטלפון.</p>${interval?`<h3>${interval.start<=Date.now()?'השבת הנוכחית':'השבת הקרובה'}</h3><dl><dt>כניסת שבת</dt><dd><time datetime="${new Date(interval.start).toISOString()}">${date(interval.start)}</time></dd><dt>צאת שבת</dt><dd><time datetime="${new Date(interval.end).toISOString()}">${date(interval.end)}</time></dd></dl>`:'<p role="status">זמני השבת הקרובה אינם זמינים כרגע. ממתינים לאימות הזמנים.</p>'}<p>מקור: <a href="https://www.hebcal.com/" target="_blank" rel="noopener noreferrer">${source}</a></p><p>עדכון הזמנים האחרון: ${Number.isFinite(status.updatedAt)?date(status.updatedAt):'לא זמין'}</p><p class="small muted">כל השעות לפי שעון ירושלים. הדלקת נרות 40 דקות לפני השקיעה; צאת שבת לפי 8.5 מעלות. לוח האתר מתעדכן מדי שבוע ובכל 1 בינואר.</p>`;
+  }
+  function compactQA(){
+    if(!qaActive)return;
+    const panel=byId('qa-panel'),banner=panel?.querySelector('.qa-banner'),head=banner?.querySelector('.qa-banner-head');if(!head)return;
+    let context=banner.querySelector('.qa-current-context');if(!context){context=document.createElement('p');context.className='qa-current-context';head.after(context);}
+    const q=window.CourseApp?.formulaQuestion()??currentQuestion();context.textContent=`${q.title} · ${q.cursor<q.steps.length?'שלב '+(q.cursor+1)+' מתוך '+q.steps.length:'התרגיל הושלם'}`;
+    let details=byId('qa-tools');if(!details){details=document.createElement('details');details.id='qa-tools';details.open=qaControlsOpen;details.innerHTML='<summary>כלי בדיקה והגדרות QA</summary>';banner.append(details);}
+    for(const child of [...banner.children])if(![head,context,details].includes(child))details.append(child);
+    const admin=byId('course-admin');if(admin&&!details.contains(admin))details.append(admin);
+    if(!head.querySelector('[data-qa-focus]')){const button=document.createElement('button');button.type='button';button.className='btn secondary tiny';button.dataset.qaFocus='';button.textContent='לתרגיל';head.append(button);}
+  }
+  function reductionChanges(q,stage){
+    const before=q.diagrams[stage-1].flat(2),after=q.diagrams[stage].flat(2),old=new Set(before.map(n=>n.symbol));
+    const replacements=after.filter(n=>!old.has(n.symbol)),members=new Set(replacements.flatMap(n=>n.members));
+    return {before:before.filter(n=>n.members.some(i=>members.has(i))).map(n=>n.symbol),after:replacements.map(n=>n.symbol)};
+  }
+  function reductionSVG(q,stage,active){
+    const template=document.createElement('template');template.innerHTML=CoursePractice.mixedSVG(q,stage,true);
+    template.content.querySelectorAll('.mixed-resistor').forEach(n=>{if(active.includes(n.dataset.symbol))n.classList.add('reduction-focus');});
+    return template.innerHTML;
+  }
+  function renderWalkthrough(q,node){
+    const state=walkthroughs.get(q),stage=state.stage,change=reductionChanges(q,Math.max(1,stage)),before=Math.max(0,stage-1);
+    const figure=(index,label,active)=>`<figure><figcaption>${label}</figcaption><button type="button" class="diagram-preview" data-reduction-zoom aria-label="הגדלת סכמה — ${label}">${reductionSVG(q,index,active)}<span class="diagram-open-label">הגדלת הסכמה ⤢</span></button></figure>`;
+    node.innerHTML=`<summary>צמצום המעגל צעד אחר צעד</summary><p class="small muted">הנגדים המודגשים מוחלפים בנגד שקול. הצגת צמצום נחשבת שימוש בעזרה בתרגיל.</p><p class="reduction-status" role="status" aria-live="polite">${stage?'צמצום '+stage+' מתוך '+q.reductions.length+': '+escape(q.reductions[stage-1].title):'המעגל המקורי — בחרו ״צמצום הבא״ כדי להתחיל'}</p><div class="reduction-diagrams">${figure(before,stage?'לפני הצמצום':'המעגל המקורי',change.before)}${stage?figure(stage,'אחרי הצמצום',change.after):''}</div>${stage?`<div class="reduction-equations">${q.reductions[stage-1].steps.map(s=>`<p>${escape(s.label)}</p><div class="math">${mathNotation(s.formula)}</div><div class="math">${mathNotation(s.substitution)} = ${CoursePractice.simulationNumber(s.value)} ${escape(s.unit)}</div>`).join('')}</div>`:''}<div class="completion-actions"><button type="button" class="btn secondary tiny" data-reduction-action="previous" ${stage===0?'disabled':''}>השלב הקודם</button><button type="button" class="btn tiny" data-reduction-action="next" ${stage===q.reductions.length?'disabled':''}>צמצום הבא</button><button type="button" class="btn secondary tiny" data-reduction-action="reset" ${stage===0?'disabled':''}>למעגל המקורי</button></div>`;
+    node.open=state.open;
+  }
+  function decorateWalkthrough(){
+    const q=window.CourseApp?.formulaQuestion(),panel=byId('course-panel');
+    if(!enabled()||q?.kind!=='mixed'||q.simulatorOpen){panel?.querySelector('.mixed-walkthrough')?.remove();return;}
+    if(!walkthroughs.has(q))walkthroughs.set(q,{stage:0,open:false});
+    let node=panel.querySelector('.mixed-walkthrough');if(node)return;
+    const picture=panel.querySelector('.mixed-schematic');if(!picture)return;
+    node=document.createElement('details');node.className='mixed-walkthrough';picture.after(node);renderWalkthrough(q,node);
   }
   const allowedKey=k=>/^dc\.basics\.(?:(?:personal|course|recent)\.v\d+(?:\.(?:security|mobile))?|(?:entry|theory|formulaViews|site-settings|calculator\.settings)\.v\d+|extra\.(?:security|mobile)\.v\d+)$/.test(k);
   function backupData(){
@@ -107,18 +194,24 @@ const LearningTools=window.LearningTools=(()=>{
   }
   function afterRender(){
     if(busy)return;busy=true;try{
-      syncSettings();decorateSimulator();
+      syncSettings();decorateSimulator();applySimulationSpeed();decorateWalkthrough();
       document.querySelectorAll('.learning-recommendation').forEach(n=>n.remove());
       const topic=enabled()&&!qaActive?recommendedTopic():null;
       const target=byId('course-panel')?.hidden?byId('workspace'):byId('course-panel');
       if(topic&&target&&!target.hidden&&!simulatorRoot()){
         const block=document.createElement('section');block.className='card learning-recommendation';block.innerHTML=`<h3>תרגול ממוקד להמשך</h3><p>לפי הדיוק בניסיון הראשון והניסיונות החוזרים, כדאי לחזק את ${escape(topicNames[topic])}. שימוש בעזרה הוא חלק מתהליך הלמידה.</p><button class="btn secondary tiny" data-focused-topic="${topic}">תרגול ${escape(topicNames[topic])}</button>`;target.prepend(block);
       }
-      if(qaActive){
-        const q=window.CourseApp?.formulaQuestion(),banner=document.querySelector('.qa-banner');
-        if(q&&banner){banner.querySelectorAll('.qa-context-note').forEach(n=>n.remove());banner.querySelector('.qa-selectors').hidden=true;banner.querySelector('.qa-actions').hidden=true;const note=document.createElement('div');note.className='qa-context-note';note.innerHTML=`<p>בודקים: ${escape(q.title)}</p><div class="qa-selectors"><label for="qa-extra-level">רמה<select id="qa-extra-level">${Array.from({length:courseProfile==='mobile'?2:3},(_,i)=>`<option value="${i}" ${CourseApp.qaExtraLevel()===i?'selected':''}>${letters[i]}</option>`).join('')}</select></label><label for="qa-extra-step">סעיף<select id="qa-extra-step">${[...q.steps.map((step,i)=>[i,step.label]),[q.steps.length,'סיום התרגיל']].map(([i,label])=>`<option value="${i}" ${i===q.cursor?'selected':''}>${escape(label)}</option>`).join('')}</select></label></div><button class="btn secondary tiny" data-qa-extra-answer>${q.qaInspect?'הסתר תשובת QA':'הצג תשובת QA'}</button>${q.qaInspect&&q.steps[q.cursor]?`<p class="math" role="status">${escape(q.steps[q.cursor].formula)} = ${escape(String(q.steps[q.cursor].value))} ${escape(q.steps[q.cursor].unit)}</p>`:''}`;banner.querySelector('.qa-banner-head').after(note);const picker=document.querySelector('#course-panel .qa-extra-picker');if(picker)note.querySelector('.qa-selectors').append(picker);const sim=banner.querySelector('.qa-actions [data-go-simulator]');if(sim)note.append(sim);}
-      }
+      decorateQA();
     }finally{busy=false;}
+  }
+  function decorateQA(){
+    if(!qaActive)return;
+    const q=window.CourseApp?.formulaQuestion(),banner=document.querySelector('.qa-banner');
+    if(q&&banner){
+      const picker=document.querySelector('#course-panel .qa-extra-picker')??banner.querySelector('.qa-extra-picker'),sim=banner.querySelector('.qa-context-note [data-go-simulator]')??banner.querySelector('.qa-actions [data-go-simulator]');
+      banner.querySelectorAll('.qa-context-note').forEach(n=>n.remove());banner.querySelector('.qa-selectors').hidden=true;banner.querySelector('.qa-actions').hidden=true;const note=document.createElement('div');note.className='qa-context-note';note.innerHTML=`<p>בודקים: ${escape(q.title)}</p><div class="qa-selectors"><label for="qa-extra-level">רמה<select id="qa-extra-level">${Array.from({length:courseProfile==='mobile'?2:3},(_,i)=>`<option value="${i}" ${CourseApp.qaExtraLevel()===i?'selected':''}>${letters[i]}</option>`).join('')}</select></label><label for="qa-extra-step">סעיף<select id="qa-extra-step">${[...q.steps.map((step,i)=>[i,step.label]),[q.steps.length,'סיום התרגיל']].map(([i,label])=>`<option value="${i}" ${i===q.cursor?'selected':''}>${escape(label)}</option>`).join('')}</select></label></div><button class="btn secondary tiny" data-qa-extra-answer>${q.qaInspect?'הסתר תשובת QA':'הצג תשובת QA'}</button>${q.qaInspect&&q.steps[q.cursor]?`<p class="math" role="status">${escape(q.steps[q.cursor].formula)} = ${escape(String(q.steps[q.cursor].value))} ${escape(q.steps[q.cursor].unit)}</p>`:''}`;banner.querySelector('.qa-banner-head').after(note);if(picker)note.querySelector('.qa-selectors').append(picker);if(sim)note.append(sim);
+    }
+    compactQA();
   }
   // Preserve SVG paths, animations, focus and table nodes during slider updates.
   function patchDisplay(container,html){
@@ -139,7 +232,19 @@ const LearningTools=window.LearningTools=(()=>{
   }
   function onClick(event){
     const button=event.target.closest('button,[data-link-component]');if(!button)return;
-    if(button.hasAttribute('data-open-site-settings')){event.preventDefault();event.stopImmediatePropagation();byId('site-settings-dialog').showModal();syncSettings();return;}
+    if(button.hasAttribute('data-open-site-settings')){event.preventDefault();event.stopImmediatePropagation();byId('site-accessibility-controls').innerHTML=accessibilityControls('site');byId('site-settings-dialog').showModal();syncSettings();renderShabbatStatus();return;}
+    if(button.hasAttribute('data-qa-focus')){event.preventDefault();event.stopImmediatePropagation();const details=byId('qa-tools');if(details)details.open=false;qaControlsOpen=false;const target=byId('course-panel')?.hidden?byId('workspace'):byId('course-panel');target?.scrollIntoView({block:'start',inline:'nearest'});resizeFrame();return;}
+    if(button.dataset.reductionAction){
+      event.preventDefault();event.stopImmediatePropagation();const q=window.CourseApp?.formulaQuestion(),node=button.closest('.mixed-walkthrough'),state=q&&walkthroughs.get(q);if(!state||!node)return;
+      if(button.dataset.reductionAction==='next'){state.stage=Math.min(q.reductions.length,state.stage+1);if(q.cursor<q.steps.length)CourseApp.markFormulaHelp();}
+      else if(button.dataset.reductionAction==='previous')state.stage=Math.max(0,state.stage-1);else state.stage=0;
+      state.open=true;renderWalkthrough(q,node);(node.querySelector(`[data-reduction-action="${button.dataset.reductionAction}"]:not(:disabled)` )??node.querySelector('[data-reduction-action]:not(:disabled)'))?.focus({preventScroll:true});resizeFrame();return;
+    }
+    if(button.hasAttribute('data-reduction-zoom')){
+      event.preventDefault();event.stopImmediatePropagation();diagramReturnToFormulas=false;diagramReturnFieldId=null;diagramZoom=1;diagramBaseWidth=0;
+      byId('diagram-dialog').classList.remove('dark-diagram');byId('diagram-context').textContent=button.closest('figure').querySelector('figcaption').textContent;
+      byId('diagram-canvas').innerHTML=button.querySelector('svg').outerHTML;byId('diagram-canvas').style.width='100%';openDialog('diagram-dialog');zoomDiagram('reset');return;
+    }
     if(button.dataset.linkComponent){event.preventDefault();event.stopImmediatePropagation();selectComponent(button.dataset.linkComponent);return;}
     if(button.hasAttribute('data-qa-extra-answer')){event.stopImmediatePropagation();CourseApp.qaExtraNavigate('answer');return;}
     if(button.dataset.focusedTopic){event.stopImmediatePropagation();CourseApp.focusPractice(button.dataset.focusedTopic);return;}
@@ -155,8 +260,10 @@ const LearningTools=window.LearningTools=(()=>{
     if(node.id==='qa-extra-level')CourseApp.qaExtraNavigate('level',Number(node.value));
     if(node.id==='qa-extra-step')CourseApp.qaExtraNavigate('step',Number(node.value));
     if(node.id==='expanded-learning'){settings.expandedLearning=node.checked;persist();render();}
+    if(node.id==='site-sim-units'){settings.simUnits=['auto','base','milli'].includes(node.value)?node.value:'auto';const q=window.CourseApp?.formulaQuestion();if(q?.unitFamily==='Rs')delete q.simUnitMode;persist();render();}
+    if(node.id==='site-animation-speed'){const speed=Number(node.value);settings.animationSpeed=[.5,1,2].includes(speed)?speed:1;persist();syncSettings();applySimulationSpeed();}
     if(node.dataset.simLayer){const root=simulatorRoot();root?.classList.toggle('sim-hide-'+node.dataset.simLayer,!node.checked);}
     if(node.id==='learning-import')try{if(qaActive)throw Error('יש לצאת מ־QA לפני השחזור.');const file=node.files?.[0];if(!file)return;if(file.size>5*1024*1024)throw Error('קובץ הגיבוי גדול מדי.');pendingImport=validateBackup(await file.text());byId('learning-import-summary').textContent=`הקובץ מכיל ${Object.keys(pendingImport.data).length} קבוצות נתונים. השחזור יחליף את הנתונים המתאימים במכשיר. להמשיך?`;byId('learning-import-review').hidden=false;byId('learning-backup-status').textContent='הקובץ נבדק. ממתינים לאישור השחזור.';}catch(error){pendingImport=null;byId('learning-backup-status').textContent=error.message;}
   }
-  return {initialize,afterRender,enabled,explanation,enterQA,exitQA,patchDisplay,backupData,validateBackup,restoreBackup,recommendedTopic};
+  return {initialize,afterRender,enabled,explanation,enterQA,exitQA,patchDisplay,backupData,validateBackup,restoreBackup,recommendedTopic,simulationUnitMode,formatSimulation,decorateQA,organizeQA:compactQA};
 })();
