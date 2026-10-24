@@ -1009,7 +1009,7 @@ function circuitSVG(q, options = {}) {
         parts.push(flow(`M${x} 100V330`,model.currents[j]));
         if(j>0){const remaining=model.currents.slice(j).reduce((sum,i)=>sum+i,0);parts.push(flow(`M${xs[j-1]} 100H${x}`,remaining),flow(`M${x} 330H${xs[j-1]}`,remaining));}
       });
-      parts.push(text(420,354,`I_T = ${quantityValue('I',model.total)}`,16,'middle',palette.current));
+      parts.push(`<g class="sim-current sim-total-current">${CoursePractice.simulationCurrentLabel(181,82,`I_T = ${quantityValue('I',model.total)}`)}</g>`);
       if (voltage > 0) {
         parts.push(arrow(175, 100, 'right'), arrow(185, 330, 'left'));
       }
@@ -1020,7 +1020,7 @@ function circuitSVG(q, options = {}) {
     parts.push(wire(path));
     if (complete) {
       parts.push(flow(path, model.total));
-      if (voltage > 0) parts.push(arrow(166, 100, 'right'), arrow(right, 214, 'down'), arrow((85+right)/2, 330, 'left'), text((85+right)/2, 312, `I = ${quantityValue('I',model.total)}`, 16, 'middle', palette.current));
+      if (voltage > 0) parts.push(arrow(166, 100, 'right'), arrow(right, 214, 'down'), arrow((85+right)/2, 330, 'left'), `<g class="sim-current sim-total-current">${CoursePractice.simulationCurrentLabel((85+right)/2+7,318,`I = ${quantityValue('I',model.total)}`)}</g>`);
     }
   }
   q.resistances.forEach((r, j) => {

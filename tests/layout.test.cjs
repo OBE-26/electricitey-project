@@ -27,11 +27,19 @@ const fixtures=require('./layout-fixture.cjs');
       const r=n.getBoundingClientRect();return r.width>0&&(r.left< -1||r.right>width+1);
      }).map(n=>({node:n.tagName+'#'+n.id+'.'+n.getAttribute('class'),left:n.getBoundingClientRect().left,right:n.getBoundingClientRect().right}));
      const navigation=[...document.querySelectorAll('.qa-navigation select')].map(n=>({width:n.getBoundingClientRect().width,height:n.getBoundingClientRect().height}));
-     return {visible:getComputedStyle(document.body).visibility,scale:getComputedStyle(document.documentElement).getPropertyValue('--text-scale'),dark:document.documentElement.classList.contains('dark-mode'),width,scroll:document.documentElement.scrollWidth,body:document.body.scrollWidth,outside,navigation};
+     const labelIssues=[];
+     for(const label of document.querySelectorAll('.sim-current-label')){
+      if(!label.checkVisibility({visibilityProperty:true,contentVisibilityAuto:true}))continue;
+      const b=label.getBBox(),v=label.ownerSVGElement.viewBox.baseVal,arrow=label.closest('.sim-component')?.querySelector('.sim-current .sim-arrow');
+      if(b.x<0||b.y<0||b.x+b.width>v.width||b.y+b.height>v.height)labelIssues.push(label.textContent+' clipped by diagram');
+      if(arrow&&b.y+b.height>arrow.getBBox().y-5)labelIssues.push(label.textContent+' needs more space above arrow');
+     }
+     return {visible:getComputedStyle(document.body).visibility,scale:getComputedStyle(document.documentElement).getPropertyValue('--text-scale'),dark:document.documentElement.classList.contains('dark-mode'),width,scroll:document.documentElement.scrollWidth,body:document.body.scrollWidth,outside,navigation,labelIssues};
     });
     const label=frame.name+' '+JSON.stringify(profile);assert.equal(result.visible,'visible',label);assert.equal(Number(result.scale),profile.scale,label);assert.equal(result.dark,profile.dark,label);assert.equal(result.width,profile.width,label);
     assert.ok(result.scroll<=profile.width+1&&result.body<=profile.width+1,label+' document overflow '+JSON.stringify(result));
     assert.deepEqual(result.outside,[],label+' inaccessible content');assert.equal(result.navigation.length,2,label);
+    assert.deepEqual(result.labelIssues,[],label+' readable current labels');
     assert.ok(result.navigation.every(n=>n.width>100&&n.height>=44),label+' usable selectors');checks++;
    }
    await context.close();

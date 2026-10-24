@@ -28,7 +28,8 @@ async function layoutFixtures(){
   const frames=[];
   const capture=name=>{const copy=d.documentElement.cloneNode(true);copy.classList.add('ui-ready');copy.querySelectorAll('script,iframe,link,img').forEach(n=>n.remove());copy.querySelector('head').insertAdjacentHTML('afterbegin','<meta http-equiv="Content-Security-Policy" content="default-src &#39;none&#39;; style-src &#39;unsafe-inline&#39;; img-src data:">');frames.push({name,html:'<!doctype html>'+copy.outerHTML});};
   for(const course of ['security','mobile','hvac']){
-   change('#qa-course-switch',course);change('#qa-topic','ohm');capture(course+'-ohm');
+   change('#qa-course-switch',course);
+   for(const topic of ['ohm','series','parallel']){change('#qa-topic',topic);capture(course+'-'+topic);change('#qa-topic','simulator');capture(course+'-'+topic+'-sim');click('[data-qa-focus]');}
    for(const topic of course==='security'?['mixed','battery']:course==='mobile'?['battery']:[]){
     change('#qa-topic',topic);capture(course+'-'+topic+'-closed');
     d.querySelector('#qa-tools').open=true;d.querySelector('#qa-tools').dispatchEvent(new w.Event('toggle'));

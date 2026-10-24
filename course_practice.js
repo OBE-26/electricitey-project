@@ -175,6 +175,9 @@ const CoursePractice = (() => {
   }
   // One notation and palette for every simulator, including enlarged diagrams.
   // Values stay unrounded in the model; rounding is only applied to these labels.
+  function simulationCurrentLabel(right,bottom,value){
+    return `<text class="sim-current-label" x="${right}" y="${bottom}" fill="#ff6565" text-anchor="end" dominant-baseline="text-after-edge" font-size="16" font-family="Arial,sans-serif" direction="ltr" paint-order="stroke" stroke="#000" stroke-width="4" stroke-linejoin="round">${value}</text>`;
+  }
   function simulationAnnotations({id,x,y,vertical=false,reverse=false,r,current,drop,resistanceUnit='Ω',currentUnit='A',voltageUnit='V',number=simulationNumber,formatQuantity}){
     const ink='#fff',red='#ff6565',green='#65e680',n=number;
     const quantity=formatQuantity??((value,unit)=>n(value)+' '+unit);
@@ -186,14 +189,13 @@ const CoursePractice = (() => {
     const iSymbol=id.replace(/^R/,'I'),uSymbol=id==='R_s'?'ΔU_s':id.replace(/^R/,'U');
     const tx=x+(vertical?35:0),anchor=vertical?'start':'middle';
     const currentArrow=vertical?arrow(x,y-67,x,y-42,red):reverse?arrow(x+72,y,x+46,y,red):arrow(x-72,y,x-46,y,red);
-    // Keep the current name, value and unit immediately beside its wire arrow.
-    // On a return wire both the arrow and its label follow the reverse direction.
-    const currentX=vertical?x+20:x+(reverse?72:-72),currentY=y+(vertical?-48:-17);
-    const currentAnchor=vertical||!reverse?'start':'end';
+    // Anchor the label's bottom-right corner above the right edge of its arrow.
+    // Extra clearance on horizontal wires keeps text above adjacent resistors.
+    const currentX=vertical?x:x+(reverse?72:-46),currentY=y-(vertical?78:26);
     // Voltage reference points toward +, opposite to conventional resistor current.
     const voltageArrow=vertical?arrow(x-30,y+30,x-30,y-30,green):reverse?arrow(x-38,y+29,x+38,y+29,green):arrow(x+38,y+29,x-38,y+29,green);
     const polarity=vertical?label(x-43,y-23,'+',green)+label(x-43,y+34,'−',green):label(x+(reverse?49:-49),y+34,'+',green)+label(x+(reverse?-49:49),y+34,'−',green);
-    return `<g class="sim-component" data-component="${id}" data-resistance="${r}" data-current="${current}" data-voltage="${drop}" data-resistance-unit="${resistanceUnit}" data-current-unit="${currentUnit}" data-voltage-unit="${voltageUnit}"><title>${id}: ${quantity(r,resistanceUnit)}; ${iSymbol} = ${quantity(current,currentUnit)}; ${uSymbol} = ${quantity(drop,voltageUnit)}</title><g class="sim-resistance">${label(tx,y+(vertical?-16:-55),`${id} = ${quantity(r,resistanceUnit)}`,ink,anchor)}</g><g class="sim-current">${currentArrow}${label(currentX,currentY,`${iSymbol} = ${quantity(current,currentUnit)}`,red,currentAnchor)}</g><g class="sim-voltage-drop">${voltageArrow}${polarity}${label(tx,y+(vertical?32:51),`${uSymbol} = ${quantity(drop,voltageUnit)}`,green,anchor)}</g></g>`;
+    return `<g class="sim-component" data-component="${id}" data-resistance="${r}" data-current="${current}" data-voltage="${drop}" data-resistance-unit="${resistanceUnit}" data-current-unit="${currentUnit}" data-voltage-unit="${voltageUnit}"><title>${id}: ${quantity(r,resistanceUnit)}; ${iSymbol} = ${quantity(current,currentUnit)}; ${uSymbol} = ${quantity(drop,voltageUnit)}</title><g class="sim-resistance">${label(tx,y+(vertical?-16:-55),`${id} = ${quantity(r,resistanceUnit)}`,ink,anchor)}</g><g class="sim-current">${currentArrow}${simulationCurrentLabel(currentX,currentY,`${iSymbol} = ${quantity(current,currentUnit)}`)}</g><g class="sim-voltage-drop">${voltageArrow}${polarity}${label(tx,y+(vertical?32:51),`${uSymbol} = ${quantity(drop,voltageUnit)}`,green,anchor)}</g></g>`;
   }
   function mixedSimulationSVG(q){
     const n=simulationNumber,ink='#fff',red='#ff6565',green='#65e680';
@@ -353,6 +355,6 @@ const CoursePractice = (() => {
       ${text(177,334,'מקור אידאלי והתנגדות פנימית',ink,15)}
     </svg>`;
   }
-  return {random,mixed,battery,internalResistance,batch,mixedSVG,phoneBatterySVG,simulationNumber,milliSimulationNumber,simulationAnnotations};
+  return {random,mixed,battery,internalResistance,batch,mixedSVG,phoneBatterySVG,simulationNumber,milliSimulationNumber,simulationCurrentLabel,simulationAnnotations};
 })();
 if(typeof module!=='undefined')module.exports=CoursePractice;

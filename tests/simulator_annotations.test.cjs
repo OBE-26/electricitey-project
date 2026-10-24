@@ -33,6 +33,12 @@ function check(svg,expected,number=practice.simulationNumber){
    return {x1,y1,x2,y2,dx:x2-x1,dy:y2-y1};
   };
   const current=endpoints('.sim-current'),voltage=endpoints('.sim-voltage-drop');
+  const currentLabel=node.querySelector('.sim-current-label');
+  assert.ok(currentLabel,'Current labels use the shared readable placement');
+  assert.equal(currentLabel.getAttribute('text-anchor'),'end','Align the label to the right edge');
+  assert.equal(currentLabel.getAttribute('dominant-baseline'),'text-after-edge','Anchor at the bottom of the label');
+  close(Number(currentLabel.getAttribute('x')),Math.max(current.x1,current.x2));
+  assert.ok(Number(currentLabel.getAttribute('y'))<=Math.min(current.y1,current.y2)-10,'Keep the label above its arrow');
   assert.ok(current.dx*voltage.dx+current.dy*voltage.dy<0,'Voltage reference arrow opposes the current arrow');
   const polarity=sign=>[...node.querySelectorAll('.sim-voltage-drop text')].find(t=>t.textContent===sign);
   const distance=sign=>Math.hypot(voltage.x2-Number(polarity(sign).getAttribute('x')),voltage.y2-Number(polarity(sign).getAttribute('y')));
