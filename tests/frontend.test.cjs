@@ -192,7 +192,9 @@ const checkShabbatContrast=()=>{
    const internalValue=Number(d.querySelector('#course-sim-internal').value),wasMilli=d.querySelector('#course-sim-units').getAttribute('aria-pressed')==='true';
    input('#course-sim-internal',String(internalValue*2));
    const voltage=g.U_t*(question.voltageUnit==='mV'?.001:1),rs=question.rs*(question.resistanceUnit==='mΩ'?.001:1),rl=g.U_L*(question.voltageUnit==='mV'?.001:1)/g.I;
-   assert.ok(Math.abs(readCurrent()-voltage/(rs*2+rl))<1e-6);
+   const expected=voltage/(rs*2+rl),milliCurrent=d.querySelector('#course-sim-display .metric bdi').textContent.endsWith('mA');
+   assert.ok(Math.abs(Number(d.querySelector('.phone-current-flow').dataset.current)-expected)<1e-12,'Calculations retain full precision');
+   assert.ok(Math.abs(readCurrent()-expected)<=(milliCurrent?5e-8:5e-5)+1e-12,'Displayed current is rounded to at most four decimal places');
    const actual=Number(d.querySelector('.phone-current-flow').dataset.current);click('#course-sim-units');
    assert.equal(Number(d.querySelector('.phone-current-flow').dataset.current),actual,'Unit toggle preserves the physical circuit in every internal-resistance exercise');
    assert.ok(Math.abs(Number(d.querySelector('#course-sim-internal').value)-internalValue*2*(wasMilli?.001:1000))<1e-9);

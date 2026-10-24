@@ -3,8 +3,8 @@ const CoursePractice = (() => {
   const pick = (rng, list) => list[Math.floor(rng() * list.length)];
   const integer = (rng, lo, hi) => lo + Math.floor(rng() * (hi - lo + 1));
   const fmt = value => String(Math.round((value + Number.EPSILON) * 100) / 100);
-  const simulationFormat=new Intl.NumberFormat('en-US',{useGrouping:false,maximumSignificantDigits:8});
-  const simulationNumber=value=>simulationFormat.format(value);
+  const simulationFormat=new Intl.NumberFormat('en-US',{useGrouping:false,maximumFractionDigits:4});
+  const simulationNumber=value=>simulationFormat.format(value).replace(/^-0$/,'0');
   const step = (key, label, unit, value, formula, substitution) => ({key,label,unit,value,formula,substitution});
   const integralBatteryIndices=[0,1,2,3,5,7,8];
   function random(seed) {

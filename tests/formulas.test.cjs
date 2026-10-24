@@ -143,7 +143,7 @@ const fillTriangle=({ctx,definition})=>{
   assert.ok(d.querySelector('#course-sim-display .metric bdi').textContent.endsWith(' A'));
   assert.ok(d.querySelector('.phone-battery-svg').textContent.includes(`${practice.simulationNumber(originalInternal*2/1000)} Ω`),'Schematic preserves small internal resistances in base units');
   assert.equal(Number(d.querySelector('.phone-current-flow').dataset.current),actualFlow,'Unit changes preserve current and animation speed');
-  assert.ok(Math.abs(power('total')-actualPower)<1e-6);
+  assert.ok(Math.abs(power('total')-actualPower)<0.0000501,'Unit changes agree within four-decimal display rounding');
   assert.ok(Math.abs(Number(d.querySelector('#course-sim-internal').value)-originalInternal*2/1000)<1e-12);
   for(let i=0;i<20;i++)click('#course-sim-units');
   assert.equal(Number(d.querySelector('.phone-current-flow').dataset.current),actualFlow,'Repeated conversions do not accumulate rounding errors');
@@ -165,7 +165,7 @@ const fillTriangle=({ctx,definition})=>{
   click('#course-sim-units');
   assert.equal(Number(d.querySelector('#course-sim-internal').max),2);
   assert.equal(Number(d.querySelector('#course-sim-internal').value),2);
-  assert.ok(Math.abs(batteryCurrent()-atTwoOhms)<1e-12);
+  assert.ok(Math.abs(batteryCurrent()-atTwoOhms)<0.0000501,'Changing displayed units only changes rounding');
   assert.equal(d.querySelector('#course-sim-units').textContent,'מעבר לסדרי גודל','Button label stays consistent in either unit system');
   assert.ok(!d.querySelector('#course-simulator').textContent.includes('∞'));
   click('#course-sim-units');
