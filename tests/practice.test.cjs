@@ -90,7 +90,11 @@ for(let seed=1;seed<=60;seed++){
   assert.equal(mobile.filter(q=>q.unitFamily==='Wh').length,0);
   assert.equal(mobile.filter(q=>q.unitFamily==='Rs').length,3);
   for(const q of [...security,...mobile])assert.ok(q.steps.every(s=>Number.isFinite(s.value)&&s.value>0));
-  for(const q of mobile.filter(q=>q.unitFamily==='Rs')){const svg=practice.phoneBatterySVG(q);assert.ok(svg.includes('phone-battery-svg'));assert.ok(svg.includes('מעגלי הטלפון'));assert.ok(svg.includes(' = ?'));assert.ok(svg.includes('dy="5"'));}
+  for(const q of mobile.filter(q=>q.unitFamily==='Rs')){
+   const svg=practice.phoneBatterySVG(q);assert.ok(svg.includes('phone-battery-svg'));assert.ok(svg.includes('מעגלי הטלפון'));assert.ok(svg.includes(' = ?'));assert.ok(svg.includes('dy="5"'));
+   assert.ok(!svg.includes('phone-current-flow'),'Exercise diagrams stay static and hide unknown answers');
+   const simulated=practice.phoneBatterySVG(q,true);assert.ok(simulated.includes('phone-current-flow'));assert.ok(!simulated.includes(' = ?'),'Simulator shows the calculated internal resistance and voltage drop');
+  }
  }
 }
 console.log('Practice generators: 60 seeds, all courses and levels passed');

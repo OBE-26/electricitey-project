@@ -217,22 +217,24 @@ const CoursePractice = (() => {
     const label=stage===0?'המעגל המקורי — '+q.title:'צמצום '+stage+': '+q.reductions[stage-1].title;
     return `<svg class="mixed-circuit-svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="${label}" data-family="${q.family}" data-stage="${stage}">${content}</svg>`;
   }
-  function phoneBatterySVG(q){
+  function phoneBatterySVG(q,simulation=false){
     const given=Object.fromEntries(q.givens.map(([key,value])=>[key,value]));
-    const showDrop=q.solution||q.cursor>0||q.cursor===0&&q.accepted;
-    const showResistance=q.solution||q.cursor>1||q.cursor===1&&q.accepted;
+    const showDrop=simulation||q.solution||q.cursor>0||q.cursor===0&&q.accepted;
+    const showResistance=simulation||q.solution||q.cursor>1||q.cursor===1&&q.accepted;
     const ink='var(--ink)',current='var(--phone-current,#b52e2e)',voltage='var(--phone-voltage,#116e65)';
     const symbolText=(x,y,base,sub,suffix='',color=ink)=>`<text x="${x}" y="${y}" fill="${color}" font-family="Arial,sans-serif" font-size="17" text-anchor="start" direction="ltr">${base}<tspan dy="5" font-size="12">${sub}</tspan><tspan dy="-5" font-size="17">${suffix}</tspan></text>`;
     const text=(x,y,value,color=ink,size=17)=>`<text x="${x}" y="${y}" fill="${color}" font-size="${size}" font-family="Arial,sans-serif" text-anchor="middle" direction="ltr">${value}</text>`;
     const voltageUnit=q.voltageUnit??'V',resistanceUnit=q.resistanceUnit??'Ω';
     const rs=showResistance?`${fmt(q.rs)} ${resistanceUnit}`:'?',drop=showDrop?`${fmt(given.U_t-given.U_L)} ${voltageUnit}`:'?';
+    const duration=Math.max(.25,Math.min(8,3/Math.max(.01,given.I))),paused=q.simAnimate===false||given.I<=0;
+    const flow=simulation?`<path class="phone-current-flow${paused?' is-paused':''}" d="M100 144V90H515V280H100V196" fill="none" stroke="${current}" stroke-width="3.5" stroke-linecap="round" style="--phone-flow-duration:${duration}s" data-current="${given.I}" aria-hidden="true"/>`:'';
     return `<svg class="phone-battery-svg" viewBox="0 0 640 345" role="img" aria-label="מודל סוללת טלפון: מתח ללא עומס, התנגדות פנימית בטור, ועומס המייצג את מעגלי הטלפון">
       <rect x="30" y="65" width="270" height="242" rx="17" fill="none" stroke="var(--line)" stroke-dasharray="6 5"/>
       ${text(177,30,'סוללה',ink,19)}
       <path d="M100 144V90H205M275 90H515V145M515 215V280H100V196" fill="none" stroke="${ink}" stroke-width="2.5"/>
       <circle cx="100" cy="170" r="26" fill="var(--card)" stroke="${ink}" stroke-width="2.5"/>
       ${text(100,164,'+',ink,22)}${text(100,187,'−',ink,22)}
-      ${symbolText(144,178,'U','t',` = ${fmt(given.U_t)} ${voltageUnit}`)}
+      ${symbolText(144,178,'U','t',` = ${fmt(given.U_t)} ${voltageUnit}`,simulation?voltage:ink)}
       <rect x="205" y="77" width="70" height="26" fill="var(--card)" stroke="${ink}" stroke-width="2.5"/>
       ${symbolText(215,130,'R','s',` = ${rs}`)}
       <path d="M205 61H275M205 61l7 -4M205 61l7 4M275 61l-7 -4M275 61l-7 4" fill="none" stroke="${voltage}" stroke-width="2"/>
@@ -245,6 +247,7 @@ const CoursePractice = (() => {
       <rect x="437" y="45" width="168" height="272" rx="24" fill="none" stroke="${ink}" stroke-width="2.5"/>
       <path d="M490 60H550M495 302H545" stroke="${ink}" stroke-width="3"/>
       <rect x="500" y="145" width="30" height="70" fill="var(--card)" stroke="${ink}" stroke-width="2.5"/>
+      ${flow}
       ${symbolText(550,184,'R','L')}${q.simLoadResistance!==undefined?text(521,232,`${fmt(q.simLoadResistance)} ${resistanceUnit}`,ink,14):''}${text(521,258,'מעגלי הטלפון',ink,18)}
       ${text(177,334,'מקור אידאלי והתנגדות פנימית',ink,15)}
     </svg>`;
