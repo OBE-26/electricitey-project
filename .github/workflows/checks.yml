@@ -1,0 +1,27 @@
+name: Application checks
+on:
+  push:
+    branches: [main, 'feature/**']
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test:
+    name: Electricity application tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-python@v7.1.0
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: '22'
+          cache: npm
+      - run: python -m pip install -r requirements.txt
+      - run: npm ci
+      - run: npm test
+      - name: Check bundled Jerusalem schedule
+        run: python -m unittest discover -s tests -p 'test_shabbat_schedule.py'

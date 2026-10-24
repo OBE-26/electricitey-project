@@ -1,0 +1,104 @@
+const assert=require('node:assert/strict'),fs=require('node:fs'),{spawn,execFileSync}=require('node:child_process'),readline=require('node:readline');
+const {JSDOM,VirtualConsole}=require('jsdom');
+const {physical,roundingError}=require('./display_values.cjs');
+const python=process.env.CODEX_PRIMARY_RUNTIME_PYTHON||'python3';
+const raw=execFileSync(python,['-c',`import ast;from pathlib import Path;t=ast.parse(Path('Electricity-circuit.py').read_text());print(next(ast.literal_eval(n.value) for n in t.body if isinstance(n,ast.Assign) and any(getattr(a,'id','')=='APP_HTML' for a in n.targets)))`],{encoding:'utf8'});
+const html=raw.replace('/* COURSE_EXTENSION */',fs.readFileSync('course_practice.js','utf8')+'\n'+fs.readFileSync('courses.js','utf8')+'\n'+fs.readFileSync('learning_tools.js','utf8'));
+const errors=[];const virtualConsole=new VirtualConsole();virtualConsole.on('jsdomError',e=>{if(!e.message.includes('CSS stylesheet'))errors.push(e.message);});
+const dom=new JSDOM(html,{url:'https://unit.test/',runScripts:'outside-only',virtualConsole});
+const w=dom.window,d=w.document;
+let phoneDark=false,phoneThemeChange;
+w.matchMedia=()=>({get matches(){return phoneDark;},addEventListener(type,callback){phoneThemeChange=callback;},removeEventListener(){}});
+w.requestAnimationFrame=()=>0;w.cancelAnimationFrame=()=>{};w.scrollTo=()=>{};
+w.HTMLElement.prototype.scrollIntoView=()=>{};
+w.HTMLDialogElement.prototype.showModal=function(){this.open=true;};
+w.HTMLDialogElement.prototype.close=function(){this.open=false;this.dispatchEvent(new w.Event('close'));};
+w.localStorage.setItem('dc.basics.personal.v1',JSON.stringify({version:1,profile:{name:'בדיקת קוד',birth:'1990-01-01',termsVersion:'2026-10-14.1'},preferences:{textScale:100,theme:'light',motion:true},sessions:[],topics:{},totals:{}}));
+const shabbatStart=Date.parse('2099-10-23T17:00:00+03:00'),shabbatEnd=shabbatStart+90000000;
+w.Date.now=()=>shabbatStart-86400000;
+w.localStorage.setItem('dc.basics.shabbat.jerusalem.v1',JSON.stringify({schedule:[{start:shabbatStart,end:shabbatEnd}]}));
+const child=spawn(python,['tests/course_bridge.py'],{stdio:['pipe','pipe','inherit']});
+let lastExam=null;
+const dispatch=reply=>w.dispatchEvent(new w.MessageEvent('message',{source:w,data:{type:'streamlit:render',args:{course_config:{names:{hvac:'קורס מיזוג וקירור',security:'קורס מיגון',mobile:'קורס סלולר'}},course_response:reply,contact_availability:{}}}}));
+readline.createInterface({input:child.stdout}).on('line',line=>{const reply=JSON.parse(line);if(reply.questions)lastExam=reply;dispatch(reply);});
+w.postMessage=message=>{if(message.type==='streamlit:setComponentValue'&&message.value.type==='course')child.stdin.write(JSON.stringify(message.value)+'\n');};
+const scripts=[...d.querySelectorAll('script')].map(n=>n.textContent);
+w.eval(scripts.join('\n')+'\nwindow.testState={question:()=>currentQuestion(),questions:()=>questions,profile:()=>personal,math:mathNotation,theme:applyTheme};');
+dispatch();
+const click=selector=>{const node=d.querySelector(selector);assert.ok(node,'Missing '+selector);node.click();};
+const input=(selector,value)=>{const node=d.querySelector(selector);assert.ok(node,'Missing '+selector);node.value=value;node.dispatchEvent(new w.Event('input',{bubbles:true}));};
+const change=(selector,value)=>{const node=d.querySelector(selector);assert.ok(node,'Missing '+selector);node.value=value;node.dispatchEvent(new w.Event('change',{bubbles:true}));};
+const submit=selector=>d.querySelector(selector).dispatchEvent(new w.Event('submit',{bubbles:true,cancelable:true}));
+const waitFor=async test=>{for(let n=0;n<100;n++){if(test())return;await new Promise(resolve=>setTimeout(resolve,20));}throw Error('Timed out waiting for state');};
+const luminance=color=>{
+ const rgb=color.match(/^rgb\((\d+), (\d+), (\d+)\)$/);assert.ok(rgb,'Computed RGB color: '+color);
+ return rgb.slice(1).map(Number).map(x=>x/255).map(x=>x<=0.04045?x/12.92:((x+0.055)/1.055)**2.4).reduce((sum,x,i)=>sum+x*[0.2126,0.7152,0.0722][i],0);
+};
+const checkShabbatContrast=()=>{
+ const card=d.querySelector('.shabbat-card'),background=w.getComputedStyle(card).backgroundColor;
+ for(const selector of ['.shabbat-card h1','.shabbat-card > p','.shabbat-test-label','.shabbat-preview-time','.shabbat-branding p','.shabbat-qa-controls button']){
+  for(const node of d.querySelectorAll(selector)){
+   const style=w.getComputedStyle(node),[low,high]=[luminance(style.color),luminance(node.tagName==='BUTTON'?style.backgroundColor:background)].sort((a,b)=>a-b);
+   assert.ok((high+0.05)/(low+0.05)>=4.5,selector+' has readable text contrast');
+  }
+ }
+};
+(async()=>{
+ try{
+  assert.equal(w.LearningTools.enabled(),false);
+  assert.ok(d.querySelector('#quickbar [data-open-site-settings]'));
+  click('[data-open-site-settings]');assert.ok(d.querySelector('#site-settings-dialog').open);
+  const toggle=()=>{const n=d.querySelector('#expanded-learning');n.checked=!n.checked;n.dispatchEvent(new w.Event('change',{bubbles:true}));};
+  toggle();assert.equal(w.LearningTools.enabled(),true);assert.equal(JSON.parse(w.localStorage.getItem('dc.basics.site-settings.v1')).expandedLearning,true);
+  click('[data-close-dialog="site-settings-dialog"]');
+  click('[data-select-course="security"]');click('[data-extra-tab="mixed"]');
+  const q=w.CourseApp.formulaQuestion(),before=w.testState.profile().topics.mixed.helped;
+  click('[data-extra-action="hint"]');input('#extra-answer',String(q.steps[q.cursor].value));submit('#extra-answer-form');click('[data-extra-action="step"]');click('[data-extra-action="hint"]');
+  assert.equal(w.testState.profile().topics.mixed.helped-before,2,'Count help separately in two stages');
+  const step=q.steps[q.cursor];input('#extra-answer',String(step.value*1000));submit('#extra-answer-form');
+  assert.ok(d.querySelector('#course-panel').textContent.includes('סדר גודל אחר'),'Explain a recognized unit-scale mistake');
+  assert.equal(q.accepted,false,'Guidance never changes the answer');
+  input('#extra-answer',String(step.value));submit('#extra-answer-form');click('[data-extra-action="step"]');input('#extra-answer',String(q.steps[q.cursor].value*1000));submit('#extra-answer-form');
+  assert.equal(w.LearningTools.recommendedTopic(),'mixed');assert.ok(d.querySelector('[data-focused-topic="mixed"]'),'Recommend a topic after several observed attempts');click('[data-focused-topic="mixed"]');assert.equal(w.CourseApp.formulaQuestion(),q,'Focused practice keeps existing exercise progress');
+  assert.ok(w.LearningTools.explanation(String(1/17),17,'Ω').includes('חילוק'));
+  const savedSettings=w.localStorage.getItem('dc.basics.site-settings.v1');
+  click('[data-open-qa]');input('#qa-password','210592');submit('#qa-login-form');await waitFor(()=>d.querySelector('#course-admin'));
+  assert.equal(d.querySelector('#qa-admin-settings').open,false,'Management is collapsed by default');
+  assert.ok(d.querySelector('.qa-management-warning'));
+  assert.ok(d.querySelector('.qa-context-note').textContent.includes(w.CourseApp.formulaQuestion().title));
+  assert.equal(d.querySelector('#qa-topic').closest('.qa-selectors').hidden,true,'Hide basic-topic controls when inspecting an extra topic');
+  assert.ok(d.querySelector('#qa-panel #qa-extra-exercise'));
+  change('#qa-extra-step','1');assert.equal(w.CourseApp.formulaQuestion().cursor,1);click('[data-qa-extra-answer]');assert.ok(w.CourseApp.formulaQuestion().qaInspect);change('#qa-extra-level','1');assert.equal(w.CourseApp.qaExtraLevel(),1);
+  assert.throws(()=>w.LearningTools.backupData(),/QA/);
+  click('[data-open-site-settings]');toggle();assert.equal(w.localStorage.getItem('dc.basics.site-settings.v1'),savedSettings,'QA changes do not persist settings');toggle();click('[data-close-dialog="site-settings-dialog"]');
+  click('#qa-panel [data-go-simulator]');
+  const svg=d.querySelector('#course-sim-display svg'),flow=d.querySelector('.mixed-current-flow'),row=d.querySelector('#course-sim-display tbody tr');
+  const voltage=Number(d.querySelector('#course-sim-voltage').value);input('#course-sim-voltage',String(voltage/2));
+  assert.equal(d.querySelector('#course-sim-display svg'),svg,'Keep SVG identity during slider changes');
+  assert.equal(d.querySelector('.mixed-current-flow'),flow,'Keep animated flow node identity');
+  assert.equal(d.querySelector('#course-sim-display tbody tr'),row,'Keep table row identity');
+  const component=d.querySelector('#course-sim-display [data-link-component="R1"]');component.dispatchEvent(new w.MouseEvent('click',{bubbles:true}));
+  assert.ok(row.classList.contains('sim-row-selected'),'Circuit selection highlights the matching row');
+  assert.equal(d.querySelector('#diagram-dialog').open,false,'Selecting a resistor does not accidentally open zoom');
+  const filter=d.querySelector('[data-sim-layer="current"]');filter.checked=false;filter.dispatchEvent(new w.Event('change',{bubbles:true}));assert.ok(d.querySelector('#course-simulator').classList.contains('sim-hide-current'));
+  assert.ok(d.querySelector('.sim-prediction'));click('[data-predict="decrease"]');assert.ok(d.querySelector('.prediction-result').textContent.includes('נכון'));click('[data-apply-prediction]');
+  assert.ok(Math.abs(Number(d.querySelector('#course-sim-voltage').value)-voltage/4)<.05);
+  click('[data-sim-fullscreen]');assert.ok(d.querySelector('.sim-expanded'));d.querySelector('[data-sim-fullscreen]').dispatchEvent(new w.KeyboardEvent('keydown',{key:'Escape',bubbles:true}));assert.equal(d.querySelector('.sim-expanded'),null);
+  click('[data-exit-qa]');assert.equal(w.LearningTools.enabled(),true);
+  w.localStorage.setItem('dc.basics.personal.v1.mobile',JSON.stringify(w.testState.profile()));
+  const backup=w.LearningTools.backupData();assert.ok(backup.data['dc.basics.personal.v1.mobile'],'Include the actual per-course key format');assert.equal(backup.data['dc.basics.shabbat.jerusalem.v1'],undefined);
+  const restored=w.LearningTools.validateBackup(JSON.stringify(backup));
+  for(const key of Object.keys(backup.data))assert.ok(Object.hasOwn(restored.data,key));
+  assert.throws(()=>w.LearningTools.validateBackup(JSON.stringify({format:backup.format,version:1,data:{'other.secret':'{}'}})),/נתמך/);
+  assert.throws(()=>w.LearningTools.validateBackup('{broken'));
+  const ext=JSON.parse(backup.data['dc.basics.extra.security.v1']);ext['mixed:0'].questions[0].r=['<script>bad</script>'];
+  const tampered={...backup,data:{...backup.data,'dc.basics.extra.security.v1':JSON.stringify(ext)}};
+  const safe=JSON.parse(w.LearningTools.validateBackup(JSON.stringify(tampered)).data['dc.basics.extra.security.v1']);assert.ok(safe['mixed:0'].questions[0].r.every(Number.isFinite),'Regenerate circuit physics instead of trusting imported question markup');
+  const key='dc.basics.personal.v1.mobile',old=w.localStorage.getItem(key);w.localStorage.setItem(key,'{}');w.LearningTools.restoreBackup(restored);assert.equal(w.localStorage.getItem(key),old);
+  const proto=Object.getPrototypeOf(w.localStorage),set=proto.setItem,keys=Object.keys(restored.data).slice(0,2),prior=keys.map(k=>w.localStorage.getItem(k));let calls=0;
+  proto.setItem=function(k,v){if(++calls===2)throw Error('quota');return set.call(this,k,v);};
+  assert.throws(()=>w.LearningTools.restoreBackup({data:Object.fromEntries(keys.map(k=>[k,'{}']))}));proto.setItem=set;keys.forEach((k,i)=>assert.equal(w.localStorage.getItem(k),prior[i],'Restore old data on a failed write'));
+  assert.equal(errors.length,0,errors.join('\n'));
+  console.log('Expanded learning: default off, recognized errors, per-step help, contextual isolated QA, stable SVG/table nodes, predictions, filters, fullscreen and safe backup/restore passed');
+ }finally{child.kill();w.close();}
+})().catch(error=>{console.error(error);process.exitCode=1;});

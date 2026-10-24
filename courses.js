@@ -2,7 +2,7 @@
 const CourseApp = window.CourseApp = (() => {
   let screen='home',extra=null,selected='hvac',config={names:{hvac:'קורס מיזוג וקירור',security:'קורס מיגון',mobile:'קורס סלולר'}};
   let theoryGeneration=0;
-  let adminMessage='',adminError=false,adminBusy=false,adminExpanded=true,deletePasswordId=null;
+  let adminMessage='',adminError=false,adminBusy=false,adminExpanded=false,deletePasswordId=null;
   let adminToken='',examToken='',adminConfig=null,adminDraft=null,qaReturn=null,pending=null,ready=false;
   let extraLevel=0,extraState={},extraMessage='',extraError=false,examMessage='',examError=false,examBusy=false,finishConfirm=false;
   const rootPersonal='dc.basics.personal.v1',entryKey='dc.basics.entry.v1',examKey='dc.basics.theory.v1';
@@ -175,7 +175,7 @@ const CourseApp = window.CourseApp = (() => {
   function updateCourseSimulator(q){
     const display=$('course-sim-display'),elapsed=display?.querySelector('.phone-current-flow')?.getAnimations?.()[0]?.currentTime;
     if(display){
-      display.innerHTML=courseSimulatorDisplay(q);
+      if(window.LearningTools)LearningTools.patchDisplay(display,courseSimulatorDisplay(q));else display.innerHTML=courseSimulatorDisplay(q);
       const animation=display.querySelector('.phone-current-flow')?.getAnimations?.()[0];
       if(animation&&typeof elapsed==='number')animation.currentTime=elapsed;
     }
@@ -304,7 +304,9 @@ const CourseApp = window.CourseApp = (() => {
     saveExtra();
   }
   function markExtraHelp(q){
-    if(qaActive||q.helped)return;q.helped=true;
+    if(qaActive)return;
+    q.helpedSteps??=q.helped?{'0':true}:{};
+    if(q.helpedSteps[q.cursor])return;q.helpedSteps[q.cursor]=true;q.helped=true;
     personal.totals.helped++;personal.topics[extra].helped++;savePersonal();
   }
   function recordExtraAttempt(q,correct){
@@ -322,6 +324,7 @@ const CourseApp = window.CourseApp = (() => {
     const correct=DC.accepted(q.draft,s.value),attempt=q.attempts??0;
     recordExtraAttempt(q,correct);
     q.attempts=attempt+1;q.accepted=correct;extraMessage=correct?(q.cursor===q.steps.length-1?(hasCourseSimulator(q)?'נכון! כל התשובות הושלמו. אפשר לפתוח את הסימולטור או לסיים את התרגיל.':'נכון! כל התשובות הושלמו. אפשר לסיים את התרגיל.'):'נכון! אפשר להמשיך לשלב הבא.'):'התשובה אינה נכונה. אפשר לנסות שוב.';extraError=!correct;
+    if(!correct&&window.LearningTools?.enabled())extraMessage+=' '+LearningTools.explanation(q.draft,s.value,s.unit);
     render();$('extra-answer')?.focus();
   }
   function extraAction(action){
@@ -405,7 +408,7 @@ const CourseApp = window.CourseApp = (() => {
     try{
       const reply=await request('admin_login',{password:input.value});if(!reply.ok)throw Error(reply.message);
       if(!reply.capabilities?.qa_theory||!reply.capabilities?.password_management)throw Error('השרת עדיין מפעיל גרסה קודמת. יש להעלות את כל קובצי העדכון ולהפעיל מחדש את האתר ב־Streamlit.');
-      adminToken=reply.token;adminConfig=reply.config;adminDraft=JSON.parse(JSON.stringify(adminConfig));adminMessage='';adminError=false;adminExpanded=true;applyConfig(reply.config);return true;
+      adminToken=reply.token;adminConfig=reply.config;adminDraft=JSON.parse(JSON.stringify(adminConfig));adminMessage='';adminError=false;adminExpanded=false;applyConfig(reply.config);return true;
     }
     catch(problem){error.textContent=problem.message;input.setAttribute('aria-invalid','true');fitDialogs();return false;}
     finally{button.disabled=false;}
@@ -446,7 +449,7 @@ const CourseApp = window.CourseApp = (() => {
       const expiry=saved?.expires_on?saved.expires_on.split('-').reverse().join('/'):'ללא תאריך תפוגה';
       return `<details class="admin-password-editor" data-password-editor="${i}" ${row.id?'':'open'}><summary>${row.id?'עריכת '+escapeHTML(saved?.label||row.label):'הגדרת סיסמה חדשה'}</summary><form class="admin-password-card" data-password-form="${i}"><div class="admin-password-heading"><h4>${escapeHTML(saved?.label||'סיסמה חדשה')}</h4><span class="admin-password-state">${escapeHTML(state)}${saved?' · '+escapeHTML(expiry):''}</span></div><fieldset class="admin-password-fields" ${disabled}><legend class="sr-only">עריכת פרטי הסיסמה</legend><label>שם לזיהוי הסיסמה<input data-admin-row="${i}" data-field="label" value="${escapeHTML(row.label)}" maxlength="60" placeholder="למשל: כיתה א — נובמבר" required></label><label>${row.id?'החלפת הסיסמה':'סיסמה לתלמידים'}<input type="password" autocomplete="new-password" data-admin-row="${i}" data-field="password" minlength="4" maxlength="128" value="${escapeHTML(row.password??'')}" placeholder="${row.id?'ריק = שמירת הסיסמה הקיימת':'לפחות 4 תווים'}" ${row.id?'':'required'}></label><label>בתוקף עד<input type="date" data-admin-row="${i}" data-field="expires_on" value="${escapeHTML(row.expires_on)}"></label><label class="admin-active"><input type="checkbox" data-admin-row="${i}" data-field="active" ${row.active?'checked':''}> הסיסמה פעילה</label></fieldset><div class="completion-actions"><button class="btn" type="submit" ${disabled}>${row.id?'שמירת שינויים בסיסמה זו':'שמירת הסיסמה החדשה'}</button>${row.id?'':`<button class="btn secondary tiny" type="button" data-remove-password="${i}" ${disabled}>ביטול הוספה</button>`}</div></form></details>`;
     }).join('');
-    container.innerHTML=`<div class="qa-course-switch"><label for="qa-course-switch">מעבר מהיר בין קורסים<select id="qa-course-switch" ${disabled}>${Object.entries(config.names).map(([id,name])=>`<option value="${id}" ${selected===id?'selected':''}>${escapeHTML(name)}</option>`).join('')}</select></label><button type="button" class="btn" data-course-action="qa-theory" ${adminBusy||examBusy?'disabled':''}>שאלות עיוניות במיזוג — כניסת מנהל</button><button type="button" class="btn secondary" data-course-action="admin-settings">ניהול סיסמאות</button></div><p class="small">כניסת המנהל לשאלות העיוניות אינה דורשת סיסמת תלמיד, גם כשאין סיסמאות פעילות.</p><div id="admin-status" role="status" class="${adminMessage?'feedback '+(adminError?'error':'success'):''}">${escapeHTML(adminMessage)}</div><details id="qa-admin-settings" ${adminExpanded?'open':''}><summary>ניהול סיסמאות ושמות קורסים · ${savedCount} סיסמאות שמורות</summary><h3>סיסמאות קיימות למבחן העיוני במיזוג וקירור</h3><p class="small">ברשימה מוצגים שם הסיסמה, הסיסמה עצמה והתוקף שלה. כדי לשנות פרטים לחצו על ״עריכה״ ואז על ״שמירת שינויים בסיסמה זו״. שדה החלפה ריק שומר על הסיסמה הקיימת. האיקס האדום שמשמאל מסיר סיסמה רק לאחר אישור.</p><p class="small">תאריך התוקף כולל את כל היום שנבחר, לפי שעון ישראל. תאריך ריק משאיר את הסיסמה ללא תאריך תפוגה.</p>${savedCount?'':'<p class="admin-empty-passwords">אין כרגע סיסמאות שמורות. אפשר להוסיף סיסמה ראשונה לתלמידים.</p>'}${passwordList()}<div id="admin-passwords">${passwordRows}</div><div class="completion-actions"><button class="btn" type="button" data-course-action="add-password" ${disabled}>הוספת סיסמה</button><button class="btn secondary" type="button" data-course-action="admin-refresh" ${disabled}>רענון הרשימה מהשמירה</button></div><p class="small muted">רענון טוען את מה ששמור בשרת ומבטל עריכות שטרם נשמרו.</p><h3>שמות כפתורי הקורסים</h3><form id="course-admin-form"><fieldset class="qa-selectors" ${disabled}>${Object.keys(config.names).map(id=>`<label>שם כפתור הקורס<input data-admin-name="${id}" value="${escapeHTML(value.names[id])}" maxlength="60" required></label>`).join('')}</fieldset><button class="btn" type="submit" ${disabled}>שמירת שמות הקורסים</button></form><p class="small admin-storage-status">${value.durable?'שמירה קבועה מחוברת: הסיסמאות ושמות הקורסים נטענים מהמאגר הפרטי.':'שמירה בשרת הנוכחי בלבד: הפעלה מחדש או עדכון האתר עלולים למחוק את ההגדרות. לחצו למטה על ״הסבר על שמירה קבועה״ כדי לחבר שמירה קבועה.'}</p><details class="admin-storage-help"><summary>הסבר על שמירה קבועה</summary><p>זו הגדרה חד־פעמית ב־Streamlit, כדי שהסיסמאות לא ייעלמו אחרי עדכון האתר. לאחריה כל ניהול הסיסמאות נעשה כאן ב־QA.</p><ol><li>ב־GitHub צרו מאגר פרטי, או השתמשו במאגר הפרטי של ההערות.</li><li>צרו טוקן גישה למאגר הזה עם הרשאת Contents: Read and write.</li><li>ב־share.streamlit.io: שלוש נקודות ליד האתר ← Settings ← Secrets. הוסיפו סעיף course_admin עם שם המאגר הפרטי ועם הטוקן. את הפרטים המדויקים והדוגמה להעתקה תמצאו ב־README תחת ״הגדרה חד־פעמית לשמירת סיסמאות״.</li><li>שמרו ב־Streamlit, היכנסו ל־QA ובדקו שמופיע ״שמירה קבועה מחוברת״.</li></ol><p>את טוקן הגישה מדביקים רק ב־Secrets. אין להעלות אותו למאגר הציבורי או לשלוח אותו בצ׳אט.</p></details></details>`;
+    container.innerHTML=`<div class="qa-course-switch"><label for="qa-course-switch">מעבר מהיר בין קורסים<select id="qa-course-switch" ${disabled}>${Object.entries(config.names).map(([id,name])=>`<option value="${id}" ${selected===id?'selected':''}>${escapeHTML(name)}</option>`).join('')}</select></label><button type="button" class="btn" data-course-action="qa-theory" ${adminBusy||examBusy?'disabled':''}>שאלות עיוניות במיזוג — כניסת מנהל</button><button type="button" class="btn secondary" data-course-action="admin-settings">ניהול סיסמאות</button></div><p class="small">כניסת המנהל לשאלות העיוניות אינה דורשת סיסמת תלמיד, גם כשאין סיסמאות פעילות.</p><div id="admin-status" role="status" class="${adminMessage?'feedback '+(adminError?'error':'success'):''}">${escapeHTML(adminMessage)}</div><details id="qa-admin-settings" ${adminExpanded?'open':''}><summary>ניהול סיסמאות ושמות קורסים · ${savedCount} סיסמאות שמורות</summary><p class="qa-management-warning">אזור ניהול אמיתי: שמירה או מחיקה כאן משנה את הגדרות האתר לכל המשתמשים, גם בזמן QA.</p><h3>סיסמאות קיימות למבחן העיוני במיזוג וקירור</h3><p class="small">ברשימה מוצגים שם הסיסמה, הסיסמה עצמה והתוקף שלה. כדי לשנות פרטים לחצו על ״עריכה״ ואז על ״שמירת שינויים בסיסמה זו״. שדה החלפה ריק שומר על הסיסמה הקיימת. האיקס האדום שמשמאל מסיר סיסמה רק לאחר אישור.</p><p class="small">תאריך התוקף כולל את כל היום שנבחר, לפי שעון ישראל. תאריך ריק משאיר את הסיסמה ללא תאריך תפוגה.</p>${savedCount?'':'<p class="admin-empty-passwords">אין כרגע סיסמאות שמורות. אפשר להוסיף סיסמה ראשונה לתלמידים.</p>'}${passwordList()}<div id="admin-passwords">${passwordRows}</div><div class="completion-actions"><button class="btn" type="button" data-course-action="add-password" ${disabled}>הוספת סיסמה</button><button class="btn secondary" type="button" data-course-action="admin-refresh" ${disabled}>רענון הרשימה מהשמירה</button></div><p class="small muted">רענון טוען את מה ששמור בשרת ומבטל עריכות שטרם נשמרו.</p><h3>שמות כפתורי הקורסים</h3><form id="course-admin-form"><fieldset class="qa-selectors" ${disabled}>${Object.keys(config.names).map(id=>`<label>שם כפתור הקורס<input data-admin-name="${id}" value="${escapeHTML(value.names[id])}" maxlength="60" required></label>`).join('')}</fieldset><button class="btn" type="submit" ${disabled}>שמירת שמות הקורסים</button></form><p class="small admin-storage-status">${value.durable?'שמירה קבועה מחוברת: הסיסמאות ושמות הקורסים נטענים מהמאגר הפרטי.':'שמירה בשרת הנוכחי בלבד: הפעלה מחדש או עדכון האתר עלולים למחוק את ההגדרות. לחצו למטה על ״הסבר על שמירה קבועה״ כדי לחבר שמירה קבועה.'}</p><details class="admin-storage-help"><summary>הסבר על שמירה קבועה</summary><p>זו הגדרה חד־פעמית ב־Streamlit, כדי שהסיסמאות לא ייעלמו אחרי עדכון האתר. לאחריה כל ניהול הסיסמאות נעשה כאן ב־QA.</p><ol><li>ב־GitHub צרו מאגר פרטי, או השתמשו במאגר הפרטי של ההערות.</li><li>צרו טוקן גישה למאגר הזה עם הרשאת Contents: Read and write.</li><li>ב־share.streamlit.io: שלוש נקודות ליד האתר ← Settings ← Secrets. הוסיפו סעיף course_admin עם שם המאגר הפרטי ועם הטוקן. את הפרטים המדויקים והדוגמה להעתקה תמצאו ב־README תחת ״הגדרה חד־פעמית לשמירת סיסמאות״.</li><li>שמרו ב־Streamlit, היכנסו ל־QA ובדקו שמופיע ״שמירה קבועה מחוברת״.</li></ol><p>את טוקן הגישה מדביקים רק ב־Secrets. אין להעלות אותו למאגר הציבורי או לשלוח אותו בצ׳אט.</p></details></details>`;
     $('qa-panel').append(container);
   }
   async function adminOperation(action,data={},rowIndex=null){
@@ -499,6 +502,7 @@ const CourseApp = window.CourseApp = (() => {
     const deleteDialog=document.createElement('dialog');deleteDialog.id='password-delete-dialog';deleteDialog.setAttribute('aria-labelledby','password-delete-title');deleteDialog.innerHTML='<h2 id="password-delete-title">הסרת סיסמה</h2><p id="password-delete-question"></p><div class="completion-actions"><button type="button" class="btn" data-course-action="confirm-password-delete">כן</button><button type="button" class="btn secondary" data-course-action="cancel-password-delete">לא</button></div>';document.body.append(deleteDialog);
     const entry=get(entryKey,null);if(entry?.profile){personal.profile=entry.profile;if(entry.preferences)personal.preferences=entry.preferences;}else syncProfile();
     document.addEventListener('click',event=>{
+      if(event.target.closest('.sim-component[data-link-component]'))return;
       const b=event.target.closest('button');if(!b||b.disabled)return;
       if(formulaQuestion()&&(b.dataset.tab==='simulator'||b.hasAttribute('data-go-simulator'))){
         event.preventDefault();event.stopImmediatePropagation();const q=currentExtra().q;
@@ -533,10 +537,10 @@ const CourseApp = window.CourseApp = (() => {
       if(action==='course-menu'){screen=selected==='hvac'?'menu':'practice';extra=null;return render();}
       if(action==='qa-theory')return openQATheory();
       if(action==='theory'){if(qaActive)return openQATheory();screen='theory';extra=null;examMessage='';render();return;}
-      if(action==='admin-settings'){adminExpanded=true;renderAdmin();$('qa-admin-settings').scrollIntoView({block:'start'});resizeFrame();return;}
+      if(action==='admin-settings'){adminExpanded=false;renderAdmin();$('qa-admin-settings').scrollIntoView({block:'start'});resizeFrame();return;}
       if(action==='admin-refresh')return adminOperation('admin_refresh');
       if(action==='cancel-password-delete'){deletePasswordId=null;$('password-delete-dialog').close();return;}
-      if(action==='add-password'){adminExpanded=true;adminDraft.passwords.push({label:'',expires_on:'',active:true,password:''});renderAdmin();resizeFrame();$('admin-passwords').lastElementChild?.scrollIntoView({block:'center'});return;}
+      if(action==='add-password'){adminExpanded=false;adminDraft.passwords.push({label:'',expires_on:'',active:true,password:''});renderAdmin();resizeFrame();$('admin-passwords').lastElementChild?.scrollIntoView({block:'center'});return;}
       if(b.dataset.removePassword!==undefined){
         if(adminBusy)return;const index=Number(b.dataset.removePassword),row=adminDraft.passwords[index];
         if(row?.id){confirmPasswordRemoval(index);return;}else adminDraft.passwords.splice(index,1);
@@ -604,9 +608,23 @@ const CourseApp = window.CourseApp = (() => {
     });
     setInterval(()=>{if(screen.startsWith('theory')&&(qaActive||examToken)&&theory.current&&!examBusy&&!pending)theoryRequest('resume');},60000);
   }
-  function onEnterQA(){theoryGeneration++;qaReturn={selected,screen,extra,extraLevel,extraState:JSON.parse(JSON.stringify(extraState)),courseProfile,courseKey,personalKey,recentKey,theory,examToken,examMessage,examError,finishConfirm};examBusy=false;examMessage='';examError=false;finishConfirm=false;theory={seen:[],previous:[],history:[],current:null};examToken='';}
-  function onExitQA(){if(!qaReturn)return;theoryGeneration++;examBusy=false;if(adminToken)request('admin_logout',{token:adminToken}).catch(()=>{});({selected,screen,extra,extraLevel,extraState,courseProfile,courseKey,personalKey,recentKey,theory,examToken,examMessage,examError,finishConfirm}=qaReturn);qaReturn=null;adminToken='';adminDraft=null;adminConfig=null;adminBusy=false;adminMessage='';deletePasswordId=null;}
+  function onEnterQA(){window.LearningTools?.enterQA();theoryGeneration++;qaReturn={selected,screen,extra,extraLevel,extraState:JSON.parse(JSON.stringify(extraState)),courseProfile,courseKey,personalKey,recentKey,theory,examToken,examMessage,examError,finishConfirm};examBusy=false;examMessage='';examError=false;finishConfirm=false;theory={seen:[],previous:[],history:[],current:null};examToken='';}
+  function onExitQA(){if(!qaReturn)return;window.LearningTools?.exitQA();theoryGeneration++;examBusy=false;if(adminToken)request('admin_logout',{token:adminToken}).catch(()=>{});({selected,screen,extra,extraLevel,extraState,courseProfile,courseKey,personalKey,recentKey,theory,examToken,examMessage,examError,finishConfirm}=qaReturn);qaReturn=null;adminToken='';adminDraft=null;adminConfig=null;adminBusy=false;adminMessage='';adminExpanded=false;deletePasswordId=null;}
+  function qaExtraNavigate(action,value){
+    if(!qaActive||!extra||extra==='formulas')return;
+    if(action==='level'&&Number.isInteger(value)&&value>=0&&value<(selected==='mobile'?2:3))extraLevel=value;
+    else{const {q}=currentExtra();if(action==='step'&&Number.isInteger(value)&&value>=0&&value<=q.steps.length){q.cursor=value;q.accepted=false;q.draft='';q.hint=false;}if(action==='answer')q.qaInspect=!q.qaInspect;}
+    extraMessage='';render();
+  }
+  function qaExtraLevel(){return extraLevel;}
+  function focusPractice(topic){
+    if(!topicVisible(topic))return;
+    screen='practice';
+    if(['mixed','battery'].includes(topic)){extra=topic;const state=currentExtra().state;const next=state.questions.findIndex(q=>q.cursor<q.steps.length);if(next>=0)state.index=next;}
+    else{extra=null;tab=topic;viewTab=topic;const next=questions[topic][levels[topic]].findIndex(q=>q.cursor<q.steps.length);if(next>=0)positions[topic][levels[topic]]=next;}
+    render(true);window.scrollTo(0,0);
+  }
   function standalone(){return screen!=='practice';}
   function topicVisible(kind){return !['mixed','battery'].includes(kind)||kind==='mixed'&&selected==='security'||kind==='battery'&&selected!=='hvac';}
-  return {standalone,topicVisible,initialize,renderOverride,showPractice,loginAdmin,renderAdmin,onEnterQA,onExitQA,syncProfile,preferredFormulaView,renderFormulaReference,decorateFormulas,formulaQuestion,triangleContext:extraTriangleContext,saveFormulaWork,markFormulaHelp,syncFormulaDraft,submitFormulaAnswer,formulaFeedback,formulaCalculatorAvailable,formulaFeedbackStatus,formulaCircuitReference,renderExtraFormulaHelp};
+  return {qaExtraNavigate,qaExtraLevel,focusPractice,standalone,topicVisible,initialize,renderOverride,showPractice,loginAdmin,renderAdmin,onEnterQA,onExitQA,syncProfile,preferredFormulaView,renderFormulaReference,decorateFormulas,formulaQuestion,triangleContext:extraTriangleContext,saveFormulaWork,markFormulaHelp,syncFormulaDraft,submitFormulaAnswer,formulaFeedback,formulaCalculatorAvailable,formulaFeedbackStatus,formulaCircuitReference,renderExtraFormulaHelp};
 })();

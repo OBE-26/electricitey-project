@@ -1,0 +1,42 @@
+name: Restore previous stable version
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Restore the stable version before expanded learning?'
+        required: true
+        default: false
+        type: boolean
+permissions:
+  contents: write
+concurrency:
+  group: release-writes
+  cancel-in-progress: false
+jobs:
+  restore:
+    if: inputs.confirm
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-python@v7.1.0
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: '22'
+      - name: Prepare the stable tree without rewriting history
+        run: git restore --source=b115c8071e3e3c57b19ab35a7e959fa42581d06e --staged --worktree .
+      - run: npm ci
+      - run: npm test
+      - name: Publish the restore as a new commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if ! git diff --cached --quiet; then
+            git commit -m "Restore stable version b115c807 before expanded learning"
+            git push origin HEAD:main
+          fi

@@ -2,7 +2,7 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),{spawn,execFile
 const {JSDOM,VirtualConsole}=require('jsdom');
 const python=process.env.CODEX_PRIMARY_RUNTIME_PYTHON||'python3';
 const raw=execFileSync(python,['-c',`import ast;from pathlib import Path;t=ast.parse(Path('Electricity-circuit.py').read_text());print(next(ast.literal_eval(n.value) for n in t.body if isinstance(n,ast.Assign) and any(getattr(a,'id','')=='APP_HTML' for a in n.targets)))`],{encoding:'utf8'});
-const html=raw.replace('/* COURSE_EXTENSION */',fs.readFileSync('course_practice.js','utf8')+'\n'+fs.readFileSync('courses.js','utf8'));
+const html=raw.replace('/* COURSE_EXTENSION */',fs.readFileSync('course_practice.js','utf8')+'\n'+fs.readFileSync('courses.js','utf8')+'\n'+fs.readFileSync('learning_tools.js','utf8'));
 const errors=[];const virtualConsole=new VirtualConsole();virtualConsole.on('jsdomError',e=>{if(!e.message.includes('CSS stylesheet'))errors.push(e.message);});
 const dom=new JSDOM(html,{url:'https://unit.test/',runScripts:'outside-only',virtualConsole});
 const w=dom.window,d=w.document;
@@ -11,6 +11,8 @@ w.requestAnimationFrame=()=>0;w.cancelAnimationFrame=()=>{};w.scrollTo=()=>{};
 w.HTMLElement.prototype.scrollIntoView=()=>{};
 w.HTMLDialogElement.prototype.showModal=function(){this.open=true;};
 w.HTMLDialogElement.prototype.close=function(){this.open=false;this.dispatchEvent(new w.Event('close'));};
+w.Date.now=()=>Date.parse('2026-10-22T12:00:00+03:00');
+w.localStorage.setItem('dc.basics.shabbat.jerusalem.v1',JSON.stringify({schedule:[{start:Date.parse('2026-10-23T17:00:00+03:00'),end:Date.parse('2026-10-24T18:30:00+03:00')}]}));
 w.localStorage.setItem('dc.basics.personal.v1',JSON.stringify({version:1,profile:{name:'בדיקת קוד',birth:'1990-01-01',termsVersion:'2026-10-14.1'},preferences:{textScale:100,theme:'light',motion:true},sessions:[],topics:{},totals:{}}));
 const child=spawn(python,['tests/course_bridge.py'],{stdio:['pipe','pipe','inherit']});
 let lastExam=null;const sentActions=[];

@@ -11,7 +11,7 @@ w.eval(script);
 w.ShabbatMode.configure({isQA:()=>qa,canUseApp:()=>true,onUnlock:()=>{}});
 async function checkClosedEntry(){
  const raw=execFileSync(process.env.CODEX_PRIMARY_RUNTIME_PYTHON||'python3',['-c',`import ast;from pathlib import Path;t=ast.parse(Path('Electricity-circuit.py').read_text());print(next(ast.literal_eval(n.value) for n in t.body if isinstance(n,ast.Assign) and any(getattr(a,'id','')=='APP_HTML' for a in n.targets)))`],{encoding:'utf8'});
- const html=raw.replace('/* COURSE_EXTENSION */',fs.readFileSync('course_practice.js','utf8')+'\n'+fs.readFileSync('courses.js','utf8'));
+ const html=raw.replace('/* COURSE_EXTENSION */',fs.readFileSync('course_practice.js','utf8')+'\n'+fs.readFileSync('courses.js','utf8')+'\n'+fs.readFileSync('learning_tools.js','utf8'));
  const entry=new JSDOM(html,{url:'https://fresh.test/',runScripts:'outside-only',virtualConsole:new VirtualConsole()}),v=entry.window,doc=v.document;
  try{
   v.matchMedia=()=>({matches:false,addEventListener(){},removeEventListener(){}});v.requestAnimationFrame=()=>0;v.cancelAnimationFrame=()=>{};v.scrollTo=()=>{};v.HTMLElement.prototype.scrollIntoView=()=>{};v.postMessage=()=>{};

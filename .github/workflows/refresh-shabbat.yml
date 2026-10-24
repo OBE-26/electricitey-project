@@ -1,0 +1,37 @@
+name: Refresh Jerusalem Shabbat schedule
+on:
+  schedule:
+    - cron: '15 2 * * 0'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: release-writes
+  cancel-in-progress: false
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          ref: main
+      - uses: actions/setup-python@v7.1.0
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: '22'
+          cache: npm
+      - run: python scripts/update_shabbat_schedule.py
+      - run: npm ci
+      - run: npm test
+      - name: Save validated schedule only
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/shabbat_jerusalem.json
+          if ! git diff --cached --quiet; then
+            git commit -m "Refresh verified Jerusalem Shabbat schedule"
+            git push origin HEAD:main
+          fi

@@ -93,8 +93,17 @@ APP_HTML = r'''<!doctype html>
     // Jerusalem Shabbat schedule from Hebcal; keep cached times available offline.
     (function(){
       const KEY='dc.basics.shabbat.jerusalem.v1',now=()=>Date.now();
-      let schedule=[],mode='auto',previewProgress=0,locked=false,access={isQA:()=>false,canUseApp:()=>true,onUnlock:()=>{}};
-      function makeSchedule(items){return items.filter(x=>x&&x.category==='candles'&&x.date).map(c=>{const h=items.find(x=>x&&x.category==='havdalah'&&x.date>c.date);return h?{start:Date.parse(c.date),end:Date.parse(h.date)}:null;}).filter(x=>x&&Number.isFinite(x.start)&&Number.isFinite(x.end));}
+      let schedule=(/* SHABBAT_FALLBACK */[]).map(x=>({start:Date.parse(x.start),end:Date.parse(x.end)})),scheduleSource='bundled',mode='auto',previewProgress=0,locked=false,access={isQA:()=>false,canUseApp:()=>true,onUnlock:()=>{}};
+      function covered(){
+        const time=now(),day=new Intl.DateTimeFormat('en-US',{timeZone:'Asia/Jerusalem',weekday:'short'}).format(new Date(time));
+        const date=value=>new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Jerusalem',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(value));
+        return schedule.some(x=>x.start<=time&&time<=x.end||day==='Sat'&&x.start<=time&&date(x.end)===date(time)||day!=='Sat'&&x.start-6*86400000<=time&&time<=x.end);
+      }
+      function merge(items){const all=[...schedule,...items].filter(x=>Number.isFinite(x?.start)&&Number.isFinite(x?.end)&&x.start<x.end);schedule=[...new Map(all.map(x=>[x.start,x])).values()].sort((a,b)=>a.start-b.start);}
+      function makeSchedule(items){
+        const day=value=>new Intl.DateTimeFormat('en-US',{timeZone:'Asia/Jerusalem',weekday:'short'}).format(new Date(value));
+        return items.filter(x=>x?.category==='candles'&&x.date&&day(x.date)==='Fri').map(c=>{const start=Date.parse(c.date),h=items.filter(x=>['havdalah','candles'].includes(x?.category)&&x.date&&day(x.date)==='Sat'&&Date.parse(x.date)>start&&Date.parse(x.date)<start+32*3600000).sort((a,b)=>Date.parse(a.date)-Date.parse(b.date))[0];return h?{start,end:Date.parse(h.date)}:null;}).filter(Boolean);
+      }
       function candlesHTML(){
         return '<svg viewBox="0 0 140 150" role="img" aria-hidden="true">'+[51,88].map(x=>`<rect class="candle-wax" x="${x-12}" y="58" width="25" height="70" fill="#fff7e7" stroke="#c99c56" stroke-width="2"/><g class="candle-burning-top"><path d="M${x} 59V47" stroke="#5a3c27" stroke-width="2"/><g class="shabbat-flame"><path d="M${x} 49c-12-14 7-19 0-34 18 17 13 27 0 34Z" fill="#ffbf45"/><path d="M${x} 46c-6-8 4-11 1-18 9 9 6 14-1 18Z" fill="#fff2a6"/></g></g><ellipse cx="${x}" cy="130" rx="22" ry="5" fill="#d8bd8e"/>`).join('')+'</svg>';
       }
@@ -136,24 +145,26 @@ APP_HTML = r'''<!doctype html>
       }
       function apply(){
         const qa=access.isQA();if(!qa)mode='auto';
-        const active=schedule.find(x=>x.start<=now()&&now()<x.end),test=qa&&mode==='test';
-        if(test||(active&&!(qa&&mode==='bypass'))){
+        const active=schedule.find(x=>x.start<=now()&&now()<x.end),test=qa&&mode==='test',unknown=!covered()&&!(qa&&mode==='bypass');
+        if(test||unknown||(active&&!(qa&&mode==='bypass'))){
           const interval=active??schedule.find(x=>x.end>now());
-          locked=true;show(interval?.end,test,qa,test?previewProgress:(now()-interval.start)/(interval.end-interval.start));
+          locked=true;show(interval?.end,test,qa,test?previewProgress:active?(now()-active.start)/(active.end-active.start):0);
+          const screen=document.getElementById('shabbat-screen');screen.classList.toggle('schedule-unavailable',unknown&&!test);screen.querySelector('#shabbat-title').textContent=unknown&&!test?'ממתינים לאימות זמני שבת':'שבת שלום';screen.querySelector('.shabbat-card > p').textContent=unknown&&!test?'זמני שבת אינם זמינים כרגע. האתר ייפתח לאחר אימות הזמנים.':'האתר סגור לשימוש במהלך השבת.';screen.querySelector('.shabbat-return').textContent=unknown&&!test?'מנסים שוב באופן אוטומטי. אפשר לפנות למנהל האתר.':'נשוב לפעול בצאת השבת';
         }else if(locked){
           locked=false;document.getElementById('shabbat-screen')?.remove();
           document.getElementById('app')?.toggleAttribute('inert',!access.canUseApp());access.onUnlock();
         }
       }
       async function refresh(){
-        try{const cached=JSON.parse(localStorage.getItem(KEY)||'null')?.schedule;if(Array.isArray(cached))schedule=cached.filter(x=>Number.isFinite(x?.start)&&Number.isFinite(x?.end)&&x.start<x.end);}catch{}
+        try{const cached=JSON.parse(localStorage.getItem(KEY)||'null')?.schedule;if(Array.isArray(cached)){if(!schedule.length)scheduleSource='cache';merge(cached);}}catch{}
         apply();
-        try{const url='https://www.hebcal.com/shabbat?cfg=json&geonameid=281184&b=40&M=on&leyning=off',response=await fetch(url,{cache:'no-store'});if(!response.ok)throw Error('schedule unavailable');const data=await response.json();schedule=makeSchedule(data.items||[]);localStorage.setItem(KEY,JSON.stringify({saved:now(),schedule}));}catch{}
+        try{const url='https://www.hebcal.com/shabbat?cfg=json&geonameid=281184&b=40&M=on&leyning=off',response=await fetch(url,{cache:'no-store'});if(!response.ok)throw Error('schedule unavailable');const data=await response.json();merge(makeSchedule(data.items||[]));scheduleSource='live';localStorage.setItem(KEY,JSON.stringify({saved:now(),schedule}));}catch{}
         apply();
       }
       window.ShabbatMode=Object.freeze({
         configure(callbacks){access=callbacks;},
         getMode:()=>mode,
+        getScheduleStatus:()=>({covered:covered(),source:scheduleSource,intervals:schedule.length}),
         isLocked:()=>locked,
         resetQA(){mode=access.isQA()?'bypass':'auto';previewProgress=0;apply();},
         setMode(value){if(!access.isQA()||!['auto','test','bypass'].includes(value))return false;if(value!==mode)previewProgress=0;mode=value;apply();return true;},
@@ -1741,12 +1752,12 @@ function renderSimulatorPanel() {
   $('simulator-workspace').innerHTML=modes+`<div class="sim-choice"><label for="sim-circuit">המעגל להצגה</label><select id="sim-circuit">${options}</select><button class="btn secondary tiny" data-return-training>חזרה לתרגול</button></div>`+simulatorHTML(simulatorQuestion);
 }
 function render(focus = false) {
-  if(window.CourseApp?.renderOverride(focus))return;
+  if(window.CourseApp?.renderOverride(focus)){window.LearningTools?.afterRender();return;}
   hideIconTooltip();
   renderQA();
   document.querySelectorAll('[role="tab"][data-tab]').forEach(button=>{const active=button.dataset.tab===viewTab;button.setAttribute('aria-selected',active);button.tabIndex=active?0:-1;});
   $('workspace').hidden=viewTab==='simulator';$('simulator-workspace').hidden=viewTab!=='simulator';
-  if(viewTab==='simulator'){renderSimulatorPanel();renderProgress();fitDialogs();resizeFrame();saveCourse();return;}
+  if(viewTab==='simulator'){renderSimulatorPanel();renderProgress();fitDialogs();resizeFrame();saveCourse();window.LearningTools?.afterRender();return;}
   $('simulator-workspace').innerHTML='';
   const level = levels[tab], sequence = questions[tab][level], index = positions[tab][level], q = sequence[index], done = completed(q), step = currentStep();
   if(reviewReturn&&reviewReturn.kind===tab&&reviewReturn.level===level&&reviewReturn.index===index)reviewReturn=null;
@@ -1770,6 +1781,7 @@ function render(focus = false) {
   if ($('formula-dialog').open) renderFormulas();
   if (focus && !done) requestAnimationFrame(() => {if($('formula-dialog').open&&formulaView==='manual')focusManualEntry();else ($('formula-dialog').open ? formulaAnswerField() : q.accepted ? $('workspace').querySelector('[data-next-step]') : $('answer'))?.focus();});
   renderProgress(); fitDialogs(); resizeFrame();saveCourse();
+  window.LearningTools?.afterRender();
 }
 function acceptedMessage(q = currentQuestion()) {
   const step=q.steps[q.cursor];
@@ -1798,6 +1810,7 @@ function checkAnswer(value, mode = 'answer') {
   if (!correct) {
     q.attempts++; feedbackType = 'error';
     feedback = value.trim() ? 'לא נכון. בדקו את הנוסחה ואת סדר פעולות החשבון. אפשר להיעזר ברמז ובמחשבון.' : 'יש להקליד תשובה מספרית. אפשר להתחיל ברמז או בדף הנוסחאות.';
+    if(window.LearningTools?.enabled())feedback+=' '+LearningTools.explanation(value,step.value,step.unit);
     q.hint = true; markHelp();
     if (q.attempts >= 3) { q.solution = true; q.help[q.cursor] = true; }
     render(true);
@@ -1826,8 +1839,8 @@ function simMetrics(q) {
 function updateSimulator() {
   const q = activeSimulatorQuestion();
   if (!$('sim-diagram')) return;
-  $('sim-diagram').innerHTML = diagramPreview(q, { complete:true, voltage:q.simVoltage, animate:q.simAnimate });
-  $('sim-metrics').innerHTML = simMetrics(q);
+  if(window.LearningTools)LearningTools.patchDisplay($('sim-diagram'),diagramPreview(q,{complete:true,voltage:q.simVoltage,animate:q.simAnimate}));else $('sim-diagram').innerHTML=diagramPreview(q,{complete:true,voltage:q.simVoltage,animate:q.simAnimate});
+  if(window.LearningTools)LearningTools.patchDisplay($('sim-metrics'),simMetrics(q));else $('sim-metrics').innerHTML=simMetrics(q);
   $('sim-voltage-label').innerHTML = bdi(`${simulatorNumber(q,q.simVoltage)} V`);
   $('sim-voltage').value = q.simVoltage; $('sim-animation').checked = q.simAnimate; $('sim-animation').disabled = personal.preferences.motion;
   saveCourse();
@@ -2806,6 +2819,7 @@ window.addEventListener('message',event=>{
 /* COURSE_EXTENSION */
 window.ShabbatMode.configure({isQA:()=>qaActive,canUseApp:()=>qaActive||profileReady(),onUnlock:()=>{if(!qaActive&&!profileReady())openProfile();}});
 CourseApp.initialize();
+window.LearningTools?.initialize();
 sendStreamlitMessage('streamlit:componentReady', { apiVersion:1 });
 if(!restoreCourse())newCourse();
 initializePersonal();
@@ -3076,8 +3090,10 @@ def frontend_directory(html):
     return str(directory)
 
 asset_root = Path(__file__).resolve().parent
-extension = (asset_root / "course_practice.js").read_text(encoding="utf-8") + "\n" + (asset_root / "courses.js").read_text(encoding="utf-8")
+extension = "\n".join((asset_root / name).read_text(encoding="utf-8") for name in ("course_practice.js", "courses.js", "learning_tools.js"))
 APP_HTML = APP_HTML.replace("/* COURSE_EXTENSION */", extension)
+shabbat_fallback = json.loads((asset_root / "data/shabbat_jerusalem.json").read_text(encoding="utf-8"))
+APP_HTML = APP_HTML.replace("/* SHABBAT_FALLBACK */[]", json.dumps(shabbat_fallback["intervals"]))
 
 @st.cache_resource
 def shared_course_service(repository, token, admin_password, bank_revision, backend_revision):
