@@ -23,5 +23,11 @@ jobs:
       - run: python -m pip install -r requirements.txt
       - run: npm ci
       - run: npm test
+      - name: Install WebKit for responsive layout checks
+        if: hashFiles('tests/layout.test.cjs') != ''
+        run: npx playwright install --with-deps webkit
+      - name: Check responsive QA layouts in WebKit
+        if: hashFiles('tests/layout.test.cjs') != ''
+        run: npm run test:layout
       - name: Check bundled Jerusalem schedule
         run: python -m unittest discover -s tests -p 'test_shabbat_schedule.py'

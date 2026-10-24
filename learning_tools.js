@@ -54,6 +54,13 @@ const LearningTools=window.LearningTools=(()=>{
       .expanded-learning-switch{font-size:20px;font-weight:bold;padding:16px;background:var(--soft);border-radius:12px}#learning-import{max-width:100%;margin-top:12px}#learning-backup-status{margin-top:12px}.learning-recommendation{margin:14px 0}.learning-recommendation h3{margin:0 0 6px}.sim-learning-tools{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:12px 0}.sim-learning-tools label{display:inline-flex!important;gap:6px;align-items:center;min-height:44px}.sim-learning-tools label[hidden],.qa-selectors[hidden],.qa-actions[hidden]{display:none!important}.sim-learning-tools input{width:auto!important}.sim-learning-tools .btn{min-height:44px}.sim-component{cursor:pointer}.sim-component.is-selected{filter:drop-shadow(0 0 4px #ffc65d)}.sim-component.is-selected text{font-weight:bold}.sim-row-selected{outline:2px solid #c38330;outline-offset:-2px}.sim-component-link{background:transparent;color:inherit;text-decoration:underline;text-underline-offset:4px;min-height:44px;padding:4px 8px;border:1px solid transparent;border-radius:6px}.sim-component-link:focus-visible{outline:3px solid #c38330}.sim-hide-current .sim-current,.sim-hide-current .sim-current-flow,.sim-hide-current .phone-current-flow,.sim-hide-current .mixed-current-flow,.sim-hide-current polygon[fill="#ff6565"]{display:none}.sim-hide-voltage .sim-voltage-drop,.sim-hide-power .sim-power{display:none}.sim-expanded{position:fixed!important;inset:0!important;z-index:10010!important;margin:0!important;padding:12px!important;overflow:auto!important;background:#000!important;color:#fff!important;max-height:100vh!important}.sim-expanded svg{width:100%;min-width:0;max-width:100%!important;height:auto}.sim-expanded:fullscreen{width:100vw;height:100vh}.sim-prediction{padding:12px;border:1px solid var(--line);border-radius:12px;margin:12px 0}.sim-prediction summary{cursor:pointer;min-height:44px;align-content:center}.qa-context-note{padding:10px;border:1px solid #739bc2;border-radius:10px;margin:10px 0}.qa-management-warning{padding:12px;border:2px solid #b75b2a;border-radius:10px}.qa-banner details>summary{min-height:44px;align-content:center;cursor:pointer}@media(max-width:600px){.sim-learning-tools{gap:6px}.sim-learning-tools label{font-size:14px}.sim-component-link{padding:4px}.learning-recommendation{padding:12px}}
       /* Keep intrinsic select/MathML sizes inside the QA and exercise panels. */
       #qa-panel,#course-panel{min-width:0;max-width:100%}
+      /* Bound intrinsic content at the layout boundary, then scroll the content itself. */
+      #app{inline-size:100%;min-inline-size:0;contain:inline-size}
+      #course-panel .exercise-grid,#course-panel .card{min-inline-size:0;max-inline-size:100%}
+      #course-panel .math{max-inline-size:100%;overflow-x:auto}
+      #course-panel :is(.given,.course-quantity){min-inline-size:0;max-inline-size:100%}
+      #course-panel .course-quantity{overflow-x:auto}
+      #course-panel :is(h2,h3,figcaption,.hint){overflow-wrap:anywhere}
       #qa-panel :is(.qa-banner,.qa-context-note,.qa-selectors,.qa-course-switch,.qa-selectors>label,.qa-course-switch>label){min-width:0;max-width:100%}
       #qa-panel :is(select,fieldset){min-inline-size:0;max-inline-size:100%}
       #qa-panel select{width:100%}
@@ -67,6 +74,7 @@ const LearningTools=window.LearningTools=(()=>{
       .site-settings-content select{width:100%;min-width:0;min-height:44px;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink)}
       .site-settings-content dl{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}.site-settings-content dt{font-weight:700}.site-settings-content dd{margin:0;overflow-wrap:anywhere}
       body.qa-mode .hero{display:none}#qa-tools>summary{cursor:pointer;min-height:48px;padding:10px 0;font-weight:700}#qa-tools{min-width:0}#qa-tools .qa-banner{margin:12px 0 0}#qa-tools .qa-context-note{margin-top:0}
+      .qa-navigation{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:14px 0}.qa-navigation label{display:grid;gap:6px;min-inline-size:0;max-inline-size:100%}.qa-navigation select{display:block;inline-size:100%;min-inline-size:0;max-inline-size:100%;min-height:44px;padding:8px;font-size:16px;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:8px}@media(max-width:570px){.qa-navigation{grid-template-columns:minmax(0,1fr)}}
       .qa-current-context{font-size:calc(14px * var(--text-scale));overflow-wrap:anywhere}.qa-banner-head .btn{min-height:44px}
       .mixed-walkthrough{margin-top:16px;border:1px solid var(--line);border-radius:12px;padding:12px;min-width:0}.mixed-walkthrough>summary{cursor:pointer;font-weight:700;min-height:44px;align-content:center}
       .reduction-diagrams{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:12px 0}.reduction-diagrams figure{margin:0;min-width:0}.reduction-diagrams figcaption{font-weight:700}.reduction-diagrams svg{display:block;width:100%;height:auto}
@@ -100,9 +108,14 @@ const LearningTools=window.LearningTools=(()=>{
     if(!qaActive)return;
     const panel=byId('qa-panel'),banner=panel?.querySelector('.qa-banner'),head=banner?.querySelector('.qa-banner-head');if(!head)return;
     let context=banner.querySelector('.qa-current-context');if(!context){context=document.createElement('p');context.className='qa-current-context';head.after(context);}
-    const q=window.CourseApp?.formulaQuestion()??currentQuestion();context.textContent=`${q.title} · ${q.cursor<q.steps.length?'שלב '+(q.cursor+1)+' מתוך '+q.steps.length:'התרגיל הושלם'}`;
+    const topic=window.CourseApp?.qaCurrentTopic()??tab,q=window.CourseApp?.formulaQuestion()??currentQuestion();
+    context.textContent=DC.kinds.includes(topic)||['mixed','battery'].includes(topic)?`${q.title} · ${q.cursor<q.steps.length?'שלב '+(q.cursor+1)+' מתוך '+q.steps.length:'התרגיל הושלם'}`:(window.CourseApp?.qaTopicOptions().find(([id])=>id===topic)?.[1]??'בחירת קורס ונושא לבדיקה');
+    let navigation=banner.querySelector('.qa-navigation');
+    if(!navigation){navigation=document.createElement('div');navigation.className='qa-navigation';navigation.innerHTML=window.CourseApp?.qaCourseSelectorHTML()??'';head.after(navigation);}
+    else if(window.CourseApp){const template=document.createElement('template');template.innerHTML=CourseApp.qaCourseSelectorHTML();const next=template.content.querySelector('select'),current=byId('qa-course-switch');if(next&&current){current.disabled=next.disabled;if(current.innerHTML!==next.innerHTML)current.innerHTML=next.innerHTML;current.value=next.value;}}
+    const topicLabel=byId('qa-topic')?.closest('label');if(topicLabel&&!navigation.contains(topicLabel))navigation.append(topicLabel);
     let details=byId('qa-tools');if(!details){details=document.createElement('details');details.id='qa-tools';details.open=qaControlsOpen;details.innerHTML='<summary>כלי בדיקה והגדרות QA</summary>';banner.append(details);}
-    for(const child of [...banner.children])if(![head,context,details].includes(child))details.append(child);
+    for(const child of [...banner.children])if(![head,navigation,context,details].includes(child))details.append(child);
     const admin=byId('course-admin');if(admin&&!details.contains(admin))details.append(admin);
     if(!head.querySelector('[data-qa-focus]')){const button=document.createElement('button');button.type='button';button.className='btn secondary tiny';button.dataset.qaFocus='';button.textContent='לתרגיל';head.append(button);}
   }
@@ -207,6 +220,7 @@ const LearningTools=window.LearningTools=(()=>{
   function decorateQA(){
     if(!qaActive)return;
     const q=window.CourseApp?.formulaQuestion(),banner=document.querySelector('.qa-banner');
+    if(banner){const hidden=!!q||!DC.kinds.includes(window.CourseApp?.qaCurrentTopic()??tab);banner.querySelector('.qa-selectors').hidden=hidden;banner.querySelector('.qa-actions').hidden=hidden;}
     if(q&&banner){
       const picker=document.querySelector('#course-panel .qa-extra-picker')??banner.querySelector('.qa-extra-picker'),sim=banner.querySelector('.qa-context-note [data-go-simulator]')??banner.querySelector('.qa-actions [data-go-simulator]');
       banner.querySelectorAll('.qa-context-note').forEach(n=>n.remove());banner.querySelector('.qa-selectors').hidden=true;banner.querySelector('.qa-actions').hidden=true;const note=document.createElement('div');note.className='qa-context-note';note.innerHTML=`<p>בודקים: ${escape(q.title)}</p><div class="qa-selectors"><label for="qa-extra-level">רמה<select id="qa-extra-level">${Array.from({length:courseProfile==='mobile'?2:3},(_,i)=>`<option value="${i}" ${CourseApp.qaExtraLevel()===i?'selected':''}>${letters[i]}</option>`).join('')}</select></label><label for="qa-extra-step">סעיף<select id="qa-extra-step">${[...q.steps.map((step,i)=>[i,step.label]),[q.steps.length,'סיום התרגיל']].map(([i,label])=>`<option value="${i}" ${i===q.cursor?'selected':''}>${escape(label)}</option>`).join('')}</select></label></div><button class="btn secondary tiny" data-qa-extra-answer>${q.qaInspect?'הסתר תשובת QA':'הצג תשובת QA'}</button>${q.qaInspect&&q.steps[q.cursor]?`<p class="math" role="status">${escape(q.steps[q.cursor].formula)} = ${escape(String(q.steps[q.cursor].value))} ${escape(q.steps[q.cursor].unit)}</p>`:''}`;banner.querySelector('.qa-banner-head').after(note);if(picker)note.querySelector('.qa-selectors').append(picker);if(sim)note.append(sim);
@@ -233,7 +247,7 @@ const LearningTools=window.LearningTools=(()=>{
   function onClick(event){
     const button=event.target.closest('button,[data-link-component]');if(!button)return;
     if(button.hasAttribute('data-open-site-settings')){event.preventDefault();event.stopImmediatePropagation();byId('site-accessibility-controls').innerHTML=accessibilityControls('site');byId('site-settings-dialog').showModal();syncSettings();renderShabbatStatus();return;}
-    if(button.hasAttribute('data-qa-focus')){event.preventDefault();event.stopImmediatePropagation();const details=byId('qa-tools');if(details)details.open=false;qaControlsOpen=false;const target=byId('course-panel')?.hidden?byId('workspace'):byId('course-panel');target?.scrollIntoView({block:'start',inline:'nearest'});resizeFrame();return;}
+    if(button.hasAttribute('data-qa-focus')){event.preventDefault();event.stopImmediatePropagation();const details=byId('qa-tools');if(details)details.open=false;qaControlsOpen=false;CourseApp.qaFocusExercise();return;}
     if(button.dataset.reductionAction){
       event.preventDefault();event.stopImmediatePropagation();const q=window.CourseApp?.formulaQuestion(),node=button.closest('.mixed-walkthrough'),state=q&&walkthroughs.get(q);if(!state||!node)return;
       if(button.dataset.reductionAction==='next'){state.stage=Math.min(q.reductions.length,state.stage+1);if(q.cursor<q.steps.length)CourseApp.markFormulaHelp();}

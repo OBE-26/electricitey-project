@@ -66,7 +66,7 @@ const checkShabbatContrast=()=>{
   assert.equal(d.querySelector('#qa-admin-settings').open,false,'Management is collapsed by default');
   assert.ok(d.querySelector('.qa-management-warning'));
   assert.ok(d.querySelector('.qa-context-note').textContent.includes(w.CourseApp.formulaQuestion().title));
-  assert.equal(d.querySelector('#qa-topic').closest('.qa-selectors').hidden,true,'Hide basic-topic controls when inspecting an extra topic');
+  assert.equal(d.querySelector('#qa-level').closest('.qa-selectors').hidden,true,'Hide basic-topic controls when inspecting an extra topic');
   assert.ok(d.querySelector('#qa-panel #qa-extra-exercise'));
   change('#qa-extra-step','1');assert.equal(w.CourseApp.formulaQuestion().cursor,1);click('[data-qa-extra-answer]');assert.ok(w.CourseApp.formulaQuestion().qaInspect);change('#qa-extra-level','1');assert.equal(w.CourseApp.qaExtraLevel(),1);
   assert.throws(()=>w.LearningTools.backupData(),/QA/);
