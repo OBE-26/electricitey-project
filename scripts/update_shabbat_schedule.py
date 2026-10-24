@@ -28,7 +28,7 @@ def build_schedule(data, source):
 def main():
     today = date.today()
     start = today - timedelta(days=30)
-    end = today + timedelta(days=800)
+    end = date(today.year + 2, 12, 31)
     source = ('https://www.hebcal.com/hebcal?v=1&cfg=json&c=on&geo=geoname&geonameid=281184'
               f'&b=40&M=on&i=on&start={start.isoformat()}&end={end.isoformat()}')
     with urllib.request.urlopen(source, timeout=30) as response:

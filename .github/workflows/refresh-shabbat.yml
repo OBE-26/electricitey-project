@@ -2,6 +2,7 @@ name: Refresh Jerusalem Shabbat schedule
 on:
   schedule:
     - cron: '15 2 * * 0'
+    - cron: '15 0 1 1 *' # January 1, 02:15 Jerusalem (UTC+2 in January)
   workflow_dispatch:
 permissions:
   contents: write
