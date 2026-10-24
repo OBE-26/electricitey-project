@@ -29,7 +29,7 @@ jobs:
         with:
           node-version: '22'
       - name: Prepare the stable tree without rewriting history
-        run: git restore --source=b115c8071e3e3c57b19ab35a7e959fa42581d06e --staged --worktree .
+        run: git restore --source=b115c8071e3e3c57b19ab35a7e959fa42581d06e --staged --worktree -- . ':(exclude).github/workflows/**' ':(exclude)scripts/update_shabbat_schedule.py' ':(exclude)data/shabbat_jerusalem.json' ':(exclude)tests/test_shabbat_schedule.py' ':(exclude)tests/test_rollback.py' ':(exclude)ROLLBACK_HE.md'
       - run: npm ci
       - run: npm test
       - name: Publish the restore as a new commit
