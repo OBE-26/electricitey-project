@@ -186,6 +186,7 @@ const fillTriangle=({ctx,definition})=>{
   assert.equal(Number(d.querySelector('#course-sim-load').value),given.U_L/given.I);
   assert.equal(Number(d.querySelector('#course-sim-internal').value),phone.rs);
   assert.equal(d.querySelectorAll('#course-sim-display .sim-component').length,2,'Completed internal-resistance exercise annotates both resistors');
+  assert.equal(d.querySelectorAll('#course-sim-display .phone-sim-table tbody tr').length,3,'Keep the internal resistance, load and total table alongside the on-wire current labels');
   click('[data-open-course-simulation]');
   assert.equal(d.querySelectorAll('#diagram-canvas .sim-voltage-drop .sim-arrow').length,2,'Enlargement preserves the two voltage arrows');
   click('[data-close-dialog="diagram-dialog"]');

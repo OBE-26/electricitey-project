@@ -151,6 +151,7 @@ const checkShabbatContrast=()=>{
    assert.ok(d.querySelector('#course-sim-voltage'),'QA simulator button routes to the mixed circuit');
    assert.equal(circuit.cursor,cursor,'Opening a QA simulator never marks answers solved');
    assert.equal(d.querySelectorAll('#course-sim-display .sim-component').length,circuit.r.length,'Every QA mixed-circuit branch has its annotations');
+   assert.equal(d.querySelectorAll('#course-sim-display table tbody tr').length,circuit.r.length,'Keep the table alongside the arrows on the mixed circuit');
    const first=d.querySelector('#course-sim-display [data-component="R1"]');
    assert.ok(Math.abs(Number(first.dataset.current)-circuit.currents[0])<1e-12);
    assert.ok(first.querySelector('.sim-voltage-drop .sim-arrow'));

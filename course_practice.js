@@ -182,9 +182,13 @@ const CoursePractice = (() => {
     const iSymbol=id.replace(/^R/,'I'),uSymbol=id==='R_s'?'ΔU_s':id.replace(/^R/,'U');
     const tx=x+(vertical?35:0),anchor=vertical?'start':'middle';
     const currentArrow=vertical?arrow(x,y-67,x,y-42,red):reverse?arrow(x+72,y,x+46,y,red):arrow(x-72,y,x-46,y,red);
+    // Keep the current name, value and unit immediately beside its wire arrow.
+    // On a return wire both the arrow and its label follow the reverse direction.
+    const currentX=vertical?x+20:x+(reverse?72:-72),currentY=y+(vertical?-48:-17);
+    const currentAnchor=vertical||!reverse?'start':'end';
     const voltageArrow=vertical?arrow(x-30,y-30,x-30,y+30,green):reverse?arrow(x+38,y+29,x-38,y+29,green):arrow(x-38,y+29,x+38,y+29,green);
     const polarity=vertical?label(x-43,y-23,'+',green)+label(x-43,y+34,'−',green):label(x+(reverse?49:-49),y+34,'+',green)+label(x+(reverse?-49:49),y+34,'−',green);
-    return `<g class="sim-component" data-component="${id}" data-resistance="${r}" data-current="${current}" data-voltage="${drop}" data-resistance-unit="${resistanceUnit}" data-current-unit="${currentUnit}" data-voltage-unit="${voltageUnit}"><title>${id}: ${n(r)} ${resistanceUnit}; ${iSymbol} = ${n(current)} ${currentUnit}; ${uSymbol} = ${n(drop)} ${voltageUnit}</title><g class="sim-resistance">${label(tx,y+(vertical?-16:-55),`${id} = ${n(r)} ${resistanceUnit}`,ink,anchor)}</g><g class="sim-current">${currentArrow}${label(tx,y+(vertical?8:-33),`${iSymbol} = ${n(current)} ${currentUnit}`,red,anchor)}</g><g class="sim-voltage-drop">${voltageArrow}${polarity}${label(tx,y+(vertical?32:51),`${uSymbol} = ${n(drop)} ${voltageUnit}`,green,anchor)}</g></g>`;
+    return `<g class="sim-component" data-component="${id}" data-resistance="${r}" data-current="${current}" data-voltage="${drop}" data-resistance-unit="${resistanceUnit}" data-current-unit="${currentUnit}" data-voltage-unit="${voltageUnit}"><title>${id}: ${n(r)} ${resistanceUnit}; ${iSymbol} = ${n(current)} ${currentUnit}; ${uSymbol} = ${n(drop)} ${voltageUnit}</title><g class="sim-resistance">${label(tx,y+(vertical?-16:-55),`${id} = ${n(r)} ${resistanceUnit}`,ink,anchor)}</g><g class="sim-current">${currentArrow}${label(currentX,currentY,`${iSymbol} = ${n(current)} ${currentUnit}`,red,currentAnchor)}</g><g class="sim-voltage-drop">${voltageArrow}${polarity}${label(tx,y+(vertical?32:51),`${uSymbol} = ${n(drop)} ${voltageUnit}`,green,anchor)}</g></g>`;
   }
   function mixedSimulationSVG(q){
     const n=simulationNumber,ink='#fff',red='#ff6565',green='#65e680';
