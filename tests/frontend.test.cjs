@@ -150,6 +150,15 @@ const checkShabbatContrast=()=>{
    click('#qa-panel [data-go-simulator]');
    assert.ok(d.querySelector('#course-sim-voltage'),'QA simulator button routes to the mixed circuit');
    assert.equal(circuit.cursor,cursor,'Opening a QA simulator never marks answers solved');
+   assert.equal(d.querySelectorAll('#course-sim-display .sim-component').length,circuit.r.length,'Every QA mixed-circuit branch has its annotations');
+   const first=d.querySelector('#course-sim-display [data-component="R1"]');
+   assert.ok(Math.abs(Number(first.dataset.current)-circuit.currents[0])<1e-12);
+   assert.ok(first.querySelector('.sim-voltage-drop .sim-arrow'));
+   assert.equal(w.getComputedStyle(d.querySelector('.mixed-current-flow')).animation,'none','Mixed simulation respects reduced motion');
+   click('[data-open-course-simulation]');
+   assert.equal(d.querySelectorAll('#diagram-canvas .sim-component').length,circuit.r.length,'Enlarged mixed simulation keeps all component data');
+   assert.ok(d.querySelector('#diagram-dialog').classList.contains('dark-diagram'));
+   click('[data-close-dialog="diagram-dialog"]');
    assert.equal(d.querySelector('#tab-simulator').getAttribute('aria-selected'),'true');
    click('[data-course-action="simulator"]');
    if(!d.querySelector('.circuit-reductions'))click('[data-extra-action="solution"]');
@@ -196,6 +205,10 @@ const checkShabbatContrast=()=>{
    assert.ok(Math.abs(Number(d.querySelector('.phone-current-flow').dataset.current)-expected)<1e-12,'Calculations retain full precision');
    assert.ok(Math.abs(readCurrent()-expected)<=(milliCurrent?5e-8:5e-5)+1e-12,'Displayed current is rounded to at most four decimal places');
    const actual=Number(d.querySelector('.phone-current-flow').dataset.current);click('#course-sim-units');
+   const shownCurrent=d.querySelector('#course-sim-display [data-component="R_L"]');
+   assert.equal(shownCurrent.dataset.currentUnit,wasMilli?'A':'mA');
+   assert.ok(Math.abs(Number(shownCurrent.dataset.current)-actual*(wasMilli?1:1000))<1e-9);
+   assert.equal(d.querySelectorAll('#course-sim-display .sim-voltage-drop .sim-arrow').length,2);
    assert.equal(Number(d.querySelector('.phone-current-flow').dataset.current),actual,'Unit toggle preserves the physical circuit in every internal-resistance exercise');
    assert.ok(Math.abs(Number(d.querySelector('#course-sim-internal').value)-internalValue*2*(wasMilli?.001:1000))<1e-9);
    assert.equal(JSON.stringify(question.givens),givens);click('[data-course-action="simulator"]');
@@ -205,6 +218,16 @@ const checkShabbatContrast=()=>{
   change('#qa-extra-exercise',chargeOption.value);
   assert.equal(d.querySelector('#tab-simulator').hidden,false,'General simulator stays visible for charge/time exercises too');
   click('#tab-simulator');assert.ok(d.querySelector('#simulator-workspace .simulator'),'General battery practice keeps the circuit builder available');
+  for(const profile of ['hvac','security','mobile']){
+   change('#qa-course-switch',profile);click('[data-course-action="practice"]');
+   for(const kind of ['ohm','series','parallel']){
+    click(`[data-tab="${kind}"]`);click('#qa-panel [data-go-simulator]');
+    assert.ok(d.querySelectorAll('#sim-diagram .sim-component').length>0,'QA simulator annotations in '+profile+' '+kind);
+    click('#sim-diagram [data-open-diagram]');
+    assert.equal(d.querySelectorAll('#diagram-canvas .sim-component').length,d.querySelectorAll('#sim-diagram .sim-component').length);
+    click('[data-close-dialog="diagram-dialog"]');
+   }
+  }
   change('#qa-course-switch','hvac');
   click('[data-course-action="theory"]');
   await waitFor(()=>d.querySelectorAll('.theory-question').length===20);

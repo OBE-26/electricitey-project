@@ -185,6 +185,10 @@ const fillTriangle=({ctx,definition})=>{
   assert.equal(Number(d.querySelector('#course-sim-source').value),given.U_t);
   assert.equal(Number(d.querySelector('#course-sim-load').value),given.U_L/given.I);
   assert.equal(Number(d.querySelector('#course-sim-internal').value),phone.rs);
+  assert.equal(d.querySelectorAll('#course-sim-display .sim-component').length,2,'Completed internal-resistance exercise annotates both resistors');
+  click('[data-open-course-simulation]');
+  assert.equal(d.querySelectorAll('#diagram-canvas .sim-voltage-drop .sim-arrow').length,2,'Enlargement preserves the two voltage arrows');
+  click('[data-close-dialog="diagram-dialog"]');
   assert.ok(Math.abs(batteryCurrent()-given.I)<1e-6,'Reset restores original exercise conditions');
   click('[data-course-action="simulator"]');
   assert.equal(phone.cursor,1);assert.equal(phone.accepted,true,'Simulation preserves the solved answer');
@@ -237,6 +241,17 @@ const fillTriangle=({ctx,definition})=>{
   const before=d.querySelector('#course-sim-display').textContent;
   input('#course-sim-voltage',String(circuit.u/2));
   assert.notEqual(d.querySelector('#course-sim-display').textContent,before,'Slider updates circuit values');
+  const mixedAnimate=d.querySelector('#course-sim-animate');mixedAnimate.checked=false;mixedAnimate.dispatchEvent(new w.Event('change',{bubbles:true}));
+  assert.ok(d.querySelector('.mixed-current-flow.is-paused'),'Mixed animation can pause while keeping its values');
+  const annotated=d.querySelectorAll('#course-sim-display .sim-component');assert.equal(annotated.length,circuit.r.length);
+  for(const component of annotated){
+   const i=Number(component.dataset.component.slice(1))-1;
+   assert.ok(Math.abs(Number(component.dataset.current)-circuit.currents[i]/2)<1e-12,'Per-branch current follows voltage slider');
+   assert.ok(Math.abs(Number(component.dataset.voltage)-circuit.voltages[i]/2)<1e-12,'Voltage-arrow value follows voltage slider');
+  }
+  click('[data-open-course-simulation]');
+  assert.equal(d.querySelector('#diagram-canvas').innerHTML,d.querySelector('#course-sim-display svg').outerHTML,'Enlargement shows the current slider settings');
+  click('[data-close-dialog="diagram-dialog"]');
   assert.ok(Math.abs(parseFloat(d.querySelector('#course-sim-display .metric:nth-child(3) bdi').textContent)-circuit.it/2)<0.011,'Half source voltage gives half total current');
   assert.ok(Math.abs(parseFloat(d.querySelector('#course-sim-display .metric:nth-child(4) bdi').textContent)-circuit.u*circuit.it/4)<0.011,'Half source voltage gives one-quarter total power');
   click('[data-course-action="simulator"]');

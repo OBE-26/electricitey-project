@@ -170,7 +170,68 @@ const CoursePractice = (() => {
     for(let i=result.length-1;i>0;i--){const j=Math.floor(rng()*(i+1));[result[i],result[j]]=[result[j],result[i]];}
     return result.map(q=>({...q,cursor:0,draft:'',attempts:0,hint:false,solution:false,accepted:false,helped:false}));
   }
-  function mixedSVG(q,stage=0,showNodes=false){
+  // One notation and palette for every simulator, including enlarged diagrams.
+  // Values stay unrounded in the model; rounding is only applied to these labels.
+  function simulationAnnotations({id,x,y,vertical=false,reverse=false,r,current,drop,resistanceUnit='Ω',currentUnit='A',voltageUnit='V'}){
+    const ink='#fff',red='#ff6565',green='#65e680',n=simulationNumber;
+    const label=(tx,ty,value,color,anchor='middle')=>`<text x="${tx}" y="${ty}" fill="${color}" text-anchor="${anchor}" font-size="16" font-family="Arial,sans-serif" direction="ltr">${value}</text>`;
+    const arrow=(x1,y1,x2,y2,color)=>{
+      const dx=x2-x1,dy=y2-y1,length=Math.hypot(dx,dy),ux=dx/length,uy=dy/length;
+      return `<path class="sim-arrow" d="M${x1} ${y1}L${x2} ${y2}M${x2-ux*8-uy*4} ${y2-uy*8+ux*4}L${x2} ${y2}L${x2-ux*8+uy*4} ${y2-uy*8-ux*4}" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`;
+    };
+    const iSymbol=id.replace(/^R/,'I'),uSymbol=id==='R_s'?'ΔU_s':id.replace(/^R/,'U');
+    const tx=x+(vertical?35:0),anchor=vertical?'start':'middle';
+    const currentArrow=vertical?arrow(x,y-67,x,y-42,red):reverse?arrow(x+72,y,x+46,y,red):arrow(x-72,y,x-46,y,red);
+    const voltageArrow=vertical?arrow(x-30,y-30,x-30,y+30,green):reverse?arrow(x+38,y+29,x-38,y+29,green):arrow(x-38,y+29,x+38,y+29,green);
+    const polarity=vertical?label(x-43,y-23,'+',green)+label(x-43,y+34,'−',green):label(x+(reverse?49:-49),y+34,'+',green)+label(x+(reverse?-49:49),y+34,'−',green);
+    return `<g class="sim-component" data-component="${id}" data-resistance="${r}" data-current="${current}" data-voltage="${drop}" data-resistance-unit="${resistanceUnit}" data-current-unit="${currentUnit}" data-voltage-unit="${voltageUnit}"><title>${id}: ${n(r)} ${resistanceUnit}; ${iSymbol} = ${n(current)} ${currentUnit}; ${uSymbol} = ${n(drop)} ${voltageUnit}</title><g class="sim-resistance">${label(tx,y+(vertical?-16:-55),`${id} = ${n(r)} ${resistanceUnit}`,ink,anchor)}</g><g class="sim-current">${currentArrow}${label(tx,y+(vertical?8:-33),`${iSymbol} = ${n(current)} ${currentUnit}`,red,anchor)}</g><g class="sim-voltage-drop">${voltageArrow}${polarity}${label(tx,y+(vertical?32:51),`${uSymbol} = ${n(drop)} ${voltageUnit}`,green,anchor)}</g></g>`;
+  }
+  function mixedSimulationSVG(q){
+    const n=simulationNumber,ink='#fff',red='#ff6565',green='#65e680';
+    const scale=q.currentUnit==='mA'?.001:q.currentUnit==='μA'?.000001:1;
+    const text=(x,y,value,color=ink,anchor='middle')=>`<text x="${x}" y="${y}" fill="${color}" text-anchor="${anchor}" font-size="17" font-family="Arial,sans-serif" direction="ltr">${value}</text>`;
+    const wire=(d,current)=>{
+      const amps=current*scale,duration=Math.max(.25,Math.min(8,3/Math.max(.01,amps)));
+      const flow=current>0?`<path class="mixed-current-flow${q.simAnimate===false?' is-paused':''}" d="${d}" fill="none" stroke="${red}" stroke-width="3.5" style="--mixed-flow-duration:${duration}s" data-current="${amps}" aria-hidden="true"/>`:'';
+      return `<path d="${d}" fill="none" stroke="${ink}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>${flow}`;
+    };
+    const node=(x,y,i,vertical=false,reverse=false)=>`<g class="mixed-resistor" data-symbol="R${i+1}" data-from="${q.resistorNodes[i].from}" data-to="${q.resistorNodes[i].to}"><rect x="${x-(vertical?12:38)}" y="${y-(vertical?30:12)}" width="${vertical?24:76}" height="${vertical?60:24}" fill="#000" stroke="${ink}" stroke-width="2.5"/>${simulationAnnotations({id:'R'+(i+1),x,y,vertical,reverse,r:q.r[i],current:q.currents[i],drop:q.voltages[i],resistanceUnit:q.resistanceUnit,currentUnit:q.currentUnit})}</g>`;
+    const junction=(x,y)=>`<circle cx="${x}" cy="${y}" r="4" fill="${ink}"/>`;
+    const source=(top,bottom)=>{
+      const mid=(top+bottom)/2;
+      return wire(`M100 ${top}V${mid-14}M100 ${mid+14}V${bottom}M77 ${mid-14}H123M87 ${mid+14}H113`)+text(69,mid-16,'+')+text(69,mid+26,'−')+text(145,mid+5,`U = ${n(q.u)} V`,green,'start');
+    };
+    let content='',width=960,height=560;
+    if(q.variant.startsWith('parallel-groups')){
+      width=1160;height=550;const top=190,bottom=440;
+      content=wire('M110 440V190H200',q.it)+wire('M440 190H700',q.it)+wire('M940 190H1050V440H485',q.it)+wire('M455 440H110',q.it)
+        +wire('M455 417V463M485 427V453')+text(441,418,'+')+text(499,418,'−')+text(470,514,`U = ${n(q.u)} V`,green);
+      const group=(g,left,right)=>g.branches.map((branch,bi)=>{
+        const x=(left+right)/2,y=bi===0?100:280,i=branch[0];
+        return wire(`M${left} ${top}V${y}H${right}V${top}`,q.currents[i])+node(x,y,i);
+      }).join('')+junction(left,top)+junction(right,top);
+      content+=group(q.groups[0],200,440)+node(570,top,2)+group(q.groups[2],700,940)+node(820,bottom,5,false,true);
+    }else if(q.family==='parallel-series'){
+      const top=65,bottom=490,xs=[350,680];
+      content=source(top,bottom)+wire(`M100 ${top}H680`,q.it)+wire(`M680 ${bottom}H100`,q.it);
+      q.groups[0].branches.forEach((branch,bi)=>{
+        const x=xs[bi],ys=branch.length===1?[280]:[180,370];
+        content+=wire(`M${x} ${top}V${bottom}`,q.currents[branch[0]])+junction(x,top)+junction(x,bottom);
+        branch.forEach((i,j)=>{content+=node(x,ys[j],i,true);});
+      });
+    }else{
+      const top=100,bottom=490,xs=q.groups[1].branches.map((_,i)=>500+i*290),end=xs.at(-1);
+      width=end+230;
+      content=source(top,bottom)+wire(`M100 ${top}H${end}`,q.it)+wire(`M${end} ${bottom}H100`,q.it)+node(270,top,0);
+      q.groups[1].branches.forEach((branch,bi)=>{
+        const x=xs[bi],i=branch[0];
+        content+=wire(`M${x} ${top}V${bottom}`,q.currents[i])+node(x,300,i,true)+junction(x,top)+junction(x,bottom);
+      });
+    }
+    return `<svg xmlns="http://www.w3.org/2000/svg" class="mixed-circuit-svg mixed-simulation-svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="סימולטור ${q.title}: זרם בכל ענף, מפל מתח עם כיוון וערך ההתנגדות על כל נגד" data-family="${q.family}" data-stage="0" style="background:#000"><desc>זרם מוסכם באדום; מפל מתח בירוק מהפלוס למינוס; התנגדות בלבן.</desc>${content}</svg>`;
+  }
+  function mixedSVG(q,stage=0,showNodes=false,simulation=false){
+    if(simulation)return mixedSimulationSVG(q);
     const groups=q.diagrams[Math.max(0,Math.min(stage,q.diagrams.length-1))];
     const ink='var(--ink)',card='var(--card)';
     const wire=path=>`<path d="${path}" fill="none" stroke="${ink}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>`;
@@ -219,7 +280,32 @@ const CoursePractice = (() => {
     const label=stage===0?'המעגל המקורי — '+q.title:'צמצום '+stage+': '+q.reductions[stage-1].title;
     return `<svg class="mixed-circuit-svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="${label}" data-family="${q.family}" data-stage="${stage}">${content}</svg>`;
   }
+  function phoneSimulationSVG(q){
+    const given=Object.fromEntries(q.givens.map(([key,value])=>[key,value])),n=simulationNumber;
+    const ink='#fff',red='#ff6565',green='#65e680',voltageUnit=q.voltageUnit??'V',resistanceUnit=q.resistanceUnit??'Ω';
+    const currentUnit=q.simCurrentUnit==='mA'?'mA':'A',current=given.I*(currentUnit==='mA'?1000:1);
+    const load=q.simLoadResistance??given.U_L/given.I;
+    const text=(x,y,value,color=ink,size=17)=>`<text x="${x}" y="${y}" fill="${color}" font-size="${size}" font-family="Arial,sans-serif" text-anchor="middle" direction="ltr">${value}</text>`;
+    const duration=Math.max(.25,Math.min(8,3/Math.max(.01,given.I))),paused=q.simAnimate===false||given.I<=0;
+    return `<svg xmlns="http://www.w3.org/2000/svg" class="phone-battery-svg" viewBox="0 0 950 500" role="img" aria-label="סוללה עם התנגדות פנימית ועומס: זרם, התנגדות ומפל מתח בכל רכיב" style="background:#000">
+      <rect x="40" y="40" width="390" height="425" rx="17" fill="none" stroke="#69717b" stroke-dasharray="6 5"/>
+      ${text(235,24,'סוללה',ink,19)}
+      <path d="M110 249V125H277M353 125H690V250M690 310V430H110V301" fill="none" stroke="${ink}" stroke-width="2.5"/>
+      <circle cx="110" cy="275" r="26" fill="#000" stroke="${ink}" stroke-width="2.5"/>
+      ${text(110,269,'+',ink,22)}${text(110,292,'−',ink,22)}${text(265,280,`U_t = ${n(given.U_t)} ${voltageUnit}`,green)}
+      <rect x="277" y="113" width="76" height="24" fill="#000" stroke="${ink}" stroke-width="2.5"/>
+      <circle cx="550" cy="125" r="4" fill="${ink}"/><circle cx="550" cy="430" r="4" fill="${ink}"/>
+      <rect x="605" y="65" width="310" height="400" rx="24" fill="none" stroke="${ink}" stroke-width="2.5"/>
+      <path d="M730 85H790M730 449H790" stroke="${ink}" stroke-width="3"/>
+      <rect x="678" y="250" width="24" height="60" fill="#000" stroke="${ink}" stroke-width="2.5"/>
+      <path class="phone-current-flow${paused?' is-paused':''}" d="M110 249V125H690V430H110V301" fill="none" stroke="${red}" stroke-width="3.5" stroke-linecap="round" style="--phone-flow-duration:${duration}s" data-current="${given.I}" aria-hidden="true"/>
+      ${simulationAnnotations({id:'R_s',x:315,y:125,r:q.rs,current,drop:given.U_t-given.U_L,resistanceUnit,currentUnit,voltageUnit})}
+      ${simulationAnnotations({id:'R_L',x:690,y:280,vertical:true,r:load,current,drop:given.U_L,resistanceUnit,currentUnit,voltageUnit})}
+      ${text(760,390,'מעגלי הטלפון',ink,19)}${text(235,488,'מקור אידאלי והתנגדות פנימית',ink,16)}
+    </svg>`;
+  }
   function phoneBatterySVG(q,simulation=false){
+    if(simulation)return phoneSimulationSVG(q);
     const format=simulation?simulationNumber:fmt;
     const given=Object.fromEntries(q.givens.map(([key,value])=>[key,value]));
     const showDrop=simulation||q.solution||q.cursor>0||q.cursor===0&&q.accepted;
@@ -256,6 +342,6 @@ const CoursePractice = (() => {
       ${text(177,334,'מקור אידאלי והתנגדות פנימית',ink,15)}
     </svg>`;
   }
-  return {random,mixed,battery,internalResistance,batch,mixedSVG,phoneBatterySVG,simulationNumber};
+  return {random,mixed,battery,internalResistance,batch,mixedSVG,phoneBatterySVG,simulationNumber,simulationAnnotations};
 })();
 if(typeof module!=='undefined')module.exports=CoursePractice;

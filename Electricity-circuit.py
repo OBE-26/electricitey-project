@@ -964,94 +964,21 @@ function circuitSVG(q, options = {}) {
   const moving = complete && options.animate !== false && voltage > 0;
   const model = DC.physics(q.kind, voltage, q.resistances);
   const baseline = DC.physics(q.kind, q.voltage, q.resistances);
-  const referencePower = Math.max(...baseline.powers);
-  const parallel = q.kind === 'parallel';
-  const count = q.resistances.length;
-  const xs = parallel ? (count === 2 ? [350, 610] : [280, 475, 670])
-    : count === 1 ? [450] : count === 2 ? [330, 600] : [260, 450, 640];
-  const parts = [];
-  const text = (x, y, value, size = 17, anchor = 'middle', color = palette.text) =>
-    `<text x="${x}" y="${y}" text-anchor="${anchor}" font-family="Arial,sans-serif" font-size="${size}" fill="${color}" direction="ltr">${value}</text>`;
-  const wire = d => `<path d="${d}" fill="none" stroke="${palette.wire}" stroke-width="3" stroke-linecap="round"/>`;
-  const flow = (d, current) => `<path d="${d}" fill="none" stroke="${palette.current}" stroke-width="4" stroke-dasharray="7 20" class="${moving ? 'flow' : ''}" style="${moving ? `animation-duration:${Math.max(.65, 3.2 / (1 + current * .35))}s` : 'animation:none'}" opacity="${voltage > 0 ? .9 : 0}"/>`;
-  const arrow = (x, y, direction) => {
-    const coordinates = direction === 'right' ? `${x - 7},${y - 5} ${x + 6},${y} ${x - 7},${y + 5}`
-      : direction === 'down' ? `${x - 5},${y - 7} ${x},${y + 6} ${x + 5},${y - 7}`
-      : `${x + 7},${y - 5} ${x - 6},${y} ${x + 7},${y + 5}`;
-    return `<polygon points="${coordinates}" fill="${palette.current}"/>`;
-  };
-  if (parallel) {
-    const end=xs[count-1];
-    parts.push(wire(`M85 184 L85 100 L${end} 100`), wire(`M85 246 L85 330 L${end} 330`));
-    xs.forEach(x => parts.push(wire(`M${x} 100 L${x} 330`)));
-    if (complete) {
-      xs.forEach((x, j) => parts.push(flow(`M85 184 L85 100 L${x} 100 L${x} 330 L85 330 L85 246`, model.currents[j])));
-      if (voltage > 0) {
-        parts.push(arrow(175, 100, 'right'), arrow(185, 330, 'left'));
-        xs.forEach((x, j) => { parts.push(arrow(x, 147, 'down')); parts.push(text(x + 35, 294, `I${j + 1} = ${quantity(q,'I',model.currents[j])}`, 14, 'start', palette.current)); });
-      }
-    }
-    xs.forEach(x => parts.push(`<circle cx="${x}" cy="100" r="4" fill="${palette.wire}"/><circle cx="${x}" cy="330" r="4" fill="${palette.wire}"/>`));
-  } else {
-    const path = 'M85 184 L85 100 L735 100 L735 330 L85 330 L85 246';
-    parts.push(wire(path));
-    if (complete) {
-      parts.push(flow(path, model.total));
-      if (voltage > 0) parts.push(arrow(166, 100, 'right'), arrow(735, 214, 'down'), arrow(395, 330, 'left'), text(435, 312, `I = ${quantity(q,'I',model.total)}`, 16, 'middle', palette.current));
-    }
-  }
-  q.resistances.forEach((r, j) => {
-    const x = xs[j], y = parallel ? 215 : 100;
-    const known = complete || q.kind !== 'ohm' || Object.hasOwn(q.givens, 'R');
-    const resistance = known ? quantity(q,'R',r) : `? ${q.units?.R??'Ω'}`;
-    if (q.lamps[j]) {
-      const brightness = complete && voltage > 0 ? Math.min(1, model.powers[j] / (referencePower * 1.4)) : 0;
-      if (brightness) parts.push(`<circle cx="${x}" cy="${y}" r="43" fill="#ffffff" opacity="${brightness * .32}"/>`);
-      parts.push(`<circle cx="${x}" cy="${y}" r="25" fill="${palette.surface}" stroke="${palette.wire}" stroke-width="2.5"/>`);
-      if (brightness) parts.push(`<circle cx="${x}" cy="${y}" r="21" fill="#ffffff" opacity="${brightness * .15}"/>`);
-      parts.push(`<path d="M${x - 16} ${y - 16} L${x + 16} ${y + 16} M${x + 16} ${y - 16} L${x - 16} ${y + 16}" stroke="${palette.wire}" stroke-width="2"/>`);
-    } else {
-      parts.push(`<rect x="${x - (parallel ? 17 : 31)}" y="${y - (parallel ? 30 : 17)}" width="${parallel ? 34 : 62}" height="${parallel ? 60 : 34}" rx="2" fill="${palette.surface}" stroke="${palette.wire}" stroke-width="2.5"/>`);
-    }
-    if (parallel) {
-      parts.push(text(x + 35, y - 10, `R${j + 1}`, 16, 'start'), text(x + 35, y + 14, resistance, 16, 'start'));
-      if (complete) parts.push(text(x + 35, y + 39, `${quantity(q,'P',model.powers[j])}`, 13, 'start', palette.power), text(x + 35, y + 61, `U${j + 1} = ${DC.fmt(model.drops[j])} V`, 13, 'start', palette.voltage));
-    } else {
-      parts.push(text(x, 53, `R${j + 1} = ${resistance}`, 17));
-      if (complete) {
-        parts.push(text(x, 152, `U${j + 1} = ${DC.fmt(model.drops[j])} V`, 14, 'middle', palette.voltage));
-        parts.push(text(x, 177, `P${j + 1} = ${quantity(q,'P',model.powers[j])}`, 14, 'middle', palette.power));
-      }
-    }
-  });
-  parts.push(`<circle cx="85" cy="215" r="31" fill="${palette.surface}" stroke="${palette.wire}" stroke-width="2.5"/>`);
-  parts.push(text(85, 204, '+', 19), text(85, 223, 'DC', 14), text(85, 239, '−', 18));
-  const knownVoltage = complete || Object.hasOwn(q.givens, 'U');
-  parts.push(text(138, 222, `U = ${knownVoltage ? DC.fmt(voltage) : '?'} V`, 16, 'start'));
-  const title = `${q.kind === 'parallel' ? 'מעגל מקבילי' : q.kind === 'series' ? 'מעגל טורי' : 'מעגל DC'} עם ${count} רכיבים`;
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 365" role="img" aria-label="${title}" dir="ltr"${complete ? ' style="background:#000000"' : ''}><title>${title}</title><desc>${complete ? `מתח המקור ${DC.fmt(voltage)} וולט. זרם כולל ${quantity(q,'I',model.total)}. זרם מסומן באדום ומפלי מתח בירוק; הערכים כתובים ליד הרכיבים.` : 'סכמה של נתוני התרגיל. מלבן הוא נגד ועיגול עם X הוא נורה.'}</desc>${parts.join('')}</svg>`;
-}
-
-function customCircuitSVG(q, options = {}) {
-  const complete = options.complete === true;
-  const palette = complete ? {text:'#ffffff',wire:'#ffffff',surface:'#000000',current:'#ff6565',voltage:'#65e680',power:'#ffffff'} : {text:'var(--diagram-ink,#203c47)',wire:'var(--diagram-wire,#687e84)',surface:'var(--diagram-surface,#fffefa)',current:'var(--diagram-current,#159485)',voltage:'var(--diagram-ink,#203c47)',power:'var(--diagram-power,#956122)'};
-  const voltage = options.voltage ?? q.voltage;
-  const moving = complete && options.animate !== false && voltage > 0;
-  const model = DC.physics(q.kind, voltage, q.resistances);
-  const baseline = DC.physics(q.kind, q.voltage, q.resistances);
   const referencePower = baseline.powers.reduce((largest,power)=>Math.max(largest,power),0);
   const parallel = q.kind === 'parallel';
   const count = q.resistances.length;
-  const extended = count > 3, width = extended ? 240 + count * 210 : 820;
-  const xs = extended ? Array.from({length:count},(_,i)=>280+i*210)
-    : parallel ? (count === 1 ? [450] : count === 2 ? [350,610] : [280,475,670])
-    : count === 1 ? [450] : count === 2 ? [330,600] : [260,450,640];
-  const right = extended ? xs[xs.length-1]+90 : 735;
+  const extended = count > 3, spacing = complete&&parallel ? 280 : 210;
+  const width = extended ? 240+count*spacing : complete&&parallel&&count===3 ? 1100 : complete&&parallel&&count===2 ? 940 : 820;
+  const xs = extended ? Array.from({length:count},(_,i)=>280+i*spacing) : parallel ? (count === 1 ? [450] : count === 2 ? [350, complete?670:610] : complete ? [300,580,860] : [280,475,670])
+    : count === 1 ? [450] : count === 2 ? [330, 600] : [260, 450, 640];
+  const right = extended ? xs.at(-1)+90 : 735;
+  const number = complete ? CoursePractice.simulationNumber : DC.fmt;
+  const quantityValue = (key,value) => complete ? simulatorQuantity(q,key,value) : quantity(q,key,value);
   const parts = [];
   const text = (x, y, value, size = 17, anchor = 'middle', color = palette.text) =>
     `<text x="${x}" y="${y}" text-anchor="${anchor}" font-family="Arial,sans-serif" font-size="${size}" fill="${color}" direction="ltr">${value}</text>`;
   const wire = d => `<path d="${d}" fill="none" stroke="${palette.wire}" stroke-width="3" stroke-linecap="round"/>`;
-  const flow = (d, current) => `<path d="${d}" fill="none" stroke="${palette.current}" stroke-width="4" stroke-dasharray="7 20" class="${moving ? 'flow' : ''}" style="${moving ? `animation-duration:${Math.max(.65, 3.2 / (1 + current * .35))}s` : 'animation:none'}" opacity="${voltage > 0 ? .9 : 0}"/>`;
+  const flow = (d, current) => `<path d="${d}" fill="none" stroke="${palette.current}" stroke-width="4" stroke-dasharray="7 20" class="sim-current-flow${moving ? ' flow' : ''}" data-current="${current}" style="${moving ? `animation-duration:${Math.max(.65, 3.2 / (1 + current * .35))}s` : 'animation:none'}" opacity="${voltage > 0 ? .9 : 0}"/>`;
   const arrow = (x, y, direction) => {
     const coordinates = direction === 'right' ? `${x - 7},${y - 5} ${x + 6},${y} ${x - 7},${y + 5}`
       : direction === 'down' ? `${x - 5},${y - 7} ${x},${y + 6} ${x + 5},${y - 7}`
@@ -1063,10 +990,14 @@ function customCircuitSVG(q, options = {}) {
     parts.push(wire(`M85 184 L85 100 L${end} 100`), wire(`M85 246 L85 330 L${end} 330`));
     xs.forEach(x => parts.push(wire(`M${x} 100 L${x} 330`)));
     if (complete) {
-      xs.forEach((x, j) => parts.push(flow(`M85 184 L85 100 L${x} 100 L${x} 330 L85 330 L85 246`, model.currents[j])));
+      parts.push(flow(`M85 184V100H${xs[0]}`,model.total),flow(`M${xs[0]} 330H85V246`,model.total));
+      xs.forEach((x,j)=>{
+        parts.push(flow(`M${x} 100V330`,model.currents[j]));
+        if(j>0){const remaining=model.currents.slice(j).reduce((sum,i)=>sum+i,0);parts.push(flow(`M${xs[j-1]} 100H${x}`,remaining),flow(`M${x} 330H${xs[j-1]}`,remaining));}
+      });
+      parts.push(text(420,354,`I_T = ${quantityValue('I',model.total)}`,16,'middle',palette.current));
       if (voltage > 0) {
         parts.push(arrow(175, 100, 'right'), arrow(185, 330, 'left'));
-        xs.forEach((x, j) => { parts.push(arrow(x, 147, 'down')); parts.push(text(x + 35, 294, `I${j + 1} = ${formatCustomNumber(model.currents[j])} A`, 14, 'start', palette.current)); });
       }
     }
     xs.forEach(x => parts.push(`<circle cx="${x}" cy="100" r="4" fill="${palette.wire}"/><circle cx="${x}" cy="330" r="4" fill="${palette.wire}"/>`));
@@ -1075,13 +1006,13 @@ function customCircuitSVG(q, options = {}) {
     parts.push(wire(path));
     if (complete) {
       parts.push(flow(path, model.total));
-      if (voltage > 0) parts.push(arrow(166, 100, 'right'), arrow(right, 214, 'down'), arrow((85+right)/2, 330, 'left'), text((85+right)/2, 312, `I = ${formatCustomNumber(model.total)} A`, 16, 'middle', palette.current));
+      if (voltage > 0) parts.push(arrow(166, 100, 'right'), arrow(right, 214, 'down'), arrow((85+right)/2, 330, 'left'), text((85+right)/2, 312, `I = ${quantityValue('I',model.total)}`, 16, 'middle', palette.current));
     }
   }
   q.resistances.forEach((r, j) => {
     const x = xs[j], y = parallel ? 215 : 100;
     const known = complete || q.kind !== 'ohm' || Object.hasOwn(q.givens, 'R');
-    const resistance = known ? `${formatCustomNumber(r)} Ω` : '? Ω';
+    const resistance = known ? quantityValue('R',r) : `? ${q.units?.R??'Ω'}`;
     if (q.lamps[j]) {
       const brightness = complete && voltage > 0 ? Math.min(1, model.powers[j] / (referencePower * 1.4)) : 0;
       if (brightness) parts.push(`<circle cx="${x}" cy="${y}" r="43" fill="#ffffff" opacity="${brightness * .32}"/>`);
@@ -1091,24 +1022,23 @@ function customCircuitSVG(q, options = {}) {
     } else {
       parts.push(`<rect x="${x - (parallel ? 17 : 31)}" y="${y - (parallel ? 30 : 17)}" width="${parallel ? 34 : 62}" height="${parallel ? 60 : 34}" rx="2" fill="${palette.surface}" stroke="${palette.wire}" stroke-width="2.5"/>`);
     }
-    if (parallel) {
-      parts.push(text(x + 35, y - 10, `R${j + 1}`, 16, 'start'), text(x + 35, y + 14, resistance, 16, 'start'));
-      if (complete) parts.push(text(x + 35, y + 39, `${formatCustomNumber(model.powers[j])} W`, 13, 'start', palette.power), text(x + 35, y + 61, `U${j + 1} = ${formatCustomNumber(model.drops[j])} V`, 13, 'start', palette.voltage));
-    } else {
-      parts.push(text(x, 53, `R${j + 1} = ${resistance}`, 17));
-      if (complete) {
-        parts.push(text(x, 152, `U${j + 1} = ${formatCustomNumber(model.drops[j])} V`, 14, 'middle', palette.voltage));
-        parts.push(text(x, 177, `P${j + 1} = ${formatCustomNumber(model.powers[j])} W`, 14, 'middle', palette.power));
-      }
-    }
+    if (complete) {
+      parts.push(CoursePractice.simulationAnnotations({id:'R'+(j+1),x,y,vertical:parallel,r:displayValue(q,'R',r),current:displayValue(q,'I',model.currents[j]),drop:model.drops[j],resistanceUnit:q.units?.R??'Ω',currentUnit:q.units?.I??'A'}));
+      parts.push(parallel ? text(x+35,y+57,`P${j+1} = ${quantityValue('P',model.powers[j])}`,13,'start',palette.power) : text(x,177,`P${j+1} = ${quantityValue('P',model.powers[j])}`,14,'middle',palette.power));
+    } else if (parallel) {
+      parts.push(text(x+35,y-10,`R${j+1}`,16,'start'),text(x+35,y+14,resistance,16,'start'));
+    } else parts.push(text(x,53,`R${j+1} = ${resistance}`,17));
   });
   parts.push(`<circle cx="85" cy="215" r="31" fill="${palette.surface}" stroke="${palette.wire}" stroke-width="2.5"/>`);
   parts.push(text(85, 204, '+', 19), text(85, 223, 'DC', 14), text(85, 239, '−', 18));
   const knownVoltage = complete || Object.hasOwn(q.givens, 'U');
-  parts.push(text(138, 222, `U = ${knownVoltage ? formatCustomNumber(voltage) : '?'} V`, 16, 'start'));
+  parts.push(text(138, 222, `U = ${knownVoltage ? number(voltage) : '?'} V`, 16, 'start', complete ? palette.voltage : palette.text));
   const title = `${q.kind === 'parallel' ? 'מעגל מקבילי' : q.kind === 'series' ? 'מעגל טורי' : 'מעגל DC'} עם ${count} רכיבים`;
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} 365" role="img" aria-label="${title}" dir="ltr"${complete ? ` style="background:#000000${extended ? ';width:'+width+'px;max-width:none' : ''}"` : ''}><title>${title}</title><desc>${complete ? `מתח המקור ${formatCustomNumber(voltage)} וולט. זרם כולל ${formatCustomNumber(model.total)} אמפר. זרם מסומן באדום ומפלי מתח בירוק; הערכים כתובים ליד הרכיבים.` : 'סכמה של נתוני התרגיל. מלבן הוא נגד ועיגול עם X הוא נורה.'}</desc>${parts.join('')}</svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} 365" role="img" aria-label="${title}" dir="ltr"${complete ? ` style="background:#000000${extended ? ';width:'+width+'px;max-width:none' : ''}"` : ''}><title>${title}</title><desc>${complete ? `מתח המקור ${number(voltage)} וולט. זרם כולל ${quantityValue('I',model.total)}. זרם מסומן באדום ומפלי מתח בירוק; הערכים כתובים ליד הרכיבים.` : 'סכמה של נתוני התרגיל. מלבן הוא נגד ועיגול עם X הוא נורה.'}</desc>${parts.join('')}</svg>`;
 }
+
+
+function customCircuitSVG(q,options={}) { return circuitSVG(q,options); }
 
 const $ = id => document.getElementById(id);
 const escapeHTML = value => String(value).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
@@ -1699,7 +1629,7 @@ function openDiagram(source) {
   const q = source === 'simulator' ? activeSimulatorQuestion() : currentQuestion();
   $('diagram-context').innerHTML=source==='simulator'?'':circuitSummaryHTML(q);
   $('diagram-canvas').innerHTML = (q.custom ? customCircuitSVG : circuitSVG)(q, source === 'simulator' ? { complete:true, voltage:q.simVoltage, animate:q.simAnimate } : {});
-  diagramBaseWidth = q.custom && q.resistances.length > 3 ? 240 + q.resistances.length * 210 : 0;
+  diagramBaseWidth = q.custom && q.resistances.length > 3 ? Number($('diagram-canvas').querySelector('svg').getAttribute('viewBox').split(/\s+/)[2]) : 0;
   if (diagramBaseWidth) $('diagram-canvas').querySelector('svg').style.width = '100%';
   $('diagram-canvas').style.width = '100%';
   openDialog('diagram-dialog');
@@ -1771,9 +1701,9 @@ function exerciseNavigationHTML() {
   return `<nav class="exercise-navigation" aria-label="מעבר בין תרגילים"><button class="btn secondary tiny" data-previous-solved${previous?'':' disabled'}>תרגיל קודם →</button><label class="solved-picker" for="solved-exercises"><span class="small">תרגילים שנפתרו</span><select id="solved-exercises"><option value="">בחירת תרגיל פתור</option>${options}</select></label>${reviewReturn?'<button class="btn secondary tiny" data-resume-exercise>חזרה לתרגול הנוכחי</button>':''}</nav>`;
 }
 function activeSimulatorQuestion() { return simulatorMode==='custom' ? customSimulator : simulatorQuestion ?? currentQuestion(); }
-function formatCustomNumber(value) { return Number(value.toPrecision(6)).toString(); }
-function simulatorNumber(q,value) { return q.custom ? formatCustomNumber(value) : DC.fmt(value); }
-function simulatorQuantity(q,key,value) { return q.custom ? `${formatCustomNumber(value)} ${units[key[0]]}` : quantity(q,key,value); }
+function formatCustomNumber(value) { return CoursePractice.simulationNumber(value); }
+function simulatorNumber(q,value) { return CoursePractice.simulationNumber(value); }
+function simulatorQuantity(q,key,value) { return `${simulatorNumber(q,displayValue(q,key,value))} ${(q.units??units)[key==='Req'?'R':key[0]]}`; }
 function customBuilderHTML() {
   const rows=customDraft.resistances.map((value,index)=>`<div class="custom-resistor"><div class="custom-field"><label for="custom-r-${index}">${bdi('R'+(index+1))} · התנגדות ${bdi('Ω')}</label><input id="custom-r-${index}" class="numeric" type="text" inputmode="decimal" maxlength="24" data-custom-resistance="${index}" value="${escapeHTML(value)}"></div><button class="btn secondary tiny" data-remove-resistor="${index}" ${customDraft.resistances.length===1?'disabled':''} aria-label="הסרת נגד R${index+1}">הסרה</button></div>`).join('');
   return `<section class="card"><h2>בניית מעגל משלכם</h2><div class="custom-fields"><div class="custom-field"><label for="custom-kind">סוג המעגל</label><select id="custom-kind"><option value="series"${customDraft.kind==='series'?' selected':''}>טורי</option><option value="parallel"${customDraft.kind==='parallel'?' selected':''}>מקבילי</option></select></div><div class="custom-field"><label for="custom-voltage">מתח מקור התחלתי ${bdi('V')}</label><input id="custom-voltage" class="numeric" type="text" inputmode="decimal" maxlength="24" value="${escapeHTML(customDraft.voltage)}"></div></div><div id="custom-resistors" class="custom-resistors">${rows}</div><div class="custom-actions"><button class="btn" data-add-resistor>+ הוספת ${customDraft.kind==='parallel'?'ענף / נגד':'נגד'}</button><span class="small muted">${customDraft.resistances.length} ${customDraft.kind==='parallel'?'ענפים':'נגדים'}</span></div><p class="custom-sim-note">כל נגד במקביל נמצא בענף נפרד. אפשר להוסיף ולהסיר נגדים; החישוב מתעדכן עם שינוי הערכים.</p><div id="custom-error" class="feedback error" role="status" hidden></div></section><div id="custom-output"></div>`;
@@ -1886,7 +1816,7 @@ function syncDraft(value, source) {
   saveCourse();
 }
 function simulatorHTML(q) {
-  return `<section class="card simulator${q.custom?' custom-simulator':''}" id="simulator-section" aria-labelledby="sim-title"><div class="sim-head"><div><div class="eyebrow">אחרי החישוב — רואים את המעגל</div><h2 id="sim-title" tabindex="-1" style="margin:5px 0">סימולטור DC</h2></div><button class="btn secondary tiny" data-open-formulas>דף נוסחאות △</button></div><div class="sim-layout"><div><figure class="diagram" id="sim-diagram">${diagramPreview(q, { complete:true, voltage:q.simVoltage, animate:q.simAnimate })}</figure>${q.custom&&q.resistances.length>3?'<p class="small muted">אפשר לגלול את הסכמה לצדדים או לפתוח אותה בהגדלה.</p>':''}<div class="sim-legend"><span class="current">→ I — זרם</span><span class="voltage">ΔU — מפל מתח</span><span>רכיבים ונתונים נוספים — לבן</span></div><div id="sim-metrics">${simMetrics(q)}</div></div><div class="sim-controls"><label for="sim-voltage">שינוי מתח המקור</label><div class="sim-value" id="sim-voltage-label">${bdi(`${simulatorNumber(q,q.simVoltage)} V`)}</div><input id="sim-voltage" type="range" min="0" max="${simulatorNumber(q,q.voltage * 2)}" step="0.1" value="${q.simVoltage}" aria-describedby="sim-note"><label class="toggle"><input id="sim-animation" type="checkbox" ${personal.preferences.motion ? 'disabled' : ''} ${q.simAnimate ? 'checked' : ''}>הנפשת מסלול הזרם</label><button class="btn secondary tiny" data-reset-simulator>חזרה למתח התרגיל</button><p class="small muted" id="sim-note" style="margin:6px 0 0">החצים מציגים זרם מוסכם: מהפלוס אל המינוס דרך המעגל החיצוני. הבהירות ממחישה את ההספק בנורה בעלת התנגדות קבועה. שינוי המתח כאן אינו משנה את תשובות התרגיל.</p></div></div></section>`;
+  return `<section class="card simulator${q.custom?' custom-simulator':''}" id="simulator-section" aria-labelledby="sim-title"><div class="sim-head"><div><div class="eyebrow">אחרי החישוב — רואים את המעגל</div><h2 id="sim-title" tabindex="-1" style="margin:5px 0">סימולטור DC</h2></div><button class="btn secondary tiny" data-open-formulas>דף נוסחאות △</button></div><div class="sim-layout"><div><figure class="diagram" id="sim-diagram">${diagramPreview(q, { complete:true, voltage:q.simVoltage, animate:q.simAnimate })}</figure>${q.custom&&q.resistances.length>3?'<p class="small muted">אפשר לגלול את הסכמה לצדדים או לפתוח אותה בהגדלה.</p>':''}<div class="sim-legend"><span class="current">→ I — זרם</span><span class="voltage">ΔU — מפל מתח</span><span>רכיבים ונתונים נוספים — לבן</span></div><div id="sim-metrics">${simMetrics(q)}</div></div><div class="sim-controls"><label for="sim-voltage">שינוי מתח המקור</label><div class="sim-value" id="sim-voltage-label">${bdi(`${simulatorNumber(q,q.simVoltage)} V`)}</div><input id="sim-voltage" type="range" min="0" max="${q.voltage * 2}" step="0.1" value="${q.simVoltage}" aria-describedby="sim-note"><label class="toggle"><input id="sim-animation" type="checkbox" ${personal.preferences.motion ? 'disabled' : ''} ${q.simAnimate ? 'checked' : ''}>הנפשת מסלול הזרם</label><button class="btn secondary tiny" data-reset-simulator>חזרה למתח התרגיל</button><p class="small muted" id="sim-note" style="margin:6px 0 0">החצים מציגים זרם מוסכם: מהפלוס אל המינוס דרך המעגל החיצוני. הבהירות ממחישה את ההספק בנורה בעלת התנגדות קבועה. שינוי המתח כאן אינו משנה את תשובות התרגיל.</p></div></div></section>`;
 }
 function simMetrics(q) {
   const m = DC.physics(q.kind, q.simVoltage, q.resistances);
