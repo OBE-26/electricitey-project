@@ -4,7 +4,25 @@ const CoursePractice = (() => {
   const integer = (rng, lo, hi) => lo + Math.floor(rng() * (hi - lo + 1));
   const fmt = value => String(Math.round((value + Number.EPSILON) * 100) / 100);
   const simulationFormat=new Intl.NumberFormat('en-US',{useGrouping:false,maximumFractionDigits:4});
-  const simulationNumber=value=>simulationFormat.format(value).replace(/^-0$/,'0');
+  const smallSimulationFormat=new Intl.NumberFormat('en-US',{useGrouping:false,maximumSignificantDigits:4});
+  const simulationNumber=value=>{
+    const rounded=simulationFormat.format(value);
+    return /^-?0$/.test(rounded)?value===0?'0':smallSimulationFormat.format(value):rounded;
+  };
+  function milliSimulationNumber(value){
+    if(value===0)return '0';
+    const magnitude=Math.abs(value),sign=value<0?'-':'',integer=Math.round(magnitude);
+    // Preserve a small nonzero quantity rather than displaying a false zero.
+    if(integer===0)return smallSimulationFormat.format(value);
+    if(integer<=9999)return sign+integer;
+    // A four-digit integer coefficient keeps large milli values compact too.
+    let exponent=Math.floor(Math.log10(magnitude))-3;
+    let coefficient=Math.round(magnitude/10**exponent);
+    if(coefficient>=10000){coefficient/=10;exponent++;}
+    while(coefficient%10===0){coefficient/=10;exponent++;}
+    const power=String(exponent).replace(/\d/g,d=>'⁰¹²³⁴⁵⁶⁷⁸⁹'[d]);
+    return `${sign}${coefficient} × 10${power}`;
+  }
   const step = (key, label, unit, value, formula, substitution) => ({key,label,unit,value,formula,substitution});
   const integralBatteryIndices=[0,1,2,3,5,7,8];
   function random(seed) {
@@ -172,8 +190,8 @@ const CoursePractice = (() => {
   }
   // One notation and palette for every simulator, including enlarged diagrams.
   // Values stay unrounded in the model; rounding is only applied to these labels.
-  function simulationAnnotations({id,x,y,vertical=false,reverse=false,r,current,drop,resistanceUnit='Ω',currentUnit='A',voltageUnit='V'}){
-    const ink='#fff',red='#ff6565',green='#65e680',n=simulationNumber;
+  function simulationAnnotations({id,x,y,vertical=false,reverse=false,r,current,drop,resistanceUnit='Ω',currentUnit='A',voltageUnit='V',number=simulationNumber}){
+    const ink='#fff',red='#ff6565',green='#65e680',n=number;
     const label=(tx,ty,value,color,anchor='middle')=>`<text x="${tx}" y="${ty}" fill="${color}" text-anchor="${anchor}" font-size="16" font-family="Arial,sans-serif" direction="ltr">${value}</text>`;
     const arrow=(x1,y1,x2,y2,color)=>{
       const dx=x2-x1,dy=y2-y1,length=Math.hypot(dx,dy),ux=dx/length,uy=dy/length;
@@ -186,7 +204,8 @@ const CoursePractice = (() => {
     // On a return wire both the arrow and its label follow the reverse direction.
     const currentX=vertical?x+20:x+(reverse?72:-72),currentY=y+(vertical?-48:-17);
     const currentAnchor=vertical||!reverse?'start':'end';
-    const voltageArrow=vertical?arrow(x-30,y-30,x-30,y+30,green):reverse?arrow(x+38,y+29,x-38,y+29,green):arrow(x-38,y+29,x+38,y+29,green);
+    // Voltage reference points toward +, opposite to conventional resistor current.
+    const voltageArrow=vertical?arrow(x-30,y+30,x-30,y-30,green):reverse?arrow(x-38,y+29,x+38,y+29,green):arrow(x+38,y+29,x-38,y+29,green);
     const polarity=vertical?label(x-43,y-23,'+',green)+label(x-43,y+34,'−',green):label(x+(reverse?49:-49),y+34,'+',green)+label(x+(reverse?-49:49),y+34,'−',green);
     return `<g class="sim-component" data-component="${id}" data-resistance="${r}" data-current="${current}" data-voltage="${drop}" data-resistance-unit="${resistanceUnit}" data-current-unit="${currentUnit}" data-voltage-unit="${voltageUnit}"><title>${id}: ${n(r)} ${resistanceUnit}; ${iSymbol} = ${n(current)} ${currentUnit}; ${uSymbol} = ${n(drop)} ${voltageUnit}</title><g class="sim-resistance">${label(tx,y+(vertical?-16:-55),`${id} = ${n(r)} ${resistanceUnit}`,ink,anchor)}</g><g class="sim-current">${currentArrow}${label(currentX,currentY,`${iSymbol} = ${n(current)} ${currentUnit}`,red,currentAnchor)}</g><g class="sim-voltage-drop">${voltageArrow}${polarity}${label(tx,y+(vertical?32:51),`${uSymbol} = ${n(drop)} ${voltageUnit}`,green,anchor)}</g></g>`;
   }
@@ -232,7 +251,7 @@ const CoursePractice = (() => {
         content+=wire(`M${x} ${top}V${bottom}`,q.currents[i])+node(x,300,i,true)+junction(x,top)+junction(x,bottom);
       });
     }
-    return `<svg xmlns="http://www.w3.org/2000/svg" class="mixed-circuit-svg mixed-simulation-svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="סימולטור ${q.title}: זרם בכל ענף, מפל מתח עם כיוון וערך ההתנגדות על כל נגד" data-family="${q.family}" data-stage="0" style="background:#000"><desc>זרם מוסכם באדום; מפל מתח בירוק מהפלוס למינוס; התנגדות בלבן.</desc>${content}</svg>`;
+    return `<svg xmlns="http://www.w3.org/2000/svg" class="mixed-circuit-svg mixed-simulation-svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="סימולטור ${q.title}: זרם בכל ענף, מפל מתח עם כיוון וערך ההתנגדות על כל נגד" data-family="${q.family}" data-stage="0" style="background:#000"><desc>זרם מוסכם באדום; מפל מתח בירוק עם ראש החץ לכיוון הפלוס; התנגדות בלבן.</desc>${content}</svg>`;
   }
   function mixedSVG(q,stage=0,showNodes=false,simulation=false){
     if(simulation)return mixedSimulationSVG(q);
@@ -285,7 +304,9 @@ const CoursePractice = (() => {
     return `<svg class="mixed-circuit-svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="${label}" data-family="${q.family}" data-stage="${stage}">${content}</svg>`;
   }
   function phoneSimulationSVG(q){
-    const given=Object.fromEntries(q.givens.map(([key,value])=>[key,value])),n=simulationNumber;
+    const given=Object.fromEntries(q.givens.map(([key,value])=>[key,value]));
+    const milli=q.voltageUnit==='mV'||q.resistanceUnit==='mΩ'||q.simCurrentUnit==='mA';
+    const n=milli?milliSimulationNumber:simulationNumber;
     const ink='#fff',red='#ff6565',green='#65e680',voltageUnit=q.voltageUnit??'V',resistanceUnit=q.resistanceUnit??'Ω';
     const currentUnit=q.simCurrentUnit==='mA'?'mA':'A',current=given.I*(currentUnit==='mA'?1000:1);
     const load=q.simLoadResistance??given.U_L/given.I;
@@ -303,8 +324,8 @@ const CoursePractice = (() => {
       <path d="M730 85H790M730 449H790" stroke="${ink}" stroke-width="3"/>
       <rect x="678" y="250" width="24" height="60" fill="#000" stroke="${ink}" stroke-width="2.5"/>
       <path class="phone-current-flow${paused?' is-paused':''}" d="M110 249V125H690V430H110V301" fill="none" stroke="${red}" stroke-width="3.5" stroke-linecap="round" style="--phone-flow-duration:${duration}s" data-current="${given.I}" aria-hidden="true"/>
-      ${simulationAnnotations({id:'R_s',x:315,y:125,r:q.rs,current,drop:given.U_t-given.U_L,resistanceUnit,currentUnit,voltageUnit})}
-      ${simulationAnnotations({id:'R_L',x:690,y:280,vertical:true,r:load,current,drop:given.U_L,resistanceUnit,currentUnit,voltageUnit})}
+      ${simulationAnnotations({id:'R_s',x:315,y:125,r:q.rs,current,drop:given.I*q.rs,resistanceUnit,currentUnit,voltageUnit,number:n})}
+      ${simulationAnnotations({id:'R_L',x:690,y:280,vertical:true,r:load,current,drop:given.U_L,resistanceUnit,currentUnit,voltageUnit,number:n})}
       ${text(760,390,'מעגלי הטלפון',ink,19)}${text(235,488,'מקור אידאלי והתנגדות פנימית',ink,16)}
     </svg>`;
   }
@@ -346,6 +367,6 @@ const CoursePractice = (() => {
       ${text(177,334,'מקור אידאלי והתנגדות פנימית',ink,15)}
     </svg>`;
   }
-  return {random,mixed,battery,internalResistance,batch,mixedSVG,phoneBatterySVG,simulationNumber,simulationAnnotations};
+  return {random,mixed,battery,internalResistance,batch,mixedSVG,phoneBatterySVG,simulationNumber,milliSimulationNumber,simulationAnnotations};
 })();
 if(typeof module!=='undefined')module.exports=CoursePractice;

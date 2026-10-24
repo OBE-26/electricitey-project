@@ -1,5 +1,6 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),{spawn,execFileSync}=require('node:child_process'),readline=require('node:readline');
 const {JSDOM,VirtualConsole}=require('jsdom');
+const {physical}=require('./display_values.cjs');
 const python=process.env.CODEX_PRIMARY_RUNTIME_PYTHON||'python3';
 const raw=execFileSync(python,['-c',`import ast;from pathlib import Path;t=ast.parse(Path('Electricity-circuit.py').read_text());print(next(ast.literal_eval(n.value) for n in t.body if isinstance(n,ast.Assign) and any(getattr(a,'id','')=='APP_HTML' for a in n.targets)))`],{encoding:'utf8'});
 const html=raw.replace('/* COURSE_EXTENSION */',fs.readFileSync('course_practice.js','utf8')+'\n'+fs.readFileSync('courses.js','utf8'));
@@ -197,14 +198,14 @@ const checkShabbatContrast=()=>{
   for(const option of [...d.querySelectorAll('#qa-extra-exercise option')].filter(node=>node.textContent.includes('התנגדות פנימית'))){
    change('#qa-extra-exercise',option.value);const question=w.CourseApp.formulaQuestion(),givens=JSON.stringify(question.givens),g=Object.fromEntries(question.givens.map(([key,value])=>[key,value]));
    batteryUnits.add(question.voltageUnit);click('#tab-simulator');click('[data-course-action="reset-simulator"]');
-   const readCurrent=()=>{const text=d.querySelector('#course-sim-display .metric bdi').textContent;return parseFloat(text)*(text.endsWith('mA')?.001:1);};
+   const readCurrent=()=>physical(d.querySelector('#course-sim-display .metric bdi'));
    assert.ok(Math.abs(readCurrent()-g.I)<1e-6,'Reset restores current for either original unit system');
    const internalValue=Number(d.querySelector('#course-sim-internal').value),wasMilli=d.querySelector('#course-sim-units').getAttribute('aria-pressed')==='true';
    input('#course-sim-internal',String(internalValue*2));
    const voltage=g.U_t*(question.voltageUnit==='mV'?.001:1),rs=question.rs*(question.resistanceUnit==='mΩ'?.001:1),rl=g.U_L*(question.voltageUnit==='mV'?.001:1)/g.I;
    const expected=voltage/(rs*2+rl),milliCurrent=d.querySelector('#course-sim-display .metric bdi').textContent.endsWith('mA');
    assert.ok(Math.abs(Number(d.querySelector('.phone-current-flow').dataset.current)-expected)<1e-12,'Calculations retain full precision');
-   assert.ok(Math.abs(readCurrent()-expected)<=(milliCurrent?5e-8:5e-5)+1e-12,'Displayed current is rounded to at most four decimal places');
+   assert.ok(Math.abs(readCurrent()-expected)<=(milliCurrent?.0005:.00005)+1e-12,'Current display follows integer milli / four-decimal base precision');
    const actual=Number(d.querySelector('.phone-current-flow').dataset.current);click('#course-sim-units');
    const shownCurrent=d.querySelector('#course-sim-display [data-component="R_L"]');
    assert.equal(shownCurrent.dataset.currentUnit,wasMilli?'A':'mA');

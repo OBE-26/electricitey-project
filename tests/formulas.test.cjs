@@ -26,7 +26,7 @@ const change=(selector,value)=>{const node=d.querySelector(selector);assert.ok(n
 const tabOrder=()=>[...d.querySelectorAll('.tabs [role=tab]')].map(node=>node.dataset.tab??node.dataset.extraTab);
 const submit=selector=>d.querySelector(selector).dispatchEvent(new w.Event('submit',{bubbles:true,cancelable:true}));
 const waitFor=async test=>{for(let n=0;n<100;n++){if(test())return;await new Promise(resolve=>setTimeout(resolve,20));}throw Error('Timed out waiting for state');};
-const physical=node=>{const [value,unit]=node.textContent.trim().split(/\s+/);return Number(value)*({V:1,mV:.001,A:1,mA:.001,'Ω':1,'mΩ':.001,W:1,mW:.001}[unit]??NaN);};
+const {physical,displayed}=require('./display_values.cjs');
 const batteryCurrent=()=>physical(d.querySelector('#course-sim-display .metric bdi'));
 const closeFormulas=()=>click('#formula-dialog [data-close-dialog="formula-dialog"]');
 const openIcon=()=>click('.quickbar [data-open-formulas]');
@@ -123,18 +123,18 @@ const fillTriangle=({ctx,definition})=>{
   input('#course-sim-load',String(Number(d.querySelector('#course-sim-load').value)*2));
   assert.notEqual(d.querySelector('#course-sim-display').textContent,batteryBefore);
   const load=Number(d.querySelector('#course-sim-load').value),expectedCurrent=given.U_t/(phone.rs+load);
-  assert.ok(Math.abs(batteryCurrent()-expectedCurrent)<1e-6,'Battery simulation obeys Ohm’s law in the displayed milli units');
+  assert.ok(Math.abs(batteryCurrent()-expectedCurrent)<.0005001,'Displayed milli current agrees with Ohm’s law within integer rounding');
   assert.ok(parseFloat(d.querySelector('.phone-current-flow').style.getPropertyValue('--phone-flow-duration'))>initialDuration,'Increasing load resistance slows the current animation');
   assert.ok(d.querySelector('#course-sim-source-value').textContent.includes(String(given.U_t)),'Changing load keeps the source label valid');
   const power=kind=>physical(d.querySelector(`.phone-sim-table [data-component="${kind}"] td:last-child`));
-  assert.ok(Math.abs(power('internal')+power('load')-power('total'))<1e-6,'Internal and load powers sum to the source power');
-  assert.ok(Math.abs(power('internal')-expectedCurrent**2*phone.rs*.001)<1e-6,'mΩ resistances produce the displayed mW losses');
+  assert.ok(Math.abs(power('internal')+power('load')-power('total'))<.0015001,'Rounded milli powers conserve source power within display precision');
+  assert.ok(Math.abs(power('internal')-expectedCurrent**2*phone.rs*.001)<.0005001,'mΩ resistances produce the displayed mW losses');
   const originalInternal=Number(d.querySelector('#course-sim-internal').value),originalGivens=JSON.stringify(phone.givens);
   input('#course-sim-internal',String(originalInternal*2));
   const increasedCurrent=given.U_t/(phone.rs*2+load);
-  assert.ok(Math.abs(batteryCurrent()-increasedCurrent)<1e-6,'Changing internal resistance updates current independently of load');
+  assert.ok(Math.abs(batteryCurrent()-increasedCurrent)<.0005001,'Changing internal resistance updates current independently of load');
   assert.ok(batteryCurrent()<expectedCurrent);
-  assert.ok(Math.abs(power('internal')-increasedCurrent**2*phone.rs*2*.001)<1e-6);
+  assert.ok(Math.abs(power('internal')-increasedCurrent**2*phone.rs*2*.001)<.0005001);
   const actualFlow=Number(d.querySelector('.phone-current-flow').dataset.current),actualPower=power('total');
   click('#course-sim-units');
   assert.equal(d.querySelector('#course-sim-units').getAttribute('aria-pressed'),'false');
@@ -143,7 +143,7 @@ const fillTriangle=({ctx,definition})=>{
   assert.ok(d.querySelector('#course-sim-display .metric bdi').textContent.endsWith(' A'));
   assert.ok(d.querySelector('.phone-battery-svg').textContent.includes(`${practice.simulationNumber(originalInternal*2/1000)} Ω`),'Schematic preserves small internal resistances in base units');
   assert.equal(Number(d.querySelector('.phone-current-flow').dataset.current),actualFlow,'Unit changes preserve current and animation speed');
-  assert.ok(Math.abs(power('total')-actualPower)<0.0000501,'Unit changes agree within four-decimal display rounding');
+  assert.ok(Math.abs(power('total')-actualPower)<0.0005501,'Unit changes agree within integer milli and four-decimal base rounding');
   assert.ok(Math.abs(Number(d.querySelector('#course-sim-internal').value)-originalInternal*2/1000)<1e-12);
   for(let i=0;i<20;i++)click('#course-sim-units');
   assert.equal(Number(d.querySelector('.phone-current-flow').dataset.current),actualFlow,'Repeated conversions do not accumulate rounding errors');
@@ -151,6 +151,10 @@ const fillTriangle=({ctx,definition})=>{
   assert.equal(d.querySelector('#course-sim-units').getAttribute('aria-pressed'),'true');
   assert.ok(d.querySelector('#course-sim-display .metric bdi').textContent.endsWith(' mA'));
   assert.ok(d.querySelector('.phone-battery-svg').textContent.includes(' mA'),'Schematic and table use the same current unit');
+  for(const node of d.querySelectorAll('#course-sim-display .metric bdi,#course-sim-display td,#course-sim-internal-value,#course-sim-load-value,#course-sim-source-value')){
+   const {value}=displayed(node);if(value>=.5)assert.ok(!node.textContent.includes('.'),'Ordinary milli quantities are whole numbers');
+   assert.ok(node.textContent.trim().split(/\s/)[0].replace('-','').length<=4||value<.5,'Milli integer coefficients fit four digits');
+  }
   assert.equal(Number(d.querySelector('#course-sim-internal').value),originalInternal*2);
   input('#course-sim-internal','0');
   assert.equal(power('internal'),0,'Ideal source has no internal power loss');
@@ -159,14 +163,25 @@ const fillTriangle=({ctx,definition})=>{
   assert.equal(Number(d.querySelector('#course-sim-internal').min),0);
   assert.equal(Number(d.querySelector('#course-sim-internal').max),2000,'Finite slider spans 0–2 Ω in milli display');
   input('#course-sim-internal','2000');
-  assert.ok(Math.abs(batteryCurrent()-given.U_t/(2000+load))<1e-6,'Two ohms is finite and still carries current');
+  assert.ok(Math.abs(batteryCurrent()-given.U_t/(2000+load))<.0005001,'Two ohms is finite and still carries current');
   assert.equal(d.querySelector('#course-sim-units').textContent,'מעבר לסדרי גודל');
   const atTwoOhms=batteryCurrent();
   click('#course-sim-units');
   assert.equal(Number(d.querySelector('#course-sim-internal').max),2);
   assert.equal(Number(d.querySelector('#course-sim-internal').value),2);
-  assert.ok(Math.abs(batteryCurrent()-atTwoOhms)<0.0000501,'Changing displayed units only changes rounding');
+  assert.ok(Math.abs(batteryCurrent()-atTwoOhms)<0.0005501,'Changing displayed units only changes rounding');
   assert.equal(d.querySelector('#course-sim-units').textContent,'מעבר לסדרי גודל','Button label stays consistent in either unit system');
+  // A micro-ohm must remain visible in both modes instead of rounding to zero.
+  input('#course-sim-internal','0.000001');
+  assert.equal(d.querySelector('#course-sim-internal-value').textContent,'0.000001 Ω');
+  const microCurrent=Number(d.querySelector('.phone-current-flow').dataset.current);
+  click('#course-sim-units');
+  assert.equal(d.querySelector('#course-sim-internal-value').textContent,'0.001 mΩ');
+  assert.ok(d.querySelector('.phone-battery-svg [data-component="R_s"] .sim-resistance').textContent.includes('0.001 mΩ'));
+  assert.equal(Number(d.querySelector('.phone-current-flow').dataset.current),microCurrent,'The small-value exception does not change the physical circuit');
+  click('#course-sim-units');
+  assert.equal(d.querySelector('#course-sim-internal-value').textContent,'0.000001 Ω');
+  input('#course-sim-internal','2');
   assert.ok(!d.querySelector('#course-simulator').textContent.includes('∞'));
   click('#course-sim-units');
   input('#course-sim-internal',String(originalInternal));
@@ -176,7 +191,7 @@ const fillTriangle=({ctx,definition})=>{
   animate.checked=true;animate.dispatchEvent(new w.Event('change',{bubbles:true}));
   assert.equal(d.querySelector('.phone-current-flow').classList.contains('is-paused'),false);
   input('#course-sim-source',String(given.U_t/2));
-  assert.ok(Math.abs(batteryCurrent()-expectedCurrent/2)<1e-6,'Source-voltage control updates the current');
+  assert.ok(Math.abs(batteryCurrent()-expectedCurrent/2)<.0005001,'Source-voltage control updates the current');
   input('#course-sim-source','0');
   assert.equal(batteryCurrent(),0);
   assert.ok(d.querySelector('.phone-current-flow').classList.contains('is-paused'),'No animated current at zero voltage');
