@@ -130,19 +130,27 @@ const CourseApp = window.CourseApp = (() => {
     const parts=answer===0?['0','0']:answer.toExponential(3).split('e'),scientific=answer===0?'0':`${parts[0]} × 10<sup>${Number(parts[1])}</sup>`,plain=answer===0?'0':String(Number(answer.toPrecision(8)));
     result.innerHTML=`<bdi>${escapeHTML(String(n))} ${escapeHTML(source[0])} = ${escapeHTML(plain)} ${escapeHTML(target[0])}</bdi><span>כתיב מדעי: <bdi>${scientific} ${escapeHTML(target[0])}</bdi></span>`;
   }
+  function batterySimulation(q){
+    const g=Object.fromEntries(q.givens.map(([key,value])=>[key,value]));
+    const voltageScale=q.voltageUnit==='mV'?.001:1,resistanceScale=q.resistanceUnit==='mΩ'?.001:1;
+    const original={ut:g.U_t*voltageScale,rs:q.rs*resistanceScale,rl:g.U_L*voltageScale/g.I};
+    // Keep physical settings in SI. Legacy saved settings use the exercise units.
+    const ut=Number(q.simSourceVolts??Number(q.simSourceVoltage??g.U_t)*voltageScale);
+    const rs=Number(q.simInternalOhms??original.rs),rl=Number(q.simLoadOhms??(q.simLoadResistance===undefined?original.rl:q.simLoadResistance*resistanceScale));
+    const milli=q.simUnitMode?q.simUnitMode==='milli':voltageScale===.001||resistanceScale===.001;
+    const current=ut/(rs+rl),ul=current*rl,drop=current*rs;
+    return {ut,rs,rl,current,ul,drop,original,milli,scale:milli?1000:1,voltageUnit:milli?'mV':'V',resistanceUnit:milli?'mΩ':'Ω',currentUnit:milli?'mA':'A',powerUnit:milli?'mW':'W'};
+  }
   function courseSimulatorDisplay(q){
     if(q.kind==='mixed'){
       const u=Number(q.simVoltage??q.u),ratio=q.u?u/q.u:0,scale2=ratio*ratio,simQ={...q,u};
       const current=q.it*ratio,req=q.rt,power=q.u*q.it*scale2;
       return `<div class="course-sim-visual"><figure class="diagram course-sim-diagram">${CoursePractice.mixedSVG(simQ,0,false)}</figure><p class="sim-legend"><span class="current">זרם: מוצג באדום</span><span class="voltage">מתחים והספקים: הערכים שלהלן מתעדכנים</span></p></div><div class="metrics"><div class="metric"><small>מתח מקור</small><bdi>${DC.fmt(u)} V</bdi></div><div class="metric"><small>התנגדות שקולה</small><bdi>${DC.fmt(req)} ${escapeHTML(q.resistanceUnit)}</bdi></div><div class="metric"><small>זרם כולל</small><bdi>${DC.fmt(current)} ${escapeHTML(q.currentUnit)}</bdi></div><div class="metric"><small>הספק כולל</small><bdi>${DC.fmt(power)} ${escapeHTML(q.powerUnit)}</bdi></div></div><div class="course-table"><table><thead><tr><th>נגד</th><th>זרם</th><th>מתח</th><th>הספק</th></tr></thead><tbody>${q.r.map((r,i)=>`<tr><td>R${i+1} · ${DC.fmt(r)} ${escapeHTML(q.resistanceUnit)}</td><td>${DC.fmt(q.currents[i]*ratio)} ${escapeHTML(q.currentUnit)}</td><td>${DC.fmt(q.voltages[i]*ratio)} V</td><td>${DC.fmt(q.powers[i]*scale2)} ${escapeHTML(q.powerUnit)}</td></tr>`).join('')}</tbody></table></div>`;
     }
-    const g=Object.fromEntries(q.givens.map(([key,value])=>[key,value])),rl0=g.U_L/g.I,rl=Number(q.simLoadResistance??rl0),rs=q.rs,ut=Number(q.simSourceVoltage??g.U_t);
-    const voltageScale=q.voltageUnit==='mV'?.001:1,resistanceScale=q.resistanceUnit==='mΩ'?.001:1;
-    const current=ut*voltageScale/((rs+rl)*resistanceScale),ul=current*rl*resistanceScale/voltageScale,drop=current*rs*resistanceScale/voltageScale;
-    const powerUnit=q.voltageUnit==='mV'?'mW':'W';
-    const simQ={...q,simAnimate:q.simAnimate!==false&&!personal.preferences.motion,simLoadResistance:rl,solution:true,cursor:2,givens:[['U_t',ut,q.voltageUnit],['U_L',ul,q.voltageUnit],['I',current,'A']]};
-    const rows=[['internal','התנגדות פנימית',rs,drop,current*drop],['load','עומס הטלפון',rl,ul,current*ul],['total','המעגל כולו',rs+rl,ut,current*ut]];
-    return `<figure class="diagram phone-schematic phone-simulator-schematic">${CoursePractice.phoneBatterySVG(simQ,true)}<figcaption class="sim-legend"><span class="current">זרם באדום — מהפלוס דרך הנגדים אל המינוס</span><span class="voltage">מתחים בירוק</span><span>מהירות ההנפשה ממחישה את עוצמת הזרם.</span></figcaption></figure><div class="metrics"><div class="metric"><small>זרם במעגל</small><bdi>${DC.fmt(current)} A</bdi></div><div class="metric"><small>מתח על העומס</small><bdi>${DC.fmt(ul)} ${escapeHTML(q.voltageUnit)}</bdi></div><div class="metric"><small>מפל מתח פנימי</small><bdi>${DC.fmt(drop)} ${escapeHTML(q.voltageUnit)}</bdi></div><div class="metric"><small>התנגדות פנימית</small><bdi>${DC.fmt(rs)} ${escapeHTML(q.resistanceUnit)}</bdi></div><div class="metric"><small>התנגדות עומס</small><bdi>${DC.fmt(rl)} ${escapeHTML(q.resistanceUnit)}</bdi></div></div><div class="course-table"><table class="phone-sim-table"><caption>אותו זרם עובר בהתנגדות הפנימית ובעומס; מתח המקור מתחלק ביניהם.</caption><thead><tr><th>רכיב</th><th>התנגדות</th><th>זרם</th><th>מפל מתח</th><th>הספק</th></tr></thead><tbody>${rows.map(([id,label,r,u,p])=>`<tr data-component="${id}"><th scope="row">${label}</th><td>${DC.fmt(r)} ${escapeHTML(q.resistanceUnit)}</td><td>${DC.fmt(current)} A</td><td>${DC.fmt(u)} ${escapeHTML(q.voltageUnit)}</td><td>${DC.fmt(p)} ${powerUnit}</td></tr>`).join('')}</tbody></table></div><p class="small muted">המודל מחשב מקור מתח אידאלי בטור עם ההתנגדות הפנימית ועם העומס שנבחר.</p>`;
+    const state=batterySimulation(q),scale=state.scale,n=CoursePractice.simulationNumber;
+    const simQ={...q,rs:state.rs*scale,voltageUnit:state.voltageUnit,resistanceUnit:state.resistanceUnit,simCurrentUnit:state.currentUnit,simAnimate:q.simAnimate!==false&&!personal.preferences.motion,simLoadResistance:state.rl*scale,solution:true,cursor:2,givens:[['U_t',state.ut*scale,state.voltageUnit],['U_L',state.ul*scale,state.voltageUnit],['I',state.current,'A']]};
+    const rows=[['internal','התנגדות פנימית',state.rs,state.drop,state.current*state.drop],['load','עומס הטלפון',state.rl,state.ul,state.current*state.ul],['total','המעגל כולו',state.rs+state.rl,state.ut,state.current*state.ut]];
+    return `<figure class="diagram phone-schematic phone-simulator-schematic">${CoursePractice.phoneBatterySVG(simQ,true)}<figcaption class="sim-legend"><span class="current">זרם באדום — מהפלוס דרך הנגדים אל המינוס</span><span class="voltage">מתחים בירוק</span><span>מהירות ההנפשה ממחישה את עוצמת הזרם.</span></figcaption></figure><div class="metrics"><div class="metric"><small>זרם במעגל</small><bdi>${n(state.current*scale)} ${state.currentUnit}</bdi></div><div class="metric"><small>מתח על העומס</small><bdi>${n(state.ul*scale)} ${state.voltageUnit}</bdi></div><div class="metric"><small>מפל מתח פנימי</small><bdi>${n(state.drop*scale)} ${state.voltageUnit}</bdi></div><div class="metric"><small>התנגדות פנימית</small><bdi>${n(state.rs*scale)} ${state.resistanceUnit}</bdi></div><div class="metric"><small>התנגדות עומס</small><bdi>${n(state.rl*scale)} ${state.resistanceUnit}</bdi></div></div><div class="course-table"><table class="phone-sim-table"><caption>אותו זרם עובר בהתנגדות הפנימית ובעומס; מתח המקור מתחלק ביניהם.</caption><thead><tr><th>רכיב</th><th>התנגדות</th><th>זרם</th><th>מפל מתח</th><th>הספק</th></tr></thead><tbody>${rows.map(([id,label,r,u,p])=>`<tr data-component="${id}"><th scope="row">${label}</th><td>${n(r*scale)} ${state.resistanceUnit}</td><td>${n(state.current*scale)} ${state.currentUnit}</td><td>${n(u*scale)} ${state.voltageUnit}</td><td>${n(p*scale)} ${state.powerUnit}</td></tr>`).join('')}</tbody></table></div><p class="small muted">המודל מחשב מקור מתח אידאלי בטור עם ההתנגדות הפנימית ועם העומס שנבחר.</p>`;
   }
   function hasCourseSimulator(q){return !!q&&(q.kind==='mixed'||q.unitFamily==='Rs');}
   function courseSimulatorReady(q){return hasCourseSimulator(q)&&(qaActive||q.cursor>=q.steps.length||q.accepted&&q.cursor===q.steps.length-1);}
@@ -152,9 +160,13 @@ const CourseApp = window.CourseApp = (() => {
       const value=Number(q.simVoltage??q.u),max=Math.max(1,q.u*2),step=Math.max(.01,max/1000);
       return `<section class="card course-simulator" id="course-simulator"><div class="sim-head"><div><div class="eyebrow">סימולציה חיה לתרגיל</div><h3>שינוי מתח המקור</h3></div><button class="btn secondary tiny" data-course-action="simulator">סגירת סימולטור</button></div><label for="course-sim-voltage">מתח המקור: <bdi id="course-sim-voltage-value">${DC.fmt(value)} V</bdi></label><input id="course-sim-voltage" type="range" min="0" max="${max}" step="${step}" value="${value}"><div id="course-sim-display">${courseSimulatorDisplay(q)}</div><button class="btn secondary tiny" data-course-action="reset-simulator">חזרה למתח התרגיל (${DC.fmt(q.u)} V)</button></section>`;
     }
-    const g=Object.fromEntries(q.givens.map(([key,value])=>[key,value])),base=g.U_L/g.I,min=Math.max(.01,base/4),max=Math.max(min*2,base*4),value=Number(q.simLoadResistance??base),step=Math.max(.001,(max-min)/1000);
-    const source=Number(q.simSourceVoltage??g.U_t),sourceMax=g.U_t*2,sourceStep=Math.max(q.voltageUnit==='mV'?1:.001,sourceMax/1000);
-    return `<section class="card course-simulator" id="course-simulator"><div class="sim-head"><div><div class="eyebrow">סימולציה חיה לתרגיל</div><h3>סוללה עם התנגדות פנימית ועומס</h3></div><button class="btn secondary tiny" data-course-action="simulator">סגירת סימולטור</button></div><label for="course-sim-source">מתח הסוללה ללא עומס: <bdi id="course-sim-source-value">${DC.fmt(source)} ${escapeHTML(q.voltageUnit)}</bdi></label><input id="course-sim-source" type="range" min="0" max="${sourceMax}" step="${sourceStep}" value="${source}"><label for="course-sim-load">התנגדות העומס: <bdi id="course-sim-load-value">${DC.fmt(value)} ${escapeHTML(q.resistanceUnit)}</bdi></label><input id="course-sim-load" type="range" min="${min}" max="${max}" step="${step}" value="${value}"><label class="toggle"><input id="course-sim-animate" type="checkbox" ${q.simAnimate!==false&&!personal.preferences.motion?'checked':''} ${personal.preferences.motion?'disabled title="מופעלת הפחתת תנועה בהגדרות הנגישות"':''}>הנפשת זרם</label><div id="course-sim-display">${courseSimulatorDisplay(q)}</div><button class="btn secondary tiny" data-course-action="reset-simulator">חזרה לנתוני התרגיל</button></section>`;
+    const state=batterySimulation(q),scale=state.scale,n=CoursePractice.simulationNumber;
+    const controls=[
+      {id:'source',label:'מתח הסוללה ללא עומס',value:state.ut,min:0,max:state.original.ut*2,step:state.original.ut/500,unit:state.voltageUnit},
+      {id:'internal',label:'התנגדות פנימית',value:state.rs,min:0,max:state.original.rs*20,step:state.original.rs/50,unit:state.resistanceUnit},
+      {id:'load',label:'התנגדות העומס',value:state.rl,min:state.original.rl/4,max:state.original.rl*4,step:state.original.rl*3.75/1000,unit:state.resistanceUnit}
+    ];
+    return `<section class="card course-simulator" id="course-simulator"><div class="sim-head"><div><div class="eyebrow">סימולציה חיה לתרגיל</div><h3>סוללה עם התנגדות פנימית ועומס</h3></div><button class="btn secondary tiny" data-course-action="simulator">סגירת סימולטור</button></div><div class="completion-actions"><button id="course-sim-units" class="btn secondary tiny" data-course-action="simulator-units" aria-pressed="${state.milli}">${state.milli?'מעבר ליחידות בסיס':'מעבר למילי'}</button><span role="status">יחידות תצוגה: <bdi>${state.voltageUnit} · ${state.currentUnit} · ${state.resistanceUnit} · ${state.powerUnit}</bdi></span></div><div class="battery-sim-controls">${controls.map(c=>`<label for="course-sim-${c.id}">${c.label}: <bdi id="course-sim-${c.id}-value">${n(c.value*scale)} ${c.unit}</bdi></label><input id="course-sim-${c.id}" type="range" min="${c.min*scale}" max="${c.max*scale}" step="${c.step*scale}" value="${c.value*scale}">`).join('')}</div><label class="toggle"><input id="course-sim-animate" type="checkbox" ${q.simAnimate!==false&&!personal.preferences.motion?'checked':''} ${personal.preferences.motion?'disabled title="מופעלת הפחתת תנועה בהגדרות הנגישות"':''}>הנפשת זרם</label><div id="course-sim-display">${courseSimulatorDisplay(q)}</div><button class="btn secondary tiny" data-course-action="reset-simulator">חזרה לנתוני התרגיל</button></section>`;
   }
   function updateCourseSimulator(q){
     const display=$('course-sim-display'),elapsed=display?.querySelector('.phone-current-flow')?.getAnimations?.()[0]?.currentTime;
@@ -164,8 +176,10 @@ const CourseApp = window.CourseApp = (() => {
       if(animation&&typeof elapsed==='number')animation.currentTime=elapsed;
     }
     const label=$('course-sim-voltage-value');if(label)label.textContent=`${DC.fmt(q.simVoltage)} V`;
-    const load=$('course-sim-load-value');if(load)load.textContent=`${DC.fmt(Number($('course-sim-load').value))} ${q.resistanceUnit}`;
-    const source=$('course-sim-source-value');if(source)source.textContent=`${DC.fmt(Number($('course-sim-source').value))} ${q.voltageUnit}`;
+    if(q.unitFamily==='Rs'){
+      const state=batterySimulation(q),n=CoursePractice.simulationNumber;
+      for(const id of ['internal','load','source']){const label=$('course-sim-'+id+'-value');if(label)label.textContent=`${n(Number($('course-sim-'+id).value))} ${id==='source'?state.voltageUnit:state.resistanceUnit}`;}
+    }
   }
   function notationKey(){return `<div class="battery-key"><span>${math('U_t')} — מתח הסוללה ללא עומס</span><span>${math('ΔU')} — מפל המתח על ההתנגדות הפנימית</span><span>${math('U_L')} — מתח עומס</span><span>${math('R_s')} — התנגדות פנימית</span></div>`;}
   function formulaQuestion(){return screen==='practice'&&extra&&extra!=='formulas'?currentExtra().q:null;}
@@ -311,7 +325,8 @@ const CourseApp = window.CourseApp = (() => {
     if(action==='hint'){q.hint=!q.hint;if(q.hint)markExtraHelp(q);}
     if(action==='solution'){q.solution=!q.solution;if(q.solution)markExtraHelp(q);}
     if(action==='simulator'){if(!courseSimulatorReady(q))return;q.simulatorOpen=!q.simulatorOpen;if(q.simulatorOpen&&q.kind==='mixed')q.simVoltage??=q.u;if(q.simulatorOpen&&q.unitFamily==='Rs'){const g=Object.fromEntries(q.givens.map(([key,value])=>[key,value]));q.simLoadResistance??=g.U_L/g.I;}}
-    if(action==='reset-simulator'&&courseSimulatorReady(q)){if(q.kind==='mixed')q.simVoltage=q.u;else if(q.unitFamily==='Rs'){const g=Object.fromEntries(q.givens.map(([key,value])=>[key,value]));q.simLoadResistance=g.U_L/g.I;q.simSourceVoltage=g.U_t;}}
+    if(action==='reset-simulator'&&courseSimulatorReady(q)){if(q.kind==='mixed')q.simVoltage=q.u;else if(q.unitFamily==='Rs'){const {original}=batterySimulation(q);q.simLoadOhms=original.rl;q.simSourceVolts=original.ut;q.simInternalOhms=original.rs;}}
+    if(action==='simulator-units'&&q.unitFamily==='Rs'&&courseSimulatorReady(q))q.simUnitMode=batterySimulation(q).milli?'base':'milli';
     if(action==='qa-complete'&&qaActive){q.cursor=q.steps.length;q.accepted=false;q.attempts=0;q.draft='';q.hint=false;}
     if(action==='step'&&q.accepted){q.cursor++;q.accepted=false;q.attempts=0;q.draft='';q.hint=false;}
     if(action==='next'){if(state.index<9)state.index++;else delete extraState[extra+':'+extraLevel];}
@@ -501,7 +516,7 @@ const CourseApp = window.CourseApp = (() => {
       if(handled){event.preventDefault();event.stopImmediatePropagation();}
       if(b.dataset.selectCourse)return switchCourse(b.dataset.selectCourse);
       if(action==='home')return backHome();
-      if(action==='simulator'||action==='reset-simulator'){if(formulaQuestion())return extraAction(action);}
+      if(action==='simulator'||action==='reset-simulator'||action==='simulator-units'){if(formulaQuestion())return extraAction(action);}
       if(action==='practice'){screen='practice';extra=null;return render();}
       if(action==='course-menu'){screen=selected==='hvac'?'menu':'practice';extra=null;return render();}
       if(action==='qa-theory')return openQATheory();
@@ -554,8 +569,8 @@ const CourseApp = window.CourseApp = (() => {
       if(node.dataset.adminRow!==undefined)adminDraft.passwords[Number(node.dataset.adminRow)][node.dataset.field]=node.type==='checkbox'?node.checked:node.value;
       if(node.id==='extra-answer'&&extra){currentExtra().q.draft=node.value;saveExtra();}
       if(node.id==='course-sim-voltage'&&formulaQuestion()){const q=currentExtra().q;q.simVoltage=Number(node.value);saveExtra();updateCourseSimulator(q);}
-      if(node.id==='course-sim-load'&&formulaQuestion()){const q=currentExtra().q;q.simLoadResistance=Number(node.value);saveExtra();updateCourseSimulator(q);}
-      if(node.id==='course-sim-source'&&formulaQuestion()){const q=currentExtra().q;q.simSourceVoltage=Number(node.value);saveExtra();updateCourseSimulator(q);}
+      const batteryControls={'course-sim-load':'simLoadOhms','course-sim-source':'simSourceVolts','course-sim-internal':'simInternalOhms'};
+      if(batteryControls[node.id]&&formulaQuestion()){const q=currentExtra().q;q[batteryControls[node.id]]=Number(node.value)/batterySimulation(q).scale;saveExtra();updateCourseSimulator(q);}
       if(node.id==='unit-converter-value')updateUnitConverter();
     });
     document.addEventListener('change',event=>{

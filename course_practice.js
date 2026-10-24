@@ -3,6 +3,8 @@ const CoursePractice = (() => {
   const pick = (rng, list) => list[Math.floor(rng() * list.length)];
   const integer = (rng, lo, hi) => lo + Math.floor(rng() * (hi - lo + 1));
   const fmt = value => String(Math.round((value + Number.EPSILON) * 100) / 100);
+  const simulationFormat=new Intl.NumberFormat('en-US',{useGrouping:false,maximumSignificantDigits:8});
+  const simulationNumber=value=>simulationFormat.format(value);
   const step = (key, label, unit, value, formula, substitution) => ({key,label,unit,value,formula,substitution});
   const integralBatteryIndices=[0,1,2,3,5,7,8];
   function random(seed) {
@@ -218,6 +220,7 @@ const CoursePractice = (() => {
     return `<svg class="mixed-circuit-svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="${label}" data-family="${q.family}" data-stage="${stage}">${content}</svg>`;
   }
   function phoneBatterySVG(q,simulation=false){
+    const format=simulation?simulationNumber:fmt;
     const given=Object.fromEntries(q.givens.map(([key,value])=>[key,value]));
     const showDrop=simulation||q.solution||q.cursor>0||q.cursor===0&&q.accepted;
     const showResistance=simulation||q.solution||q.cursor>1||q.cursor===1&&q.accepted;
@@ -225,7 +228,8 @@ const CoursePractice = (() => {
     const symbolText=(x,y,base,sub,suffix='',color=ink)=>`<text x="${x}" y="${y}" fill="${color}" font-family="Arial,sans-serif" font-size="17" text-anchor="start" direction="ltr">${base}<tspan dy="5" font-size="12">${sub}</tspan><tspan dy="-5" font-size="17">${suffix}</tspan></text>`;
     const text=(x,y,value,color=ink,size=17)=>`<text x="${x}" y="${y}" fill="${color}" font-size="${size}" font-family="Arial,sans-serif" text-anchor="middle" direction="ltr">${value}</text>`;
     const voltageUnit=q.voltageUnit??'V',resistanceUnit=q.resistanceUnit??'Ω';
-    const rs=showResistance?`${fmt(q.rs)} ${resistanceUnit}`:'?',drop=showDrop?`${fmt(given.U_t-given.U_L)} ${voltageUnit}`:'?';
+    const rs=showResistance?`${format(q.rs)} ${resistanceUnit}`:'?',drop=showDrop?`${format(given.U_t-given.U_L)} ${voltageUnit}`:'?';
+    const currentUnit=simulation&&q.simCurrentUnit==='mA'?'mA':'A',displayCurrent=given.I*(currentUnit==='mA'?1000:1);
     const duration=Math.max(.25,Math.min(8,3/Math.max(.01,given.I))),paused=q.simAnimate===false||given.I<=0;
     const flow=simulation?`<path class="phone-current-flow${paused?' is-paused':''}" d="M100 144V90H515V280H100V196" fill="none" stroke="${current}" stroke-width="3.5" stroke-linecap="round" style="--phone-flow-duration:${duration}s" data-current="${given.I}" aria-hidden="true"/>`:'';
     return `<svg class="phone-battery-svg" viewBox="0 0 640 345" role="img" aria-label="מודל סוללת טלפון: מתח ללא עומס, התנגדות פנימית בטור, ועומס המייצג את מעגלי הטלפון">
@@ -234,24 +238,24 @@ const CoursePractice = (() => {
       <path d="M100 144V90H205M275 90H515V145M515 215V280H100V196" fill="none" stroke="${ink}" stroke-width="2.5"/>
       <circle cx="100" cy="170" r="26" fill="var(--card)" stroke="${ink}" stroke-width="2.5"/>
       ${text(100,164,'+',ink,22)}${text(100,187,'−',ink,22)}
-      ${symbolText(144,178,'U','t',` = ${fmt(given.U_t)} ${voltageUnit}`,simulation?voltage:ink)}
+      ${symbolText(144,178,'U','t',` = ${format(given.U_t)} ${voltageUnit}`,simulation?voltage:ink)}
       <rect x="205" y="77" width="70" height="26" fill="var(--card)" stroke="${ink}" stroke-width="2.5"/>
       ${symbolText(215,130,'R','s',` = ${rs}`)}
       <path d="M205 61H275M205 61l7 -4M205 61l7 4M275 61l-7 -4M275 61l-7 4" fill="none" stroke="${voltage}" stroke-width="2"/>
       ${text(240,52,`ΔU = ${drop}`,voltage,16)}
       <path d="M345 90H373l-9 -5M373 90l-9 5" fill="none" stroke="${current}" stroke-width="3"/>
-      ${text(365,72,`I = ${fmt(given.I)} A`,current,16)}
+      ${text(365,72,`I = ${format(displayCurrent)} ${currentUnit}`,current,16)}
       <circle cx="390" cy="90" r="4" fill="${ink}"/><circle cx="390" cy="280" r="4" fill="${ink}"/>
       <path d="M391 112V258M391 112l-5 9M391 112l5 9M391 258l-5 -9M391 258l5 -9" fill="none" stroke="${voltage}" stroke-width="2"/>
-      ${symbolText(343,187,'U','L','',voltage)}${text(354,211,`${fmt(given.U_L)} ${voltageUnit}`,voltage,16)}
+      ${symbolText(343,187,'U','L','',voltage)}${text(354,211,`${format(given.U_L)} ${voltageUnit}`,voltage,16)}
       <rect x="437" y="45" width="168" height="272" rx="24" fill="none" stroke="${ink}" stroke-width="2.5"/>
       <path d="M490 60H550M495 302H545" stroke="${ink}" stroke-width="3"/>
       <rect x="500" y="145" width="30" height="70" fill="var(--card)" stroke="${ink}" stroke-width="2.5"/>
       ${flow}
-      ${symbolText(550,184,'R','L')}${q.simLoadResistance!==undefined?text(521,232,`${fmt(q.simLoadResistance)} ${resistanceUnit}`,ink,14):''}${text(521,258,'מעגלי הטלפון',ink,18)}
+      ${symbolText(550,184,'R','L')}${q.simLoadResistance!==undefined?text(521,232,`${format(q.simLoadResistance)} ${resistanceUnit}`,ink,14):''}${text(521,258,'מעגלי הטלפון',ink,18)}
       ${text(177,334,'מקור אידאלי והתנגדות פנימית',ink,15)}
     </svg>`;
   }
-  return {random,mixed,battery,internalResistance,batch,mixedSVG,phoneBatterySVG};
+  return {random,mixed,battery,internalResistance,batch,mixedSVG,phoneBatterySVG,simulationNumber};
 })();
 if(typeof module!=='undefined')module.exports=CoursePractice;

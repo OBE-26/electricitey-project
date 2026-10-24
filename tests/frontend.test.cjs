@@ -183,6 +183,22 @@ const checkShabbatContrast=()=>{
   click('#tab-simulator');assert.ok(d.querySelector('#course-sim-load'));
   click('[data-extra-tab="battery"]');
   assert.ok(d.querySelector('.complete-badge'),'Battery tab returns to the same exercise');
+  const batteryUnits=new Set();
+  for(const option of [...d.querySelectorAll('#qa-extra-exercise option')].filter(node=>node.textContent.includes('התנגדות פנימית'))){
+   change('#qa-extra-exercise',option.value);const question=w.CourseApp.formulaQuestion(),givens=JSON.stringify(question.givens),g=Object.fromEntries(question.givens.map(([key,value])=>[key,value]));
+   batteryUnits.add(question.voltageUnit);click('#tab-simulator');click('[data-course-action="reset-simulator"]');
+   const readCurrent=()=>{const text=d.querySelector('#course-sim-display .metric bdi').textContent;return parseFloat(text)*(text.endsWith('mA')?.001:1);};
+   assert.ok(Math.abs(readCurrent()-g.I)<1e-6,'Reset restores current for either original unit system');
+   const internalValue=Number(d.querySelector('#course-sim-internal').value),wasMilli=d.querySelector('#course-sim-units').getAttribute('aria-pressed')==='true';
+   input('#course-sim-internal',String(internalValue*2));
+   const voltage=g.U_t*(question.voltageUnit==='mV'?.001:1),rs=question.rs*(question.resistanceUnit==='mΩ'?.001:1),rl=g.U_L*(question.voltageUnit==='mV'?.001:1)/g.I;
+   assert.ok(Math.abs(readCurrent()-voltage/(rs*2+rl))<1e-6);
+   const actual=Number(d.querySelector('.phone-current-flow').dataset.current);click('#course-sim-units');
+   assert.equal(Number(d.querySelector('.phone-current-flow').dataset.current),actual,'Unit toggle preserves the physical circuit in every internal-resistance exercise');
+   assert.ok(Math.abs(Number(d.querySelector('#course-sim-internal').value)-internalValue*2*(wasMilli?.001:1000))<1e-9);
+   assert.equal(JSON.stringify(question.givens),givens);click('[data-course-action="simulator"]');
+  }
+  assert.ok(batteryUnits.has('V')&&batteryUnits.has('mV'),'Cover both fractional and whole-number battery exercises');
   const chargeOption=[...d.querySelectorAll('#qa-extra-exercise option')].find(node=>!node.textContent.includes('התנגדות פנימית'));
   change('#qa-extra-exercise',chargeOption.value);
   assert.equal(d.querySelector('#tab-simulator').hidden,false,'General simulator stays visible for charge/time exercises too');
