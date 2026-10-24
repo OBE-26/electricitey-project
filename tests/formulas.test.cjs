@@ -26,7 +26,7 @@ const change=(selector,value)=>{const node=d.querySelector(selector);assert.ok(n
 const tabOrder=()=>[...d.querySelectorAll('.tabs [role=tab]')].map(node=>node.dataset.tab??node.dataset.extraTab);
 const submit=selector=>d.querySelector(selector).dispatchEvent(new w.Event('submit',{bubbles:true,cancelable:true}));
 const waitFor=async test=>{for(let n=0;n<100;n++){if(test())return;await new Promise(resolve=>setTimeout(resolve,20));}throw Error('Timed out waiting for state');};
-const {physical,displayed}=require('./display_values.cjs');
+const {physical,displayed,significantDigits,roundingError}=require('./display_values.cjs');
 const batteryCurrent=()=>physical(d.querySelector('#course-sim-display .metric bdi'));
 const closeFormulas=()=>click('#formula-dialog [data-close-dialog="formula-dialog"]');
 const openIcon=()=>click('.quickbar [data-open-formulas]');
@@ -123,7 +123,7 @@ const fillTriangle=({ctx,definition})=>{
   input('#course-sim-load',String(Number(d.querySelector('#course-sim-load').value)*2));
   assert.notEqual(d.querySelector('#course-sim-display').textContent,batteryBefore);
   const load=Number(d.querySelector('#course-sim-load').value),expectedCurrent=given.U_t/(phone.rs+load);
-  assert.ok(Math.abs(batteryCurrent()-expectedCurrent)<.0005001,'Displayed milli current agrees with Ohm’s law within integer rounding');
+  assert.ok(Math.abs(batteryCurrent()-expectedCurrent)<.0005001,'Displayed milli current agrees with Ohm’s law within four significant digits');
   assert.ok(parseFloat(d.querySelector('.phone-current-flow').style.getPropertyValue('--phone-flow-duration'))>initialDuration,'Increasing load resistance slows the current animation');
   assert.ok(d.querySelector('#course-sim-source-value').textContent.includes(String(given.U_t)),'Changing load keeps the source label valid');
   const power=kind=>physical(d.querySelector(`.phone-sim-table [data-component="${kind}"] td:last-child`));
@@ -143,7 +143,7 @@ const fillTriangle=({ctx,definition})=>{
   assert.ok(d.querySelector('#course-sim-display .metric bdi').textContent.endsWith(' A'));
   assert.ok(d.querySelector('.phone-battery-svg').textContent.includes(`${practice.simulationNumber(originalInternal*2/1000)} Ω`),'Schematic preserves small internal resistances in base units');
   assert.equal(Number(d.querySelector('.phone-current-flow').dataset.current),actualFlow,'Unit changes preserve current and animation speed');
-  assert.ok(Math.abs(power('total')-actualPower)<0.0005501,'Unit changes agree within integer milli and four-decimal base rounding');
+  assert.ok(Math.abs(power('total')-actualPower)<0.0005501,'Unit changes preserve four-significant-digit display precision');
   assert.ok(Math.abs(Number(d.querySelector('#course-sim-internal').value)-originalInternal*2/1000)<1e-12);
   for(let i=0;i<20;i++)click('#course-sim-units');
   assert.equal(Number(d.querySelector('.phone-current-flow').dataset.current),actualFlow,'Repeated conversions do not accumulate rounding errors');
@@ -152,8 +152,7 @@ const fillTriangle=({ctx,definition})=>{
   assert.ok(d.querySelector('#course-sim-display .metric bdi').textContent.endsWith(' mA'));
   assert.ok(d.querySelector('.phone-battery-svg').textContent.includes(' mA'),'Schematic and table use the same current unit');
   for(const node of d.querySelectorAll('#course-sim-display .metric bdi,#course-sim-display td,#course-sim-internal-value,#course-sim-load-value,#course-sim-source-value')){
-   const {value}=displayed(node);if(value>=.5)assert.ok(!node.textContent.includes('.'),'Ordinary milli quantities are whole numbers');
-   assert.ok(node.textContent.trim().split(/\s/)[0].replace('-','').length<=4||value<.5,'Milli integer coefficients fit four digits');
+   assert.ok(significantDigits(node.textContent)<=4,'Milli quantities use at most four significant digits, including fractional parts');
   }
   assert.equal(Number(d.querySelector('#course-sim-internal').value),originalInternal*2);
   input('#course-sim-internal','0');

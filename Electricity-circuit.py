@@ -1702,6 +1702,7 @@ function exerciseNavigationHTML() {
 }
 function activeSimulatorQuestion() { return simulatorMode==='custom' ? customSimulator : simulatorQuestion ?? currentQuestion(); }
 function formatCustomNumber(value) { return CoursePractice.simulationNumber(value); }
+// Round simulator labels to four significant digits; never round the physics model.
 function simulatorNumber(q,value) { return CoursePractice.simulationNumber(value); }
 function simulatorQuantity(q,key,value) { return `${simulatorNumber(q,displayValue(q,key,value))} ${(q.units??units)[key==='Req'?'R':key[0]]}`; }
 function customBuilderHTML() {

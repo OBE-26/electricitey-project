@@ -11,4 +11,10 @@ function physical(node){
  const {value,unit}=displayed(node);
  return value*({V:1,mV:.001,A:1,mA:.001,'Ω':1,'mΩ':.001,W:1,mW:.001}[unit]??NaN);
 }
-module.exports={displayed,physical};
+function significantDigits(text){
+ return String(text).trim().split(/\s/)[0].replace(/[+.-]/g,'').replace(/^0+/,'').replace(/0+$/,'').length;
+}
+function roundingError(value){
+ return value===0?0:.500001*10**(Math.floor(Math.log10(Math.abs(value)))-3);
+}
+module.exports={displayed,physical,significantDigits,roundingError};

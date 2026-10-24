@@ -1,6 +1,6 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),{spawn,execFileSync}=require('node:child_process'),readline=require('node:readline');
 const {JSDOM,VirtualConsole}=require('jsdom');
-const {physical}=require('./display_values.cjs');
+const {physical,roundingError}=require('./display_values.cjs');
 const python=process.env.CODEX_PRIMARY_RUNTIME_PYTHON||'python3';
 const raw=execFileSync(python,['-c',`import ast;from pathlib import Path;t=ast.parse(Path('Electricity-circuit.py').read_text());print(next(ast.literal_eval(n.value) for n in t.body if isinstance(n,ast.Assign) and any(getattr(a,'id','')=='APP_HTML' for a in n.targets)))`],{encoding:'utf8'});
 const html=raw.replace('/* COURSE_EXTENSION */',fs.readFileSync('course_practice.js','utf8')+'\n'+fs.readFileSync('courses.js','utf8'));
@@ -203,9 +203,9 @@ const checkShabbatContrast=()=>{
    const internalValue=Number(d.querySelector('#course-sim-internal').value),wasMilli=d.querySelector('#course-sim-units').getAttribute('aria-pressed')==='true';
    input('#course-sim-internal',String(internalValue*2));
    const voltage=g.U_t*(question.voltageUnit==='mV'?.001:1),rs=question.rs*(question.resistanceUnit==='mΩ'?.001:1),rl=g.U_L*(question.voltageUnit==='mV'?.001:1)/g.I;
-   const expected=voltage/(rs*2+rl),milliCurrent=d.querySelector('#course-sim-display .metric bdi').textContent.endsWith('mA');
+   const expected=voltage/(rs*2+rl);
    assert.ok(Math.abs(Number(d.querySelector('.phone-current-flow').dataset.current)-expected)<1e-12,'Calculations retain full precision');
-   assert.ok(Math.abs(readCurrent()-expected)<=(milliCurrent?.0005:.00005)+1e-12,'Current display follows integer milli / four-decimal base precision');
+   assert.ok(Math.abs(readCurrent()-expected)<=roundingError(expected)+1e-12,'Current display has four significant digits in either unit system');
    const actual=Number(d.querySelector('.phone-current-flow').dataset.current);click('#course-sim-units');
    const shownCurrent=d.querySelector('#course-sim-display [data-component="R_L"]');
    assert.equal(shownCurrent.dataset.currentUnit,wasMilli?'A':'mA');

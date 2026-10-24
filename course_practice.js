@@ -3,26 +3,11 @@ const CoursePractice = (() => {
   const pick = (rng, list) => list[Math.floor(rng() * list.length)];
   const integer = (rng, lo, hi) => lo + Math.floor(rng() * (hi - lo + 1));
   const fmt = value => String(Math.round((value + Number.EPSILON) * 100) / 100);
-  const simulationFormat=new Intl.NumberFormat('en-US',{useGrouping:false,maximumFractionDigits:4});
-  const smallSimulationFormat=new Intl.NumberFormat('en-US',{useGrouping:false,maximumSignificantDigits:4});
-  const simulationNumber=value=>{
-    const rounded=simulationFormat.format(value);
-    return /^-?0$/.test(rounded)?value===0?'0':smallSimulationFormat.format(value):rounded;
-  };
-  function milliSimulationNumber(value){
-    if(value===0)return '0';
-    const magnitude=Math.abs(value),sign=value<0?'-':'',integer=Math.round(magnitude);
-    // Preserve a small nonzero quantity rather than displaying a false zero.
-    if(integer===0)return smallSimulationFormat.format(value);
-    if(integer<=9999)return sign+integer;
-    // A four-digit integer coefficient keeps large milli values compact too.
-    let exponent=Math.floor(Math.log10(magnitude))-3;
-    let coefficient=Math.round(magnitude/10**exponent);
-    if(coefficient>=10000){coefficient/=10;exponent++;}
-    while(coefficient%10===0){coefficient/=10;exponent++;}
-    const power=String(exponent).replace(/\d/g,d=>'⁰¹²³⁴⁵⁶⁷⁸⁹'[d]);
-    return `${sign}${coefficient} × 10${power}`;
-  }
+  // Display the same rounded physical quantity in every unit scale. Leading
+  // zeros do not count; the physics model keeps its full calculation precision.
+  const simulationFormat=new Intl.NumberFormat('en-US',{useGrouping:false,maximumSignificantDigits:4});
+  const simulationNumber=value=>simulationFormat.format(value).replace(/^-0$/,'0');
+  const milliSimulationNumber=simulationNumber;
   const step = (key, label, unit, value, formula, substitution) => ({key,label,unit,value,formula,substitution});
   const integralBatteryIndices=[0,1,2,3,5,7,8];
   function random(seed) {
@@ -305,8 +290,7 @@ const CoursePractice = (() => {
   }
   function phoneSimulationSVG(q){
     const given=Object.fromEntries(q.givens.map(([key,value])=>[key,value]));
-    const milli=q.voltageUnit==='mV'||q.resistanceUnit==='mΩ'||q.simCurrentUnit==='mA';
-    const n=milli?milliSimulationNumber:simulationNumber;
+    const n=simulationNumber;
     const ink='#fff',red='#ff6565',green='#65e680',voltageUnit=q.voltageUnit??'V',resistanceUnit=q.resistanceUnit??'Ω';
     const currentUnit=q.simCurrentUnit==='mA'?'mA':'A',current=given.I*(currentUnit==='mA'?1000:1);
     const load=q.simLoadResistance??given.U_L/given.I;

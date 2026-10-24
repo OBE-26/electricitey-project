@@ -1,5 +1,6 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
 const {JSDOM}=require('jsdom'),practice=require('../course_practice.js');
+const {significantDigits}=require('./display_values.cjs');
 const source=fs.readFileSync('Electricity-circuit.py','utf8');
 const dc=source.slice(source.indexOf('const DC = (() => {'),source.indexOf('\nfunction circuitSVG('));
 const renderers=source.slice(source.indexOf('function circuitSVG('),source.indexOf('\nconst $ ='));
@@ -20,7 +21,7 @@ function check(svg,expected,number=practice.simulationNumber){
    const group=node.querySelector(selector),label=group.querySelector('text:last-child');assert.ok(group);
    assert.ok(label.textContent.endsWith(`= ${number(value)} ${unit}`),label.textContent);
    assert.equal(label.getAttribute('fill'),color);
-   if(value===0||Math.abs(value)>=(number===practice.milliSimulationNumber?.5:.00005))assert.ok(!/\d+\.\d{5}/.test(label.textContent),'Four decimal places except tiny nonzero values');
+   assert.ok(significantDigits(label.textContent.split(' = ')[1])<=4,'At most four significant digits, including fractional micro quantities');
    if(selector!=='.sim-resistance'){
     const arrow=group.querySelector('path.sim-arrow');assert.ok(arrow,'Directional arrow alongside the value');assert.equal(arrow.getAttribute('stroke'),color);
    }
@@ -89,13 +90,24 @@ for(const whole of [false,true]){
   if(!whole&&ratio===1&&rs===q.rs)capture('phone-internal',svg);
  }
 }
-console.log('Simulator annotations: all courses, basic and custom entry points, every mixed topology, per-component currents/resistances, voltage arrows, zero source, units and four-decimal labels passed');
+console.log('Simulator annotations: all courses, basic and custom entry points, every mixed topology, per-component currents/resistances, voltage arrows, zero source, units and four-significant-digit labels passed');
 
 const examples=[
- [0,'0'],[1.234567,'1.2346'],[.000001,'0.000001'],[.000000123456,'0.0000001235'],[-.000001,'-0.000001']
+ [0,'0'],[1.234567,'1.235'],[12.34567,'12.35'],[.4123,'0.4123'],
+ [.000001,'0.000001'],[.000000123456,'0.0000001235'],[-.000001,'-0.000001'],
+ [4200,'4200'],[1234.567,'1235'],[9999.49,'9999'],[9999.5,'10000'],
+ [12345.6,'12350'],[175000,'175000'],[.001,'0.001'],[-.001,'-0.001']
 ];
-for(const [value,text] of examples)assert.equal(practice.simulationNumber(value),text);
-for(const [value,text] of [[0,'0'],[4200,'4200'],[1234.567,'1235'],[9999.49,'9999'],[9999.5,'1 × 10⁴'],[12345.6,'1235 × 10¹'],[175000,'175 × 10³'],[.001,'0.001'],[.000001,'0.000001'],[-.001,'-0.001']])assert.equal(practice.milliSimulationNumber(value),text);
+for(const [value,text] of examples){
+ assert.equal(practice.simulationNumber(value),text);
+ assert.equal(practice.milliSimulationNumber(value),text,'Milli mode uses the same significant-digit rule');
+}
+// Corrected user examples and fractional micro values agree in all unit scales.
+for(const [micro,milli,base] of [['0.4123','0.0004123','0.0000004123'],['4','0.004','0.000004'],['1000000','1000','1'],['12.35','0.01235','0.00001235']]){
+ for(const [raw,text] of [[Number(micro),micro],[Number(micro)/1000,milli],[Number(micro)/1000000,base]])assert.equal(practice.simulationNumber(raw),text);
+}
+assert.equal(practice.simulationNumber(12.34567/1000),'0.01235');
+assert.equal(practice.simulationNumber(12.34567/1000000),'0.00001235');
 // One microamp remains visible in both units, exactly as requested.
 for(const milli of [false,true]){
  const tiny={rs:milli?1000:1,voltageUnit:milli?'mV':'V',resistanceUnit:milli?'mΩ':'Ω',simCurrentUnit:milli?'mA':'A',simLoadResistance:milli?1000:1,givens:[['U_t',milli?.002:.000002],['U_L',milli?.001:.000001],['I',.000001]]};
@@ -105,7 +117,12 @@ for(const milli of [false,true]){
  ],milli?practice.milliSimulationNumber:practice.simulationNumber);
  if(milli)capture('tiny-milli',practice.phoneBatterySVG(tiny,true));
 }
-console.log('Display precision: integer milli values, compact large quantities and nonzero micro quantities in both modes passed');
+console.log('Display precision: four significant digits and consistent micro/milli/base quantities passed');
 
 const microBasic={custom:true,kind:'series',voltage:.000001,resistances:[1],lamps:[false],givens:{}};
 check(customCircuitSVG(microBasic,{complete:true}),[{id:'R1',r:1,i:.000001,u:.000001,ru:'Ω',iu:'A'}]);
+
+const microExercise={kind:'ohm',voltage:12.34567,resistances:[1e6],resistanceScale:1e6,units:{U:'V',R:'MΩ',I:'μA',P:'μW'},lamps:[false],givens:{}};
+const microDiagram=circuitSVG(microExercise,{complete:true});
+check(microDiagram,[{id:'R1',r:1,i:12.34567,u:12.34567,ru:'MΩ',iu:'μA'}]);
+assert.ok(microDiagram.includes('I1 = 12.35 μA'),'The micro current on the circuit uses four significant digits');
