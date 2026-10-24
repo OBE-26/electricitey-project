@@ -84,6 +84,9 @@ const checkShabbatContrast=()=>{
   assert.ok(d.querySelector('.sim-prediction'));click('[data-predict="decrease"]');assert.ok(d.querySelector('.prediction-result').textContent.includes('נכון'));click('[data-apply-prediction]');
   assert.ok(Math.abs(Number(d.querySelector('#course-sim-voltage').value)-voltage/4)<.05);
   click('[data-sim-fullscreen]');assert.ok(d.querySelector('.sim-expanded'));d.querySelector('[data-sim-fullscreen]').dispatchEvent(new w.KeyboardEvent('keydown',{key:'Escape',bubbles:true}));assert.equal(d.querySelector('.sim-expanded'),null);
+  click('[data-tab="series"]');click('#qa-panel [data-go-simulator]');
+  assert.ok(d.querySelector('#simulator-section .sim-learning-tools'),'Decorate the visible basic simulator when a hidden extra simulator remains in the DOM');
+  click('#simulator-section [data-sim-fullscreen]');assert.ok(d.querySelector('#simulator-section').classList.contains('sim-expanded'));d.querySelector('#simulator-section [data-sim-fullscreen]').dispatchEvent(new w.KeyboardEvent('keydown',{key:'Escape',bubbles:true}));
   click('[data-exit-qa]');assert.equal(w.LearningTools.enabled(),true);
   w.localStorage.setItem('dc.basics.personal.v1.mobile',JSON.stringify(w.testState.profile()));
   const backup=w.LearningTools.backupData();assert.ok(backup.data['dc.basics.personal.v1.mobile'],'Include the actual per-course key format');assert.equal(backup.data['dc.basics.shabbat.jerusalem.v1'],undefined);
