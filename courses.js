@@ -640,7 +640,7 @@ const CourseApp = window.CourseApp = (() => {
     if(q)q.simulatorOpen=false;
     screen='practice';extraMessage='';
     if(DC.kinds.includes(topic)){extra=null;selectTab(topic);return;}
-    if(topic==='simulator'){extra=null;simulatorMode='custom';selectTab('simulator');return;}
+    if(topic==='simulator'){const exercise=!q&&DC.kinds.includes(viewTab);extra=null;simulatorMode=exercise?'exercise':'custom';if(exercise)simulatorQuestion=currentQuestion();selectTab('simulator');return;}
     if(extra!==topic)extraLevel=0;extra=topic;render();
   }
   function qaFocusExercise(){

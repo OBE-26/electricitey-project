@@ -11,7 +11,7 @@ const fixtures=require('./layout-fixture.cjs');
    await context.route('**/*',route=>route.abort());const page=await context.newPage();
    // Every generated circuit is checked at phone width; each layout variant is
    // also checked at narrow, tablet and desktop widths with enlarged dark text.
-   const selected=profile.all?frames:frames.filter(f=>/ohm|closed|sim|solution-0-[0269]$|mixed-0-[0269]$|battery-0-[0269]$/.test(f.name));
+   const selected=profile.all?frames:frames.filter(f=>/ohm|closed|sim|walkthrough|solution-0-[0269]$|mixed-0-[0269]$|battery-0-[0269]$/.test(f.name));
    for(const frame of selected){
     const style=`<style>:root{--text-scale:${profile.scale}!important}</style>`;
     const html=frame.html.replace('</head>',style+'</head>').replace('<html ',`<html data-render-test="true" `).replace('class="ui-ready',`class="ui-ready${profile.dark?' dark-mode':''}${profile.scale===1.5?' text-scale-150':''}`);
@@ -27,9 +27,9 @@ const fixtures=require('./layout-fixture.cjs');
       const r=n.getBoundingClientRect();return r.width>0&&(r.left< -1||r.right>width+1);
      }).map(n=>({node:n.tagName+'#'+n.id+'.'+n.getAttribute('class'),left:n.getBoundingClientRect().left,right:n.getBoundingClientRect().right}));
      const navigation=[...document.querySelectorAll('.qa-navigation select')].map(n=>({width:n.getBoundingClientRect().width,height:n.getBoundingClientRect().height}));
-     return {width,scroll:document.documentElement.scrollWidth,body:document.body.scrollWidth,outside,navigation};
+     return {visible:getComputedStyle(document.body).visibility,scale:getComputedStyle(document.documentElement).getPropertyValue('--text-scale'),dark:document.documentElement.classList.contains('dark-mode'),width,scroll:document.documentElement.scrollWidth,body:document.body.scrollWidth,outside,navigation};
     });
-    const label=frame.name+' '+JSON.stringify(profile);assert.equal(result.width,profile.width,label);
+    const label=frame.name+' '+JSON.stringify(profile);assert.equal(result.visible,'visible',label);assert.equal(Number(result.scale),profile.scale,label);assert.equal(result.dark,profile.dark,label);assert.equal(result.width,profile.width,label);
     assert.ok(result.scroll<=profile.width+1&&result.body<=profile.width+1,label+' document overflow '+JSON.stringify(result));
     assert.deepEqual(result.outside,[],label+' inaccessible content');assert.equal(result.navigation.length,2,label);
     assert.ok(result.navigation.every(n=>n.width>100&&n.height>=44),label+' usable selectors');checks++;
