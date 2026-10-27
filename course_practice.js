@@ -190,8 +190,9 @@ const CoursePractice = (() => {
     const tx=x+(vertical?35:0),anchor=vertical?'start':'middle';
     const currentArrow=vertical?arrow(x,y-67,x,y-42,red):reverse?arrow(x+72,y,x+46,y,red):arrow(x-72,y,x-46,y,red);
     // Anchor the label's bottom-right corner above the right edge of its arrow.
-    // Extra clearance on horizontal wires keeps text above adjacent resistors.
-    const currentX=vertical?x:x+(reverse?72:-46),currentY=y-(vertical?78:26);
+    // Leave space above and to the left of a vertical wire, including its arrowhead.
+    // Horizontal labels stay above adjacent resistors.
+    const currentX=vertical?x-18:x+(reverse?72:-46),currentY=y-(vertical?91:26);
     // Voltage reference points toward +, opposite to conventional resistor current.
     const voltageArrow=vertical?arrow(x-30,y+30,x-30,y-30,green):reverse?arrow(x-38,y+29,x+38,y+29,green):arrow(x+38,y+29,x-38,y+29,green);
     const polarity=vertical?label(x-43,y-23,'+',green)+label(x-43,y+34,'−',green):label(x+(reverse?49:-49),y+34,'+',green)+label(x+(reverse?-49:49),y+34,'−',green);

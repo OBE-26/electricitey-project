@@ -33,6 +33,7 @@ const fixtures=require('./layout-fixture.cjs');
       const b=label.getBBox(),v=label.ownerSVGElement.viewBox.baseVal,arrow=label.closest('.sim-component')?.querySelector('.sim-current .sim-arrow');
       if(b.x<0||b.y<0||b.x+b.width>v.width||b.y+b.height>v.height)labelIssues.push(label.textContent+' clipped by diagram');
       if(arrow&&b.y+b.height>arrow.getBBox().y-5)labelIssues.push(label.textContent+' needs more space above arrow');
+      if(arrow){const a=arrow.getBBox();if(a.height>a.width){if(b.x+b.width>a.x-12)labelIssues.push(label.textContent+' too close to vertical arrow horizontally');if(b.y+b.height>a.y-22)labelIssues.push(label.textContent+' too close to vertical arrow vertically');}}
      }
      return {visible:getComputedStyle(document.body).visibility,scale:getComputedStyle(document.documentElement).getPropertyValue('--text-scale'),dark:document.documentElement.classList.contains('dark-mode'),width,scroll:document.documentElement.scrollWidth,body:document.body.scrollWidth,outside,navigation,labelIssues};
     });
