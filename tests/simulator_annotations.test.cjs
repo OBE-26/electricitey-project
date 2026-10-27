@@ -21,6 +21,9 @@ function check(svg,expected,number=practice.simulationNumber){
    const group=node.querySelector(selector),label=group.querySelector('text:last-child');assert.ok(group);
    assert.ok(label.textContent.endsWith(`= ${number(value)} ${unit}`),label.textContent);
    assert.equal(label.getAttribute('fill'),color);
+   const subscript=label.querySelector('.sim-subscript');assert.ok(subscript,'Render component indices as mathematical subscripts');
+   assert.equal(subscript.textContent,e.id.replace(/^R_?/,''));assert.equal(subscript.getAttribute('baseline-shift'),'sub');
+   assert.equal(subscript.getAttribute('font-size'),'70%');assert.ok(!label.textContent.includes('_'),'No visible underscore in a quantity label');
    assert.ok(significantDigits(label.textContent.split(' = ')[1])<=4,'At most four significant digits, including fractional micro quantities');
    if(selector!=='.sim-resistance'){
     const arrow=group.querySelector('path.sim-arrow');assert.ok(arrow,'Directional arrow alongside the value');assert.equal(arrow.getAttribute('stroke'),color);
@@ -39,9 +42,9 @@ function check(svg,expected,number=practice.simulationNumber){
   assert.equal(currentLabel.getAttribute('dominant-baseline'),'text-after-edge','Anchor at the bottom of the label');
   if(current.dx===0){
    assert.ok(Number(currentLabel.getAttribute('x'))<=current.x1-16,'Leave horizontal space between a vertical current arrow and its right-aligned label');
-   assert.ok(Number(currentLabel.getAttribute('y'))<=Math.min(current.y1,current.y2)-22,'Leave visible space above a vertical current arrow');
-  }else close(Number(currentLabel.getAttribute('x')),Math.max(current.x1,current.x2));
-  assert.ok(Number(currentLabel.getAttribute('y'))<=Math.min(current.y1,current.y2)-10,'Keep the label above its arrow');
+   assert.ok(Number(currentLabel.getAttribute('y'))>Math.min(current.y1,current.y2),'Keep the label beside the vertical arrow shaft');
+   assert.ok(Number(currentLabel.getAttribute('y'))<=Math.max(current.y1,current.y2)-8,'Keep the label slightly above the vertical arrowhead');
+  }else{close(Number(currentLabel.getAttribute('x')),Math.max(current.x1,current.x2));assert.ok(Number(currentLabel.getAttribute('y'))<=Math.min(current.y1,current.y2)-10,'Keep the label above its arrow');}
   assert.ok(current.dx*voltage.dx+current.dy*voltage.dy<0,'Voltage reference arrow opposes the current arrow');
   const polarity=sign=>[...node.querySelectorAll('.sim-voltage-drop text')].find(t=>t.textContent===sign);
   const distance=sign=>Math.hypot(voltage.x2-Number(polarity(sign).getAttribute('x')),voltage.y2-Number(polarity(sign).getAttribute('y')));
@@ -134,4 +137,5 @@ check(customCircuitSVG(microBasic,{complete:true}),[{id:'R1',r:1,i:.000001,u:.00
 const microExercise={kind:'ohm',voltage:12.34567,resistances:[1e6],resistanceScale:1e6,units:{U:'V',R:'MΩ',I:'μA',P:'μW'},lamps:[false],givens:{}};
 const microDiagram=circuitSVG(microExercise,{complete:true});
 check(microDiagram,[{id:'R1',r:1,i:12.34567,u:12.34567,ru:'MΩ',iu:'μA'}]);
-assert.ok(microDiagram.includes('I1 = 12.35 μA'),'The micro current on the circuit uses four significant digits');
+const microBox=document.createElement('div');microBox.innerHTML=microDiagram;
+assert.equal(microBox.querySelector('.sim-component .sim-current-label').textContent,'I1 = 12.35 μA','The micro current on the circuit uses four significant digits');

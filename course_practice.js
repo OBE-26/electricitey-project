@@ -175,13 +175,19 @@ const CoursePractice = (() => {
   }
   // One notation and palette for every simulator, including enlarged diagrams.
   // Values stay unrounded in the model; rounding is only applied to these labels.
+  function simulationText(value){
+    const escape=text=>String(text).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    const text=String(value),symbol=/^(ΔU|[IUR])(?:_([A-Za-z0-9]+)|(\d+))(?=\s|=|$)/.exec(text);
+    if(!symbol)return escape(text);
+    return `<tspan class="sim-symbol" font-style="italic">${escape(symbol[1])}<tspan class="sim-subscript" font-size="70%" font-style="normal" baseline-shift="sub">${escape(symbol[2]??symbol[3])}</tspan></tspan><tspan>${escape(text.slice(symbol[0].length))}</tspan>`;
+  }
   function simulationCurrentLabel(right,bottom,value){
-    return `<text class="sim-current-label" x="${right}" y="${bottom}" fill="#ff6565" text-anchor="end" dominant-baseline="text-after-edge" font-size="16" font-family="Arial,sans-serif" direction="ltr" paint-order="stroke" stroke="#000" stroke-width="4" stroke-linejoin="round">${value}</text>`;
+    return `<text class="sim-current-label" x="${right}" y="${bottom}" fill="#ff6565" text-anchor="end" dominant-baseline="text-after-edge" font-size="16" font-family="Arial,sans-serif" direction="ltr" paint-order="stroke" stroke="#000" stroke-width="4" stroke-linejoin="round">${simulationText(value)}</text>`;
   }
   function simulationAnnotations({id,x,y,vertical=false,reverse=false,r,current,drop,resistanceUnit='Ω',currentUnit='A',voltageUnit='V',number=simulationNumber,formatQuantity}){
     const ink='#fff',red='#ff6565',green='#65e680',n=number;
     const quantity=formatQuantity??((value,unit)=>n(value)+' '+unit);
-    const label=(tx,ty,value,color,anchor='middle')=>`<text x="${tx}" y="${ty}" fill="${color}" text-anchor="${anchor}" font-size="16" font-family="Arial,sans-serif" direction="ltr">${value}</text>`;
+    const label=(tx,ty,value,color,anchor='middle')=>`<text x="${tx}" y="${ty}" fill="${color}" text-anchor="${anchor}" font-size="16" font-family="Arial,sans-serif" direction="ltr">${simulationText(value)}</text>`;
     const arrow=(x1,y1,x2,y2,color)=>{
       const dx=x2-x1,dy=y2-y1,length=Math.hypot(dx,dy),ux=dx/length,uy=dy/length;
       return `<path class="sim-arrow" d="M${x1} ${y1}L${x2} ${y2}M${x2-ux*8-uy*4} ${y2-uy*8+ux*4}L${x2} ${y2}L${x2-ux*8+uy*4} ${y2-uy*8-ux*4}" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`;
@@ -189,10 +195,10 @@ const CoursePractice = (() => {
     const iSymbol=id.replace(/^R/,'I'),uSymbol=id==='R_s'?'ΔU_s':id.replace(/^R/,'U');
     const tx=x+(vertical?35:0),anchor=vertical?'start':'middle';
     const currentArrow=vertical?arrow(x,y-67,x,y-42,red):reverse?arrow(x+72,y,x+46,y,red):arrow(x-72,y,x-46,y,red);
-    // Anchor the label's bottom-right corner above the right edge of its arrow.
-    // Leave space above and to the left of a vertical wire, including its arrowhead.
+    // Keep a bottom-right text anchor. Vertical labels sit beside the shaft,
+    // slightly above the arrowhead, with a clear horizontal gap from the wire.
     // Horizontal labels stay above adjacent resistors.
-    const currentX=vertical?x-18:x+(reverse?72:-46),currentY=y-(vertical?91:26);
+    const currentX=vertical?x-18:x+(reverse?72:-46),currentY=y-(vertical?60:26);
     // Voltage reference points toward +, opposite to conventional resistor current.
     const voltageArrow=vertical?arrow(x-30,y+30,x-30,y-30,green):reverse?arrow(x-38,y+29,x+38,y+29,green):arrow(x+38,y+29,x-38,y+29,green);
     const polarity=vertical?label(x-43,y-23,'+',green)+label(x-43,y+34,'−',green):label(x+(reverse?49:-49),y+34,'+',green)+label(x+(reverse?-49:49),y+34,'−',green);
@@ -202,7 +208,7 @@ const CoursePractice = (() => {
     const n=simulationNumber,ink='#fff',red='#ff6565',green='#65e680';
     const quantity=q.formatQuantity??((value,unit)=>n(value)+' '+unit);
     const scale=q.currentUnit==='mA'?.001:q.currentUnit==='μA'?.000001:1;
-    const text=(x,y,value,color=ink,anchor='middle')=>`<text x="${x}" y="${y}" fill="${color}" text-anchor="${anchor}" font-size="17" font-family="Arial,sans-serif" direction="ltr">${value}</text>`;
+    const text=(x,y,value,color=ink,anchor='middle')=>`<text x="${x}" y="${y}" fill="${color}" text-anchor="${anchor}" font-size="17" font-family="Arial,sans-serif" direction="ltr">${simulationText(value)}</text>`;
     const wire=(d,current)=>{
       const amps=current*scale,duration=Math.max(.25,Math.min(8,3/Math.max(.01,amps)));
       const flow=current>0?`<path class="mixed-current-flow${q.simAnimate===false?' is-paused':''}" d="${d}" fill="none" stroke="${red}" stroke-width="3.5" style="--mixed-flow-duration:${duration}s" data-current="${amps}" aria-hidden="true"/>`:'';
@@ -299,7 +305,7 @@ const CoursePractice = (() => {
     const ink='#fff',red='#ff6565',green='#65e680',voltageUnit=q.voltageUnit??'V',resistanceUnit=q.resistanceUnit??'Ω';
     const currentUnit=q.simCurrentUnit==='mA'?'mA':'A',current=given.I*(currentUnit==='mA'?1000:1);
     const load=q.simLoadResistance??given.U_L/given.I;
-    const text=(x,y,value,color=ink,size=17)=>`<text x="${x}" y="${y}" fill="${color}" font-size="${size}" font-family="Arial,sans-serif" text-anchor="middle" direction="ltr">${value}</text>`;
+    const text=(x,y,value,color=ink,size=17)=>`<text x="${x}" y="${y}" fill="${color}" font-size="${size}" font-family="Arial,sans-serif" text-anchor="middle" direction="ltr">${simulationText(value)}</text>`;
     const duration=Math.max(.25,Math.min(8,3/Math.max(.01,given.I))),paused=q.simAnimate===false||given.I<=0;
     return `<svg xmlns="http://www.w3.org/2000/svg" class="phone-battery-svg" viewBox="0 0 950 500" role="img" aria-label="סוללה עם התנגדות פנימית ועומס: זרם, התנגדות ומפל מתח בכל רכיב" style="background:#000">
       <rect x="40" y="40" width="390" height="425" rx="17" fill="none" stroke="#69717b" stroke-dasharray="6 5"/>
@@ -356,6 +362,6 @@ const CoursePractice = (() => {
       ${text(177,334,'מקור אידאלי והתנגדות פנימית',ink,15)}
     </svg>`;
   }
-  return {random,mixed,battery,internalResistance,batch,mixedSVG,phoneBatterySVG,simulationNumber,milliSimulationNumber,simulationCurrentLabel,simulationAnnotations};
+  return {random,mixed,battery,internalResistance,batch,mixedSVG,phoneBatterySVG,simulationNumber,milliSimulationNumber,simulationText,simulationCurrentLabel,simulationAnnotations};
 })();
 if(typeof module!=='undefined')module.exports=CoursePractice;

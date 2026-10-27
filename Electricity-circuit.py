@@ -990,7 +990,7 @@ function circuitSVG(q, options = {}) {
   const quantityValue = (key,value) => complete ? simulatorQuantity(q,key,value) : quantity(q,key,value);
   const parts = [];
   const text = (x, y, value, size = 17, anchor = 'middle', color = palette.text) =>
-    `<text x="${x}" y="${y}" text-anchor="${anchor}" font-family="Arial,sans-serif" font-size="${size}" fill="${color}" direction="ltr">${value}</text>`;
+    `<text x="${x}" y="${y}" text-anchor="${anchor}" font-family="Arial,sans-serif" font-size="${size}" fill="${color}" direction="ltr">${complete?CoursePractice.simulationText(value):value}</text>`;
   const wire = d => `<path d="${d}" fill="none" stroke="${palette.wire}" stroke-width="3" stroke-linecap="round"/>`;
   const flow = (d, current) => `<path d="${d}" fill="none" stroke="${palette.current}" stroke-width="4" stroke-dasharray="7 20" class="sim-current-flow${moving ? ' flow' : ''}" data-current="${current}" style="${moving ? `animation-duration:${Math.max(.65, 3.2 / (1 + current * .35))}s` : 'animation:none'}" opacity="${voltage > 0 ? .9 : 0}"/>`;
   const arrow = (x, y, direction) => {
@@ -1838,7 +1838,7 @@ function simulatorHTML(q) {
 }
 function simMetrics(q) {
   const m = DC.physics(q.kind, q.simVoltage, q.resistances);
-  return `<div class="metrics"><div class="metric"><small>נגד שקול</small>${bdi(`${simulatorQuantity(q,'R',m.req)}`)}</div><div class="metric"><small>זרם כולל</small>${bdi(`${simulatorQuantity(q,'I',m.total)}`)}</div><div class="metric"><small>הספק כולל</small>${bdi(`${simulatorQuantity(q,'P',m.power)}`)}</div></div><div class="table-scroll"><table><caption class="small muted" style="text-align:right;margin-bottom:5px">נתוני המעגל במתח שנבחר בסימולטור</caption><thead><tr><th>רכיב</th><th>התנגדות</th><th>מתח</th><th>זרם</th><th>הספק</th></tr></thead><tbody>${q.resistances.map((r,j) => `<tr><td data-label="רכיב">${bdi('R' + (j+1))}${q.lamps[j] ? ' · נורה' : ''}</td><td data-label="התנגדות">${bdi(`${simulatorQuantity(q,'R',r)}`)}</td><td data-label="מתח">${bdi(`${simulatorQuantity(q,'U',m.drops[j])}`)}</td><td data-label="זרם">${bdi(`${simulatorQuantity(q,'I',m.currents[j])}`)}</td><td data-label="הספק">${bdi(`${simulatorQuantity(q,'P',m.powers[j])}`)}</td></tr>`).join('')}</tbody></table></div>`;
+  return `<div class="metrics"><div class="metric"><small>נגד שקול</small>${bdi(`${simulatorQuantity(q,'R',m.req)}`)}</div><div class="metric"><small>זרם כולל</small>${bdi(`${simulatorQuantity(q,'I',m.total)}`)}</div><div class="metric"><small>הספק כולל</small>${bdi(`${simulatorQuantity(q,'P',m.power)}`)}</div></div><div class="table-scroll"><table><caption class="small muted" style="text-align:right;margin-bottom:5px">נתוני המעגל במתח שנבחר בסימולטור</caption><thead><tr><th>רכיב</th><th>התנגדות</th><th>מתח</th><th>זרם</th><th>הספק</th></tr></thead><tbody>${q.resistances.map((r,j) => `<tr><td data-label="רכיב"><bdi>${mathNotation('R' + (j+1))}</bdi>${q.lamps[j] ? ' · נורה' : ''}</td><td data-label="התנגדות">${bdi(`${simulatorQuantity(q,'R',r)}`)}</td><td data-label="מתח">${bdi(`${simulatorQuantity(q,'U',m.drops[j])}`)}</td><td data-label="זרם">${bdi(`${simulatorQuantity(q,'I',m.currents[j])}`)}</td><td data-label="הספק">${bdi(`${simulatorQuantity(q,'P',m.powers[j])}`)}</td></tr>`).join('')}</tbody></table></div>`;
 }
 function updateSimulator() {
   const q = activeSimulatorQuestion();
