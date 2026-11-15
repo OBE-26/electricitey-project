@@ -4,13 +4,9 @@
   "geonameid": 281184,
   "candle_minutes": 40,
   "havdalah": "nightfall_8.5_degrees",
-  "source": "https://www.hebcal.com/hebcal?v=1&cfg=json&c=on&geo=geoname&geonameid=281184&b=40&M=on&i=on&start=2026-10-09&end=2028-12-31",
-  "generated_at": "2026-11-08T08:55:41.541771+00:00",
+  "source": "https://www.hebcal.com/hebcal?v=1&cfg=json&c=on&geo=geoname&geonameid=281184&b=40&M=on&i=on&start=2026-10-16&end=2028-12-31",
+  "generated_at": "2026-11-15T09:16:40.345665+00:00",
   "intervals": [
-    {
-      "start": "2026-10-09T17:34:00+03:00",
-      "end": "2026-10-10T18:49:00+03:00"
-    },
     {
       "start": "2026-10-16T17:26:00+03:00",
       "end": "2026-10-17T18:41:00+03:00"
